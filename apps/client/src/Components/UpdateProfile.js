@@ -12,17 +12,18 @@ function UpdateProfile() {
   const brithRef = useRef()
   const passwordRef = useRef()
   const passwordConfirmRef = useRef()
-  const { currentUser, updatePassword, updateEmail } = useAuth()
+  const { currentUser, updatePassword, updateEmail ,getId} = useAuth()
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
+
   const history = useHistory()
   const [user, setUser] = useState({})
   
   //fetch firestore dataBase and bring current User details
   useEffect( () => {
-    console.log("useEffect called");
     const getUser  = async() => {
-      const res = await axios.get(`https://moveo-server.herokuapp.com/users/${currentUser.email}`);
+   const UserId =getId();
+      const res = await axios.get(`http://localhost:3000/users/${UserId}`);
       setUser(res.data);
     };
     getUser();
@@ -31,9 +32,9 @@ function UpdateProfile() {
   //fetch firestore dataBase and bring current User details
   
   useEffect( () => {
-    console.log("useEffect called2");
     const getUser  = async() => {
-      const res = await axios.get(`https://moveo-server.herokuapp.com/users/${currentUser.email}`);
+      const UserId =getId();
+      const res = await axios.get(`http://localhost:5000/users/${UserId}`);
       setUser(res.data);
     };
     getUser();
@@ -52,12 +53,11 @@ function UpdateProfile() {
         }
 
   try{
-    const res = await axios.put(`https://moveo-server.herokuapp.com/update/{user.id}`, formData, config);
-    console.log("res = " , res)
+     await axios.put(`http://localhost:5000/update/${user.id}`, formData, config);
     return ("succses")
   } 
-  catch {
-    console.log("err")
+  catch {     
+     setError("Failed to to update")
     return  setError("Failed to update Account")
   }
   }
@@ -70,6 +70,7 @@ function UpdateProfile() {
     }
     await setLoading(true)
     setError("")
+
     //upadte fireStore first , and if update succses contiue update firebase
     const resp=  await(updateFireStore())
     try{
@@ -81,9 +82,12 @@ function UpdateProfile() {
       if (passwordRef.current.value) {
         await (updatePassword(passwordRef.current.value))
       }
-   }
+      history.push("/")
+
+    }
   }
 catch{
+  setError("  Update Failed")
    console.log("update cancel")
   }
 
@@ -102,7 +106,6 @@ catch{
             <fieldset id="sign_up" className="ba b--transparent ph0 mh0">
               <legend className="f1 fw6 ph0 mh0">Update Profile</legend>
               {error && <Alert variant="danger">{error}</Alert>}
-
               <div className="mt3">
                 <label className="db fw6 lh-copy f6" htmlFor="name">Name</label>
                 <input

@@ -7,7 +7,7 @@ import  axios  from "axios"
 
 export default function Dashboard() {
   const [error, setError] = useState("")
-  const { currentUser, logout ,getId} = useAuth()
+  const { currentUser, logout } = useAuth()
   const [user, setUser] = useState({})
   const random = Math.floor(Math.random() * 20)
   const history = useHistory()
@@ -27,9 +27,8 @@ export default function Dashboard() {
 
   //fetch firestore dataBase and bring current User details
   useEffect( () => {
-    console.log("useEffect called");
     const getUser  = async() => {
-      const res = await axios.get(`https://moveo-server.herokuapp.com/users/${currentUser.email}`);
+      const res = await axios.get(`http://localhost:5000/users/${currentUser.uid}`);
       setUser(res.data);
     };
     getUser();
