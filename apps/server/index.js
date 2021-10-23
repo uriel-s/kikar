@@ -25,7 +25,7 @@ console.log("connect to db")
 
 //routrs
 app.post('/add'        ,(req, res) =>  { user_route.handleRegister(req, res, db, ) })
-app.get('/users/:email',(req, res) => {user_route.getUserbyEmail(req, res, db, )})
+app.get('/users/:id',(req, res) => {user_route.getUserbyEmail(req, res, db, )})
 app.put('/update/:id',(req, res) => {user_route.updateUser(req, res, db, )})
 
 

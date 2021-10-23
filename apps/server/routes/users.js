@@ -4,11 +4,10 @@
 // @desc     Get current user profile
 // @access   Private
 const getUserbyEmail = async (req ,res ,db ,) =>{
-  const  email = await req.params.email
+  const  id = await req.params.id
   try { 
-    const query = await db.collection('users').where('email', '==', email).get()
+    const query = await db.collection('users').where('id', '==', id).get()
     if (query.empty) {
-        console.log("user not exist")
         return res.status(500).send("user not exist");
       }
     const snapshot = query.docs[0];
@@ -27,6 +26,7 @@ const getUserbyEmail = async (req ,res ,db ,) =>{
 const updateUser = async (req ,res ,db ,) =>{
   const  fireBaseid = await req.params.id
   const { email, name,  birthDate, address} = await req.body;
+
   try
   {
     const docRef =  db.collection('users').doc(fireBaseid);
