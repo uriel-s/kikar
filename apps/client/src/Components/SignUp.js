@@ -94,7 +94,7 @@ function SignUp() {
 
     try{
       //Add new User details to fireStore
-      const res = await axios.post('https://humanz-server.herokuapp.com/add', formData, config);
+      const res = await axios.post('https://moveo-server.herokuapp.com/add', formData, config);
       await history.push("/")
 
     } 

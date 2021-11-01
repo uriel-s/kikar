@@ -23,7 +23,7 @@ function UpdateProfile() {
   useEffect( () => {
     const getUser  = async() => {
    const UserId =getId();
-      const res = await axios.get(`https://humanz-server.herokuapp.com/users/${UserId}`);
+      const res = await axios.get(`https://moveo-server.herokuapp.com/users/${UserId}`);
       setUser(res.data);
     };
     getUser();
@@ -34,7 +34,7 @@ function UpdateProfile() {
   useEffect( () => {
     const getUser  = async() => {
       const UserId =getId();
-      const res = await axios.get(`https://humanz-server.herokuapp.com/users/${UserId}`);
+      const res = await axios.get(`https://moveo-server.herokuapp.com/users/${UserId}`);
       setUser(res.data);
     };
     getUser();
@@ -53,7 +53,7 @@ function UpdateProfile() {
         }
 
   try{
-     await axios.put(`https://humanz-server.herokuapp.com/update/${user.id}`, formData, config);
+     await axios.put(`https://moveo-server.herokuapp.com/update/${user.id}`, formData, config);
     return ("succses")
   } 
   catch {     
