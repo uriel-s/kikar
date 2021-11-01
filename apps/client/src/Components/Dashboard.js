@@ -28,7 +28,7 @@ export default function Dashboard() {
   //fetch firestore dataBase and bring current User details
   useEffect( () => {
     const getUser  = async() => {
-      const res = await axios.get(`http://localhost:5000/users/${currentUser.uid}`);
+      const res = await axios.get(`https://humanz-server.herokuapp.com/users/${currentUser.uid}`);
       setUser(res.data);
     };
     getUser();

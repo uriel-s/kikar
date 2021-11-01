@@ -38,7 +38,6 @@ function Signin() {
               <i class="fas fa-door-open"></i>
 Login</legend>  
               {error && <Alert variant="danger">{error}</Alert>}
-          
               <div className="mt3">
                 <label className="db fw6 lh-copy f6" htmlFor="email-address">Email</label>
                 <input
