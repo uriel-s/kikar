@@ -19,14 +19,20 @@ async function handleLogout() {
     return (
         <div>
         <nav className="navbar  fixed-top bg-light   navbar-dark bg-dark justify-content-between">
-             <a className="navbar-brand">Moveo </a>
+             <a className="navbar-brand">Moveo <i class="fas fa-grip-lines-vertical"></i> </a>
+             
             <form className="form-inline">
-            { currentUser ? 
-                <a className="nav-link  " href="#"  onClick={handleLogout}>Log Out </a>
+            { currentUser ?
+             <div>
+                <a className="mr3 gray " href="#"  onClick={handleLogout}>
+                  
+                <i class="fas fa-user-times"></i>
+                 </a>
+                </div>
                 :
                 <div className="navbar" > 
-                    <a className="nav-link"  href="SignUp"> Register  </a>
-                    <a className="nav-link"  href="Signin"> Log In </a>
+                    <a className="gray mr3"  href="SignUp">  <i class="fas fa-user-plus"></i>  </a>
+                    <a className="gray mr4"  href="Signin"> <i class="fas fa-sign-in-alt"></i> </a>
                 </div> 
                 }
             </form>
