@@ -63,7 +63,7 @@ const  handleRegister = async (req, res, db,  ) => {
         res.json("success");
       }
   catch{
-    return res.status(500).send("can not register");
+    return res.status(500).send("can not register",res);
   }
 
 }
