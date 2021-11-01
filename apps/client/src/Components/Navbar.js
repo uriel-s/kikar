@@ -26,7 +26,7 @@ async function handleLogout() {
                 :
                 <div className="navbar" > 
                     <a className="nav-link"  href="SignUp"> Register  </a>
-                    <a className="nav-link"  href="SignUp"> Log In </a>
+                    <a className="nav-link"  href="Signin"> Log In </a>
                 </div> 
                 }
             </form>
