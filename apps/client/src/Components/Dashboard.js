@@ -36,15 +36,18 @@ export default function Dashboard() {
 
   
   return (
-    <div>
+    <div  className="mt6">
 
-    <article className="grow br3 ba b--black-10 mv4 w-100 w-50-m w-25-l mw6 shadow-5 center">
-      <main className="pa4 black-80">
-        <div className="measure">
+    <article className="grow br3 ba b--black-10 mv4 w-100 w-50-m  w-25-l mw6 shadow-5 center ">
+      <main className="pa4 black-80  ">
+        <div className="measure ">
           <fieldset id="sign_up" className="ba b--transparent ph0 mh0">
+          <div className="w-100 grow"><img src={`https://randomuser.me/api/portraits/men/${random}.jpg`} alt="" className="rounded-circle"></img></div>  
+
             <legend className="f1 fw6 ph0 mh0">{user.name}</legend>  
+            <hr className ="mw5 center bg-white br3 pa3 pa1-ns mv3 ba b--black-30 "></hr>
+
             {error && <Alert variant="danger">{error}</Alert>}
-           <div className="w-100 grow"><img src={`https://randomuser.me/api/portraits/men/${random}.jpg`} alt="" className="rounded-circle"></img></div>  
            <div className="mt4 grow">  <strong>Email:</strong> {user.email} </div>
            <div className="mr4 grow">  <strong>name:</strong> {user.name} </div>
            <div className="measure grow">  <strong>Address:</strong> {user.address} </div>
