@@ -1,5 +1,5 @@
 import React from 'react'
-import { Link, useHistory , } from "react-router-dom"
+import {  useHistory , } from "react-router-dom"
 import { useAuth } from "../contexts/AuthContext"
 
 const Navbar = () => {
@@ -19,14 +19,14 @@ async function handleLogout() {
     return (
         <div>
         <nav className="navbar  fixed-top bg-light   navbar-dark bg-dark justify-content-between">
-             <a className="navbar-brand">Moveo <i class="fas fa-grip-lines-vertical"></i> </a>
-             
+        <a className="navbar-brand" href="/">Moveo <i className="fas fa-grip-lines-vertical"></i> </a>
+    
             <form className="form-inline">
             { currentUser ?
              <div>
-                <a className="mr3 gray " href="#"  onClick={handleLogout}>
+                <a className="mr3 gray " href="/"  onClick={handleLogout}>
                   
-                <i class="fas fa-user-times"></i>
+                <i className="fas fa-user-times"></i>
                  </a>
                 </div>
                 :

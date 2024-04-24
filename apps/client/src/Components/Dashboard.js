@@ -2,14 +2,17 @@ import React, { useState ,useEffect,} from "react"
 import {  Button, Alert } from "react-bootstrap"
 import { useAuth } from "../contexts/AuthContext"
 import { Link, useHistory } from "react-router-dom"
-import  axios  from "axios"
+import  axios  from "axios";
+import { getStorage, ref, getDownloadURL } from "firebase/storage";
 
 
 export default function Dashboard() {
   const [error, setError] = useState("")
   const { currentUser, logout } = useAuth()
   const [user, setUser] = useState({})
-  const random = Math.floor(Math.random() * 20)
+  const [imageUrl, setImageUrl] = useState('');
+
+  //const random = Math.floor(Math.random() * 20)
   const history = useHistory()
 
   //exit from currnet User
@@ -28,21 +31,62 @@ export default function Dashboard() {
   //fetch firestore dataBase and bring current User details
   useEffect( () => {
     const getUser  = async() => {
-      const res = await axios.get(`https://moveo-server.herokuapp.com/users/${currentUser.uid}`);
-      setUser(res.data);
+     try {
+
+        const res = await axios.get(`http://localhost:5000/users/${currentUser.uid}`);
+
+        console.log("ID == ",currentUser.uid )
+        setUser(res.data);
+     } catch (error) {
+      // Handle error, e.g., display an error message or redirect to an error page
+      console.error('Error fetching user data:', error);
+      }
     };
     getUser();
-  },[]) ;
+  },[currentUser.uid,]) ;
 
-  
+  useEffect(() => {
+    // Function to fetch the profile picture URL
+    const fetchImageUrl = async () => {
+      try {
+        const storage = getStorage();
+       // const profilePictureRef = ref(storage, `profile_pictures/${currentUser.uid}.jpg`);
+       const profilePictureRef = ref(storage, `profile_pictures/${currentUser.uid}`);
+ 
+       const url = await getDownloadURL(profilePictureRef);
+        setImageUrl(url);
+        console.log(url)
+        console.log("picurl",imageUrl)
+      }
+      catch (error) {
+        // Handle any errors that occur while fetching the download URL
+        console.error("Error getting download URL:", error);
+      }
+    };
+    fetchImageUrl();
+  }, []);
+
+
+  // This useEffect is used for logging the user state after it's updated
+  useEffect(() => {
+  }, [user]);
+
   return (
+    
     <div  className="mt6">
 
     <article className="grow br3 ba b--black-10 mv4 w-100 w-50-m  w-25-l mw6 shadow-5 center ">
       <main className="pa4 black-80  ">
         <div className="measure ">
           <fieldset id="sign_up" className="ba b--transparent ph0 mh0">
-          <div className="w-100 grow"><img src={`https://randomuser.me/api/portraits/men/${random}.jpg`} alt="" className="rounded-circle"></img></div>  
+          <div className="w-100 grow ">
+            <img
+             src={imageUrl}
+              alt="Avatar"
+              className="rounded-circle square"
+              style={{ width: '200px', height: '200px' }} 
+               />
+               </div>  
 
             <legend className="f1 fw6 ph0 mh0">{user.name}</legend>  
             <hr className ="mw5 center bg-white br3 pa3 pa1-ns mv3 ba b--black-30 "></hr>
@@ -54,14 +98,14 @@ export default function Dashboard() {
            <div className="measure grow">  <strong>birthDate:</strong> {user.birthDate} </div>
 
           <Link to="/update-profile" className="grow btn btn-primary w-100 mt-3">
-          <i class="fas fa-pen-alt"></i>
+          <i className="fas fa-pen-alt"></i>
 Update Profile
           </Link>
           
 
       <div className="w-100 text-center mt-2 grow">
         <Button variant="link" onClick={handleLogout}>
-        <i class="fas fa-sign-out-alt"></i>
+        <i className="fas fa-sign-out-alt"></i>
           Log Out
         </Button>
       </div>

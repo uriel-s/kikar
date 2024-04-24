@@ -15,7 +15,6 @@ export function AuthProvider({ children }) {
     return auth.createUserWithEmailAndPassword(email, password)
   }
   function getId(){
-    console.log("try to find" ,auth.currentUser.uid )
     return auth.currentUser.uid
   }
 

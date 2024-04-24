@@ -1,8 +1,8 @@
-import React, {useEffect, useRef,  useState} from "react"
+import React, { useRef,  useState} from "react"
 import { useAuth } from "../contexts/AuthContext"
 import  Alert  from "react-bootstrap/Alert"
 import  axios  from "axios"
-import { validEmail, validPassword } from '../Regex';
+import { validEmail } from '../Regex';
 
 import { Link, useHistory , } from "react-router-dom"
 
@@ -16,25 +16,25 @@ function SignUp() {
   const adrresRef = useRef()
   const { signup , getId} = useAuth()
   const [error, setError] = useState("")
-  const [userID, setUserID] = useState("null")
+  //const [userID, setUserID] = useState("null")
   const idRef = useRef("")
 
   const [loading, setLoading] = useState(false)
   const history = useHistory()
-  const firstUpdate = useRef(true);
+  //const firstUpdate = useRef(true);
 
 
  //fetch firestore dataBase and bring current User details
- useEffect( () => {
+ /*useEffect( () => {
   const getUser  = async() => {
     const res = await getId();
-    idRef.current =res;
+    idRef.current = res;
     setUserID(res);
   };
   if (firstUpdate.current) firstUpdate.current = false;
   else getUser();
 },[,loading]) ;
-
+*/
 
 
 
@@ -44,7 +44,7 @@ function SignUp() {
       return ("Passwords do not match")
     }
   
-   if (passwordRef.current.value.length < 6) {
+   if (passwordRef.current.value.length < 3) {
     return ("Password must have 6 char or more")
   }
 
@@ -52,39 +52,44 @@ function SignUp() {
     return ("invalid Email")
  }
 
-   if (!validPassword.test(passwordRef.current.value)) {
-    return ("invalid Password")
-  }
+  // if (!validPassword.test(passwordRef.current.value)) {
+    //return ("invalid Password")
+  //}
  return "null"
   }
 
-
    async function handleSubmit(e) {
     e.preventDefault()
-    
     const Valid = validation()//if input invalid return the  error
-    if (Valid != "null")  return setError(Valid)
+    if (Valid !== "null")  return setError(Valid)
+    console.log("uusss01")
+      try {
+        console.log("uusss02")
 
-
-    try {
       setError("")
       await signup(emailRef.current.value, passwordRef.current.value);
-      await setLoading(true)    
-      idRef.current = getId()
+      console.log("uusss03")
+
+      await setLoading(true)   ; 
+      idRef.current = getId();   
+   
     }
 
-    catch {
+    catch(error) {
+      console.log("uusss04",error)
+
       return setError("Failed to create an account")
     }
 
 
     //Header and Body for Fetch server 
       const config ={
+        
         headers: {
             'Content-Type': 'application/json'
          }
       }
-      const formData = {
+            const formData = {
       id : idRef.current,
       email : emailRef.current.value,
       name: nameRef.current.value, 
@@ -94,15 +99,18 @@ function SignUp() {
 
     try{
       //Add new User details to fireStore
-      const res = await axios.post('https://moveo-server.herokuapp.com/add', formData, config);
+      console.log("uuss1")
+      await axios.post('http://localhost:5000/add', formData, config);
+      console.log("uuss2")
+
       await history.push("/")
 
     } 
-    catch {
-      return  setError("Failed to send new Account")
+    catch(e) {
+      return  setError("Failed to send new Account ",error)
     }
   
-   // setLoading(false)
+    setLoading(false)
   }
 
     return (
