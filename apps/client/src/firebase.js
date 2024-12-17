@@ -3,14 +3,13 @@ import 'firebase/compat/auth';
 const app =firebase.initializeApp({
 
    
-
-   apiKey: "AIzaSyBQ9lfN9MwVaUxYW-LKn77j_EchWhJpYUc",
-   authDomain: "moveo-de052.firebaseapp.com",
-   projectId: "moveo-de052",
-   storageBucket: "moveo-de052.appspot.com",
-   messagingSenderId: "599696852445",
-   appId: "1:599696852445:web:1f34b25a20c1a203046234",
-   measurementId: "G-GZLPWP32FY"
+   apiKey: "AIzaSyBKTQ5Nb8haFNVO1cEYOSvtTw4qkwaQj3o",
+  authDomain: "palhan-b30d2.firebaseapp.com",
+  projectId: "palhan-b30d2",
+  storageBucket: "palhan-b30d2.appspot.com",
+  messagingSenderId: "1055743165310",
+  appId: "1:1055743165310:web:03d6c7f466c5cb223fa92f",
+  measurementId: "G-0ZXE197DPY"
 }
 )
 export const auth = app.auth()

@@ -121,7 +121,7 @@ function SignUp() {
           <div className="measure">
             <fieldset id="sign_up" className="ba b--transparent ph0 mh0">
               <legend className="f1 fw6 ph0 mh0">Register  
-              <i class="fas fa-user-plus"></i>
+              <i className="fas fa-user-plus"></i>
 
               </legend>
               {error && <Alert variant="danger">{error}</Alert>}

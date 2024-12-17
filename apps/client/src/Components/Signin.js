@@ -35,7 +35,7 @@ function Signin() {
           <div className="measure">
             <fieldset id="sign_up" className="ba b--transparent ph0 mh0">
               <legend className="f1 fw6 ph0 mh0">
-              <i class="fas fa-door-open"></i>
+              <i className="fas fa-door-open"></i>
 Login</legend>  
               {error && <Alert variant="danger">{error}</Alert>}
               <div className="mt3">

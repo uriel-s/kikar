@@ -3,10 +3,10 @@ import { useAuth } from "../contexts/AuthContext"
 import Alert from "react-bootstrap/Alert"
 import { Link, useHistory } from "react-router-dom"
 import axios from "axios"
+import { FaEdit } from 'react-icons/fa'; // Import an icon for the edit button
 
 function UpdateProfile() {
   const nameRef = useRef()
-  const emailRef = useRef()
   const addressRef = useRef()
   const brithRef = useRef()
   const passwordRef = useRef()
@@ -23,14 +23,20 @@ function UpdateProfile() {
     const getUser = async () => {
       const UserId = getId();
       const res = await axios.get(`http://localhost:5000/users/${UserId}`);
+
       setUser(res.data);
+  
+      // Set the value of nameRef only if the field exists
+      if (nameRef.current) {
+        console.log("debug2 Response: ", res.data);
+        nameRef.current.value = res.data.name;
+        console.log("nameRef = ", nameRef.current.value);
+      }
     };
-    getUser();
+      getUser();
   }, [getId]);
+    
   
-  
-
-
   const handleImageChange = (e) => {
     if (e.target.files[0]) {
       setImage(e.target.files[0]);
@@ -53,12 +59,11 @@ function UpdateProfile() {
             headers: {'Content-Type': 'application/json'  }  
         }
         let formData = {
-            email : emailRef.current.value,
             name: nameRef.current.value, 
             address : addressRef.current.value,
             birthDate : brithRef.current.value
         }
-        console.log("uriel11")
+       
         await axios.put(`http://localhost:5000/update/${user.id}`,formData,config );
       
         config ={
@@ -74,10 +79,7 @@ function UpdateProfile() {
         await axios.post(`http://localhost:5000/uploadAvatar/${user.id}`, formData, config);
         console.log("uriel2233")
         }
-        // Update email and password if necessary
-        if (emailRef.current.value !== currentUser.email) {
-        await updateEmail(emailRef.current.value);
-      }
+       
       if (passwordRef.current.value) {
         await updatePassword(passwordRef.current.value);
       }
@@ -101,6 +103,12 @@ useEffect(() => {
         }
     };
 }, [cancelUpload]);
+
+const handleEditEmail = () => {
+  // Logic to handle email editing (e.g., opening a modal)
+  alert("Edit Email is unavilabe right now");
+};
+
   return (
     <div className="mt6">
       <article className="grow br3 ba b--black-10 mv4 w-100 w-50-m w-25-l mw6 shadow-5 center">
@@ -110,30 +118,34 @@ useEffect(() => {
               <legend className="f1 fw6 ph0 mh0"><i className="fas fa-wrench"></i> Update Profile</legend>
               {error && <Alert variant="danger">{error}</Alert>}
               <div className="mt3">
+                <label className="db fw6 lh-copy f6" htmlFor="email-address">Email</label>
+                <span className="flex items-center pa2 ba bg-light-gray w-100 justify-between">
+                  {user.email}
+                  <FaEdit 
+                    className="ml2 cursor-pointer icon-hover" 
+                    onClick={handleEditEmail} 
+                    title="Edit Email" 
+                  />
+                </span>
+              </div>
+              <div className="mt3">
                 <label className="db fw6 lh-copy f6" htmlFor="name">Name</label>
                 <input
                   defaultValue={user.name}
                   ref={nameRef}
                   className="pa2 input-reset ba bg-transparent hover-bg-black hover-white w-100"
                   type="text"
+                  autoComplete="off"
                 />
               </div>
-              <div className="mt3">
-                <label className="db fw6 lh-copy f6" htmlFor="email-address">Email</label>
-                <input
-                  defaultValue={user.email}
-                  ref={emailRef}
-                  className="pa2 input-reset ba bg-transparent hover-bg-black hover-white w-100"
-                  type="email"
-                  name="email-address"
-                  id="email-address"
-                />
-              </div>
+             
               <div className="mv3">
                 <label className="db fw6 lh-copy f6" htmlFor="password">Password</label>
                 <input
-                  placeholder="Leave blank to keep the same"
+                  defaultValue=""
+                  //placeholder="Leave blank to keep the same"
                   ref={passwordRef}
+                  autoComplete="off"
                   className="b pa2 input-reset ba bg-transparent hover-bg-black hover-white w-100"
                   type="password"
                   name="password"
@@ -147,7 +159,6 @@ useEffect(() => {
                   className="b pa2 input-reset ba bg-transparent hover-bg-black hover-white w-100"
                   type="password"
                   name="password"
-                  id="password"
                 />
               </div>
               <div className="mt5">
@@ -168,34 +179,43 @@ useEffect(() => {
                   type="date"
                 />
               </div>
-              <div className="mv3">
-                <label className="db fw6 lh-copy f6" htmlFor="avatar">Avatar</label>
-                <input
-                  //ref={avatarRef}
-                  className="b pa2 input-reset ba bg-transparent hover-bg-black hover-white w-100"
-                  type="file"
-                  name="avatar"
-                  id="avatar"
-                  accept="image/*" // Allow only image files
-                  onChange={handleImageChange} // Handle file selection
-                />
-              </div>
+
+
+              <div className="mb-3">
+  <label className="form-label fw-bold" htmlFor="avatar">Avatar</label>
+  <input
+    // ref={avatarRef}
+    className="form-control border border-secondary bg-transparent hover-bg-black hover-white"
+    type="file"
+    name="avatar"
+    id="avatar"
+    accept="image/*" // Allow only image files
+    onChange={handleImageChange} // Handle file selection
+  />
+</div>
+
+
+              
             </fieldset>
-            <div className="">
-              <input
-                disabled={loading}
-                onClick={handleSubmit}
-                className="b ph3 pv2 input-reset ba b--black bg-transparent grow pointer f6 dib"
-                type="submit"
-                value="Update"
-              />
-            </div>
+            <div className="text-center">
+            <input
+              disabled={loading}
+              onClick={handleSubmit}
+              className={`btn btn-primary ph3 pv2 grow pointer f6 dib ${loading ? 'disabled' : ''}`}
+              type="submit"
+              value={loading ? "Updating..." : "Update"}
+            />
+          </div>
           </div>
         </main>
       </article>
-      <div className="grow w-100 text-center mt-2">
-        <Link to="/"> Cancel</Link>
-      </div>
+      <div className="d-flex justify-content-center mt-3">
+  <Link to="/" className="btn btn-outline-secondary btn-lg">
+    Cancel
+  </Link>
+</div>
+
+
     </div>
   );
 }

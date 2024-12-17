@@ -31,8 +31,8 @@ async function handleLogout() {
                 </div>
                 :
                 <div className="navbar" > 
-                    <a className="gray mr3"  href="SignUp">  <i class="fas fa-user-plus"></i>  </a>
-                    <a className="gray mr4"  href="Signin"> <i class="fas fa-sign-in-alt"></i> </a>
+                    <a className="gray mr3"  href="SignUp">  <i className="fas fa-user-plus"></i>  </a>
+                    <a className="gray mr4"  href="Signin"> <i className="fas fa-sign-in-alt"></i> </a>
                 </div> 
                 }
             </form>

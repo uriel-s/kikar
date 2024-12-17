@@ -51,10 +51,10 @@ export default function Dashboard() {
       try {
         const storage = getStorage();
        // const profilePictureRef = ref(storage, `profile_pictures/${currentUser.uid}.jpg`);
-       const profilePictureRef = ref(storage, `profile_pictures/${currentUser.uid}`);
- 
+       const profilePictureRef = await ref(storage, `profile_pictures/${currentUser.uid}`);
+    
        const url = await getDownloadURL(profilePictureRef);
-        setImageUrl(url);
+             setImageUrl(url);
         console.log(url)
         console.log("picurl",imageUrl)
       }
@@ -86,7 +86,7 @@ export default function Dashboard() {
               className="rounded-circle square"
               style={{ width: '200px', height: '200px' }} 
                />
-               </div>  
+            </div>  
 
             <legend className="f1 fw6 ph0 mh0">{user.name}</legend>  
             <hr className ="mw5 center bg-white br3 pa3 pa1-ns mv3 ba b--black-30 "></hr>

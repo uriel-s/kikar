@@ -15,3 +15,15 @@
   left: 0;
   z-index: -1;
 }
+span .icon-hover:hover {
+  transform: scale(1.5); /* Enlarge */
+  color: #007bff; /* Change to Bootstrap primary color */
+}
+.icon-hover {
+  transition: transform 0.2s, color 0.2s; /* Smooth transition */
+}
+
+.icon-hover:hover {
+  transform: scale(1.5); /* Enlarge */
+  color: #007bff; /* Change to Bootstrap primary color */
+}
