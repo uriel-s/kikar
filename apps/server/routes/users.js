@@ -1,16 +1,15 @@
 const multer = require('multer');
 
 
-
 // @route    GET /users/:id
 // @desc     Get current user profile
 // @access   Private
 const getUserbyEmail = async (req ,res ,db ,) =>{
     const  id = await req.params.id
-    try { 
+      try { 
       const query = await db.collection('users').where('id', '==', id).get()
       if (query.empty) {
-          return res.status(500).send("user not exist");
+          return res.status(500).send("user not exist empty");
         }
       const snapshot = query.docs[0];
       const user = snapshot.data();
@@ -31,14 +30,13 @@ const getUserbyEmail = async (req ,res ,db ,) =>{
   
     try
     {
-      const docRef =  db.collection('users').doc(fireBaseid);
-      var user = docRef.update({
-        email: email,
+        const docRef = await db.collection('users').doc(fireBaseid);
+      var user = await docRef.update({
         name : name, 
         birthDate : birthDate,
         address : address
       });
-      res.json("succses")
+         res.json("succses")
     }
     catch
     {
@@ -49,7 +47,7 @@ const getUserbyEmail = async (req ,res ,db ,) =>{
   
   
   // @route    POST users/profile
-  // @desc     Create  user profile
+  // @desc     Create user profile
   // @access   Private
   const  handleRegister = async (req, res, db,  ) => {
     const { email, name, id ,birthDate,address} = await req.body;
@@ -74,14 +72,14 @@ const getUserbyEmail = async (req ,res ,db ,) =>{
   // @desc     update current users Avatar
   // @access   Private
   const updateAvatar = async (req ,res ,bucket ) => {
-    //Sconsole.log("req",req.file)
+    
     if (!req.file || !req.file) {
-      console.log("no file!!" ,req.file)
+      
       return res.status(400).send('No file uploaded.');
   }   
   const imageFile = req.file;
   const fileName = req.params.id//Date.now() + '_' + imageFile.originalname;
-  const fileUpload = bucket.file('profile_pictures/' + fileName); // Specify the prefix here
+   const fileUpload = bucket.file('profile_pictures/' + fileName); // Specify the prefix here
     
   // Delete existing profile picture if it exists
   try {

@@ -11,7 +11,7 @@ const admin = require('firebase-admin');
 const multer = require('multer');
 
 const { doc, getDoc ,collection,addDoc}  = require( "firebase/firestore");
-const serviceAccount = require('./serviceAccountKey');
+const serviceAccount = require('./serviceAccountKey.json');
 
 require("dotenv/config");
 app.use(cors());
@@ -22,7 +22,7 @@ app.use(bodyParser.json());
 try {
     initializeApp({
         credential: admin.credential.cert(serviceAccount),
-        storageBucket: "gs://moveo-de052.appspot.com"
+        storageBucket: "palhan-b30d2.appspot.com"
     });
     console.log("Firebase initialized successfully");
 } catch (error) {
