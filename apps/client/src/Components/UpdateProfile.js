@@ -38,11 +38,12 @@ function UpdateProfile() {
     
   
   const handleImageChange = (e) => {
+    console.log("uriel1")
     if (e.target.files[0]) {
       setImage(e.target.files[0]);
     }
   };
-
+ 
   let cancelUpload;
 
   const handleSubmit = async (e) => {

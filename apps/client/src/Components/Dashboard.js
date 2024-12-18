@@ -36,6 +36,7 @@ export default function Dashboard() {
         const res = await axios.get(`http://localhost:5000/users/${currentUser.uid}`);
 
         console.log("ID == ",currentUser.uid )
+        
         setUser(res.data);
      } catch (error) {
       // Handle error, e.g., display an error message or redirect to an error page
@@ -46,25 +47,28 @@ export default function Dashboard() {
   },[currentUser.uid,]) ;
 
   useEffect(() => {
+    console.log("uriel11");
+  
     // Function to fetch the profile picture URL
     const fetchImageUrl = async () => {
       try {
-        const storage = getStorage();
-       // const profilePictureRef = ref(storage, `profile_pictures/${currentUser.uid}.jpg`);
-       const profilePictureRef = await ref(storage, `profile_pictures/${currentUser.uid}`);
-    
-       const url = await getDownloadURL(profilePictureRef);
-             setImageUrl(url);
-        console.log(url)
-        console.log("picurl",imageUrl)
-      }
-      catch (error) {
+        const storage = getStorage(); // Initialize Firebase Storage
+        const profilePictureRef = ref(storage, `profile_pictures/${currentUser.uid}`); // Create a reference to the file
+  
+        const url = await getDownloadURL(profilePictureRef); // Get the download URL
+        console.log("Download URL?:", url);
+  
+        setImageUrl(url); // Update the state with the image URL
+        console.log("uri %s", url);
+      } catch (error) {
         // Handle any errors that occur while fetching the download URL
-        console.error("Error getting download URL:", error);
+        console.error("Error getting download URL:", error.message);
       }
     };
+  
     fetchImageUrl();
   }, []);
+  
 
 
   // This useEffect is used for logging the user state after it's updated
