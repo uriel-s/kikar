@@ -16,25 +16,11 @@ function SignUp() {
   const adrresRef = useRef()
   const { signup , getId} = useAuth()
   const [error, setError] = useState("")
-  //const [userID, setUserID] = useState("null")
   const idRef = useRef("")
 
   const [loading, setLoading] = useState(false)
   const history = useHistory()
-  //const firstUpdate = useRef(true);
 
-
- //fetch firestore dataBase and bring current User details
- /*useEffect( () => {
-  const getUser  = async() => {
-    const res = await getId();
-    idRef.current = res;
-    setUserID(res);
-  };
-  if (firstUpdate.current) firstUpdate.current = false;
-  else getUser();
-},[,loading]) ;
-*/
 
 
 
@@ -62,13 +48,11 @@ function SignUp() {
     e.preventDefault()
     const Valid = validation()//if input invalid return the  error
     if (Valid !== "null")  return setError(Valid)
-    console.log("uusss01")
+  
       try {
-        console.log("uusss02")
 
       setError("")
       await signup(emailRef.current.value, passwordRef.current.value);
-      console.log("uusss03")
 
       await setLoading(true)   ; 
       idRef.current = getId();   
@@ -76,7 +60,6 @@ function SignUp() {
     }
 
     catch(error) {
-      console.log("uusss04",error)
 
       return setError("Failed to create an account")
     }
@@ -99,8 +82,7 @@ function SignUp() {
 
     try{
       //Add new User details to fireStore
-      console.log("uuss1")
-      await axios.post('http://localhost:5000/add', formData, config);
+      await axios.post('http://localhost:5000/users', formData, config);
       console.log("uuss2")
 
       await history.push("/")
@@ -132,7 +114,7 @@ function SignUp() {
                 <label className="db fw6 lh-copy f6" htmlFor="email-address">* Email</label>
                 <input
                  ref = {emailRef}
-                  className="pa2 input-reset ba bg-transparent hover-bg-black hover-white w-100"
+                   className="pa2 input-reset ba hover:bg-gray-700 w-100"
                   type="email"
                   name="email-address"
                   id="email-address"
@@ -145,7 +127,7 @@ function SignUp() {
                 <label className="db fw6 lh-copy f6" htmlFor="password">* Password</label>
                 <input
                   ref = {passwordRef}            
-                  className="b pa2 input-reset ba bg-transparent hover-bg-black hover-white w-100"
+                   className="pa2 input-reset ba hover:bg-gray-700 w-100"
                   type="password"
                   name="password"
                   id="password"
@@ -156,7 +138,7 @@ function SignUp() {
                 <label className="db fw6 lh-copy f6" htmlFor="password">* Verify Password </label>
                 <input
                   ref = {passwordConfirmRef}
-                  className="b pa2 input-reset ba bg-transparent hover-bg-black hover-white w-100"
+                   className="pa2 input-reset ba hover:bg-gray-700 w-100"
                   type="password"
                   name="password"
                   id="password"
@@ -167,7 +149,7 @@ function SignUp() {
                 <label className="db fw6 lh-copy f6" htmlFor="name">Name</label>
                 <input
                  ref = {nameRef}
-                  className="pa2 input-reset ba bg-transparent hover-bg-black hover-white w-100"
+                   className="pa2 input-reset ba hover:bg-gray-700 w-100"
                   type="text"
                   name="name"
                   id="name"
@@ -179,7 +161,7 @@ function SignUp() {
                 <label className="db fw6 lh-copy f6"htmlFor="password" >Addres</label>
                 <input
                  ref = {adrresRef}
-                  className="pa2 input-reset ba bg-transparent hover-bg-black hover-white w-100"
+                   className="pa2 input-reset ba hover:bg-gray-700 w-100"
                   type="text"
                 
                 />
@@ -190,7 +172,7 @@ function SignUp() {
                 <label className="db fw6 lh-copy f6" htmlFor="password">Brith Day </label>
                 <input
                   ref = {brithDayRef}
-                  className="b pa2 input-reset ba bg-transparent hover-bg-black hover-white w-100"
+                   className="pa2 input-reset ba hover:bg-gray-700 w-100"
                   type="date"
                   
                 />

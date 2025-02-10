@@ -1,12 +1,426 @@
+/* General body styling */
 body {
   margin: 0;
   font-family: "Courier New", Courier, monospace;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background: linear-gradient(to right, rgb(121, 126, 133), rgb(201, 218, 209));
+  background: linear-gradient(to right, #f7f7f7, #e1e8ee); /* Soft gradient */
+  color: #333;
+}
+/* שינוי צבע טקסט בשדות קלט */
+input:hover {
+  background-color: #aca6a6; /* כהה יותר */
+  color: #fff; /* אם תרצה שהטקסט יהיה בהיר */
 }
 
-code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New",
-    monospace;
+
+textarea {
+  color: #827979; /* צבע טקסט כהה */
+  background-color: #fff; /* צבע רקע בהיר */
+}
+
+/* אם יש צורך, תוכל לשנות את הצבע של התוויות */
+label {
+  color: #969393;
+}
+
+
+/* General styling for links */
+a {
+  cursor: pointer;
+  transition: color 0.3s ease;
+}
+
+a:hover {
+  color: #007bff;
+  text-decoration: none;
+}
+
+/* Logout button styling */
+.logout-btn {
+  text-align: center;
+  margin-top: 20px;
+}
+
+.logout-btn button {
+  padding: 10px 20px;
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.logout-btn button:hover {
+  background-color: #c82333;
+}
+
+/* Page background styling */
+.particles {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: -1;
+  background: rgba(255, 255, 255, 0.8); /* Light effect with soft hue */
+  filter: blur(8px); /* Light blur effect for background */
+}
+
+/* General App styling */
+.App {
+  text-align: center;
+}
+
+.center {
+  display: flex;
+  justify-content: center;
+}
+
+/* Container for user cards */
+.user-card-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(500px, 1fr)); /* Less cards per row */
+  gap: 20px; /* Space between cards */
+}
+
+/* User card styling with one rounded and one square corner */
+.user-card {
+  position: relative;
+  width: calc(33.333% - 20px);
+  max-width: 280px;
+  margin-bottom: 20px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1); /* Soft shadow */
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  overflow: hidden;
+  border-top-left-radius: 30px;  /* Round top-left corner */
+  border-bottom-left-radius: 30px; /* Round bottom-left corner */
+  border-top-right-radius: 0px; /* Square top-right corner */
+  border-bottom-right-radius: 0px; /* Square bottom-right corner */
+}
+
+.user-card:hover {
+  transform: translateY(-10px); /* Lift effect */
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2); /* Stronger shadow on hover */
+}
+
+.user-card img {
+  width: 100px;
+  height: 100px;
+  object-fit: cover;
+  border-radius: 50%;
+  margin-bottom: 15px;
+  border: 2px solid #007bff; /* Border around image */
+}
+
+.user-card .user-info {
+  display: flex;
+  flex-direction: column;
+  text-align: center;
+}
+
+.user-card .user-info h3 {
+  font-size: 18px;
+  margin: 10px 0;
+  color: #333;
+  font-weight: 600;
+}
+
+.user-card .user-info p {
+  font-size: 14px;
+  color: #666;
+}
+
+/* Optionally add a gradient overlay */
+.user-card:before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(0, 123, 255, 0.3), rgba(0, 0, 0, 0.3));
+  z-index: -1; /* Behind the content */
+  border-radius: 30px; /* Match the rounded corners */
+}
+
+
+
+/* Filter container styling */
+.filter-container {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.filter-label {
+  font-size: 18px;
+  margin-right: 10px;
+}
+
+.filter-select {
+  padding: 10px;
+  font-size: 16px;
+  border-radius: 5px;
+  border: 1px solid #ddd;
+  cursor: pointer;
+  width: 150px;
+  margin-top: 5px;
+}
+
+.filter-btn {
+  margin: 0 10px;
+  padding: 10px 20px;
+  font-size: 16px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.filter-btn:hover {
+  background-color: #0056b3;
+}
+
+/* "Add Friend" button styling */
+.add-friend-btn {
+  padding: 10px 20px;
+  font-size: 16px;
+  background-color: #28a745;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  transition: background-color 0.3s ease, transform 0.3s ease;
+}
+
+.add-friend-btn:hover {
+  background-color: #218838;
+  transform: translateY(-3px);
+}
+
+.add-friend-btn:disabled {
+  background-color: #6c757d;
+  cursor: not-allowed;
+}
+
+.add-friend-btn svg {
+  font-size: 20px;
+  transition: transform 0.3s ease;
+}
+
+.add-friend-btn:hover svg {
+  transform: scale(1.2);
+}
+
+/* "Unfriend" button styling */
+.unfriend-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background-color: #797070;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 5px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  transition: background-color 0.3s ease, transform 0.3s ease;
+  visibility: visible;
+  opacity: 1;
+}
+
+.unfriend-btn:hover {
+  background-color: #797070;
+  color: #e98484;
+  transform: translateY(-3px);
+}
+
+.unfriend-btn:disabled {
+  background-color: #6c757d;
+  cursor: not-allowed;
+}
+
+.unfriend-btn svg {
+  font-size: 20px;
+  margin-right: 8px;
+  transition: transform 0.3s ease;
+}
+
+.unfriend-btn:hover svg {
+  transform: scale(1.2);
+}
+
+/* Dashboard container */
+.dashboard-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background-color: #f7f7f7;
+}
+
+/* Dashboard card with rounded corners and asymmetric shape */
+.dashboard-card {
+  background-color: #ffffff;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+  border-radius: 30px;  /* More rounded corners */
+  overflow: hidden;
+  width: 100%;
+  max-width: 400px;  /* Increased width */
+  padding: 30px;
+  text-align: center;
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.dashboard-card:hover {
+  transform: translateY(-10px); /* Lift effect */
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2);
+}
+
+.dashboard-avatar {
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin-bottom: 20px;
+  border: 5px solid #007bff;
+}
+
+.dashboard-header {
+  font-size: 26px;  /* Slightly larger text */
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 20px;
+}
+
+.dashboard-info {
+  margin-bottom: 20px;
+  font-size: 16px;
+  color: #555;
+}
+
+.dashboard-button {
+  padding: 12px 30px;
+  font-size: 16px;  /* Bigger text for buttons */
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 50px; /* Rounded buttons */
+  cursor: pointer;
+  transition: background-color 0.3s, transform 0.3s ease;
+  text-decoration: none;
+}
+
+.dashboard-button:hover {
+  background-color: #0056b3;
+  transform: translateY(-5px);
+}
+
+.dashboard-button i {
+  margin-right: 8px;
+}
+
+.logout-btn {
+  background-color: #dc3545;
+}
+
+.logout-btn:hover {
+  background-color: #c82333;
+}
+
+.update-profile-btn {
+  background-color: #28a745;
+}
+
+.update-profile-btn:hover {
+  background-color: #218838;
+}
+
+/* Navbar container */
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 30px;
+  background-color: #333;
+  color: white;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+}
+
+/* Navbar logo */
+.navbar-logo {
+  font-size: 24px;
+  font-weight: bold;
+  color: #ffffff;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+/* Navbar menu items */
+.navbar-menu {
+  display: flex;
+  gap: 20px;
+}
+
+.navbar-menu a {
+  color: white;
+  text-decoration: none;
+  font-size: 18px;
+  font-weight: 500;
+  transition: color 0.3s ease;
+}
+
+.navbar-menu a:hover {
+  color: #007bff;
+}
+
+/* Navbar mobile menu toggle */
+.navbar-toggle {
+  display: none;
+  flex-direction: column;
+  gap: 5px;
+  cursor: pointer;
+}
+
+.navbar-toggle div {
+  width: 30px;
+  height: 3px;
+  background-color: white;
+  border-radius: 5px;
+}
+
+@media (max-width: 768px) {
+  .navbar-menu {
+    display: none;
+    flex-direction: column;
+    gap: 15px;
+    margin-top: 20px;
+  }
+
+  .navbar-menu.active {
+    display: flex;
+  }
+
+  .navbar-toggle {
+    display: flex;
+  }
 }
