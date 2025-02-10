@@ -7,23 +7,22 @@ body {
   background: linear-gradient(to right, #f7f7f7, #e1e8ee); /* Soft gradient */
   color: #333;
 }
-/* שינוי צבע טקסט בשדות קלט */
-input:hover {
-  background-color: #aca6a6; /* כהה יותר */
-  color: #fff; /* אם תרצה שהטקסט יהיה בהיר */
-}
 
+/* Change text color in input fields */
+input:hover {
+  background-color: #aca6a6; /* Darker shade */
+  color: #fff; /* Light text color */
+}
 
 textarea {
-  color: #827979; /* צבע טקסט כהה */
-  background-color: #fff; /* צבע רקע בהיר */
+  color: #827979; /* Dark text color */
+  background-color: #fff; /* Light background */
 }
 
-/* אם יש צורך, תוכל לשנות את הצבע של התוויות */
+/* Label text color adjustment */
 label {
   color: #969393;
 }
-
 
 /* General styling for links */
 a {
@@ -137,7 +136,7 @@ a:hover {
   color: #666;
 }
 
-/* Optionally add a gradient overlay */
+/* Gradient overlay for user card */
 .user-card:before {
   content: '';
   position: absolute;
@@ -149,8 +148,6 @@ a:hover {
   z-index: -1; /* Behind the content */
   border-radius: 30px; /* Match the rounded corners */
 }
-
-
 
 /* Filter container styling */
 .filter-container {
@@ -173,21 +170,6 @@ a:hover {
   margin-top: 5px;
 }
 
-.filter-btn {
-  margin: 0 10px;
-  padding: 10px 20px;
-  font-size: 16px;
-  background-color: #007bff;
-  color: white;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-}
-
-.filter-btn:hover {
-  background-color: #0056b3;
-}
-
 /* "Add Friend" button styling */
 .add-friend-btn {
   padding: 10px 20px;
@@ -202,6 +184,26 @@ a:hover {
   gap: 10px;
   transition: background-color 0.3s ease, transform 0.3s ease;
 }
+
+.add-friend-btn:hover {
+  background-color: #218838;
+  transform: translateY(-3px);
+}
+
+.add-friend-btn:disabled {
+  background-color: #6c757d;
+  cursor: not-allowed;
+}
+
+.add-friend-btn svg {
+  font-size: 20px;
+  transition: transform 0.3s ease;
+}
+
+.add-friend-btn:hover svg {
+  transform: scale(1.2);
+}
+
 
 .add-friend-btn:hover {
   background-color: #218838;
