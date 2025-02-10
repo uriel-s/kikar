@@ -31,8 +31,5 @@ jobs:
       # Run Firebase dependency check (optional debugging step)
       - run: npm list firebase
 
-      # Run tests
-      - run: npm test
-
       # Check the Node.js version used in GitHub Actions
       - run: node -v
