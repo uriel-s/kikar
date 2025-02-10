@@ -4,6 +4,8 @@
 name: Node.js Package
 on:
   push:
+    branches:
+      - main  
 
 jobs:
   build:
@@ -17,10 +19,17 @@ jobs:
       FIREBASE_APP_ID: ${{ secrets.FIREBASE_APP_ID }} 
     steps:
       - uses: actions/checkout@v4
+
+      # Setup Node.js (change node version to 18 for stability)
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: '18'  # השתמש בגרסה 18, שהיא יציבה יותר
+
+      # Install dependencies
       - run: npm ci
+
+      # Install Firebase dependencies explicitly if needed
+      - run: npm install
+
+      # Run tests
       - run: npm test
-
-
