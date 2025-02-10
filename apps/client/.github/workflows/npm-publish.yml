@@ -17,16 +17,22 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Setup Node.js (use node version 18)
+      # Setup Node.js (use node version 18.16.1)
       - uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '18.16.1'
 
       # Install dependencies
       - run: npm ci
+
+      # Install firebase version 9.23.0 explicitly (to match your local environment)
+      - run: npm install firebase@9.23.0
 
       # Run Firebase dependency check (optional debugging step)
       - run: npm list firebase
 
       # Run tests
       - run: npm test
+
+      # Check the Node.js version used in GitHub Actions
+      - run: node -v
