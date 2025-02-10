@@ -1,11 +1,8 @@
-# This workflow will run tests using node and then publish a package to GitHub Packages when a release is created
-# For more information see: https://docs.github.com/en/actions/publishing-packages/publishing-nodejs-packages
-
 name: Node.js Package
 on:
   push:
     branches:
-      - main  
+      - main
 
 jobs:
   build:
@@ -20,16 +17,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Setup Node.js (change node version to 18 for stability)
+      # Setup Node.js (use node version 18)
       - uses: actions/setup-node@v4
         with:
-          node-version: '18'  # השתמש בגרסה 18, שהיא יציבה יותר
+          node-version: '18'
 
       # Install dependencies
       - run: npm ci
 
-      # Install Firebase dependencies explicitly if needed
-      - run: npm install
+      # Run Firebase dependency check (optional debugging step)
+      - run: npm list firebase
 
       # Run tests
       - run: npm test
