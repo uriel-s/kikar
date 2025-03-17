@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import UserCard from "../Components/UserCard";
 import { useAuth } from "../contexts/AuthContext";
-
+import { apiUrl } from '../Global/config';
 const filterUsers = (users, filter, friendsList) => {
   if (filter === "friends") return users.filter(user => friendsList[user.id]);
   if (filter === "non-friends") return users.filter(user => !friendsList[user.id]);
@@ -24,10 +24,10 @@ const AllUsers = () => {
             setIsLoading(true);
             try {
                 const [usersRes, friendsRes] = await Promise.all([
-                    axios.get("http://localhost:5000/users"),
-                    axios.get(`http://localhost:5000/users/${currentUser.uid}/friends`)
+                    axios.get(`${apiUrl}/users`),
+                    axios.get(`${apiUrl}/users/${currentUser.uid}/friends`)
                 ]);
-
+  
                 const friends = {};
                 friendsRes.data.friends.forEach(friendId => friends[friendId] = true);
                 
@@ -50,12 +50,12 @@ const AllUsers = () => {
     const handleFriendChange = async (friendId, action) => {
         try {
             if (action === 'add') {
-                await axios.post(`http://localhost:5000/users/${currentUser.uid}/friends`, { friendId });
+                await axios.post(`${apiUrl}/users/${currentUser.uid}/friends`, { friendId });
             } else if (action === 'remove') {
-                await axios.delete(`http://localhost:5000/users/${currentUser.uid}/friends/${friendId}`);
+                await axios.delete(`${apiUrl}/users/${currentUser.uid}/friends/${friendId}`);
             }
 
-            const updatedFriendsRes = await axios.get(`http://localhost:5000/users/${currentUser.uid}/friends`);
+            const updatedFriendsRes = await axios.get(`${apiUrl}/users/${currentUser.uid}/friends`);
             const updatedFriends = {};
             updatedFriendsRes.data.friends.forEach(friendId => updatedFriends[friendId] = true);
             

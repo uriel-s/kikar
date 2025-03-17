@@ -4,6 +4,7 @@ import Alert from "react-bootstrap/Alert";
 import { Link, useHistory } from "react-router-dom";
 import axios from "axios";
 import { FaEdit } from 'react-icons/fa';
+import { apiUrl } from '../Global/config.js';
 
 function UpdateProfile() {
   const nameRef = useRef();
@@ -25,7 +26,7 @@ function UpdateProfile() {
     const getUser = async () => {
       const UserId = getId();
       try {
-        const res = await axios.get(`http://localhost:5000/users/${UserId}`);
+        const res = await axios.get(`${apiUrl}/users/${UserId}`);
         setUser(res.data);
 
         // Set the value of nameRef only if the field exists
@@ -65,7 +66,7 @@ function UpdateProfile() {
       };
 
       // Update user data
-      await axios.put(`http://localhost:5000/users/${user.id}`, formData, config);
+      await axios.put(`${apiUrl}/users/${user.id}`, formData, config);
 
       // Handle avatar image upload
       if (image) {
@@ -75,7 +76,7 @@ function UpdateProfile() {
         };
         formData = new FormData();
         formData.append("avatar", image);
-        await axios.post(`http://localhost:5000/users/avatar/${user.id}`, formData, config);
+        await axios.post(`${apiUrl}/users/avatar/${user.id}`, formData, config);
       }
 
       // Update password if provided

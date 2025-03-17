@@ -5,7 +5,7 @@ import  axios  from "axios"
 import { validEmail } from '../Regex';
 
 import { Link, useHistory , } from "react-router-dom"
-
+import { apiUrl } from '../Global/config';
 function SignUp() {
    
   const nameRef = useRef()
@@ -82,7 +82,7 @@ function SignUp() {
 
     try{
       //Add new User details to fireStore
-      await axios.post('http://localhost:5000/users', formData, config);
+      await axios.post('${apiUrl}:/users', formData, config);
       console.log("uuss2")
 
       await history.push("/")
