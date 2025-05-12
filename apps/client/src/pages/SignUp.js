@@ -82,7 +82,7 @@ function SignUp() {
 
     try{
       //Add new User details to fireStore
-      await axios.post('${apiUrl}:/users', formData, config);
+      await axios.post(`${apiUrl}/users`, formData, config);
       console.log("uuss2")
 
       await history.push("/")

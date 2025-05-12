@@ -1,13 +1,11 @@
-/* עיצוב כללי של הגוף */
-body {
+/* body {
   margin: 0;
   font-family: "Courier New", Courier, monospace;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background: linear-gradient(to right, #f7f7f7, #e1e8ee); /* גרדיאנט רך */
+  background: linear-gradient(to right, #f7f7f7, #e1e8ee);
 }
 
-/* סטייל כללי לקישורים */
 a {
   cursor: pointer;
   transition: color 0.3s ease;
@@ -18,7 +16,6 @@ a:hover {
   text-decoration: none;
 }
 
-/* כפתור התנתקות */
 .logout-btn {
   text-align: center;
   margin-top: 20px;
@@ -37,7 +34,6 @@ a:hover {
   background-color: #c82333;
 }
 
-/* סגנונות רקע לדף */
 .particles {
   position: fixed;
   top: 0;
@@ -45,11 +41,10 @@ a:hover {
   bottom: 0;
   left: 0;
   z-index: -1;
-  background: rgba(255, 255, 255, 0.8); /* אפקט בהיר עם גוון רך */
-  filter: blur(8px); /* blur עדין ברקע */
+  background: rgba(255, 255, 255, 0.8);
+  filter: blur(8px);
 }
 
-/* אלמנטים נוספים */
 .App {
   text-align: center;
 }
@@ -59,7 +54,6 @@ a:hover {
   justify-content: center;
 }
 
-/* כרטיסי משתמש */
 .user-card {
   position: relative;
   width: calc(33.333% - 20px);
@@ -72,7 +66,7 @@ a:hover {
   align-items: center;
   justify-content: flex-start;
   border-radius: 10px;
-  background: rgba(250, 250, 250, 0.85); /* רקע בהיר ומעט שקוף */
+  background: rgba(250, 250, 250, 0.85);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
   transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
 }
@@ -132,7 +126,6 @@ a:hover {
   background-color: #0056b3;
 }
 
-/* כפתור "Add Friend" */
 .add-friend-btn {
   padding: 10px 20px;
   font-size: 16px;
@@ -166,12 +159,11 @@ a:hover {
   transform: scale(1.2);
 }
 
-/* כפתור "Unfriend" */
 .unfriend-btn {
-  position: absolute; 
+  position: absolute;
   top: 10px;
   right: 10px;
-  background-color: #797070; 
+  background-color: #797070;
   color: white;
   border: none;
   padding: 10px 20px;
@@ -182,27 +174,86 @@ a:hover {
   justify-content: center;
   font-size: 16px;
   transition: background-color 0.3s ease, transform 0.3s ease;
-  visibility: visible; 
-  opacity: 1; 
+  visibility: visible;
+  opacity: 1;
 }
 
 .unfriend-btn:hover {
-  background-color: #797070; 
+  background-color: #797070;
   color: #e98484;
-  transform: translateY(-3px); 
+  transform: translateY(-3px);
 }
 
 .unfriend-btn:disabled {
-  background-color: #6c757d; 
+  background-color: #6c757d;
   cursor: not-allowed;
 }
 
 .unfriend-btn svg {
-  font-size: 20px; 
-  margin-right: 8px; 
+  font-size: 20px;
+  margin-right: 8px;
   transition: transform 0.3s ease;
 }
 
 .unfriend-btn:hover svg {
-  transform: scale(1.2); 
+  transform: scale(1.2);
 }
+
+.post-card {
+  position: relative;
+  width: calc(33.333% - 20px);
+  max-width: 280px;
+  margin-bottom: 20px;
+  transition: transform 0.2s, box-shadow 0.2s;
+  padding: 20px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  border-radius: 10px;
+  background: rgba(250, 250, 250, 0.85);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+}
+
+.post-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+}
+
+.post-card img {
+  width: 80px;
+  height: 80px;
+  object-fit: cover;
+  border-radius: 50%;
+  margin-right: 20px;
+}
+
+.post-card .post-info {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+  flex-grow: 1;
+}
+
+.like-btn.liked {
+  background-color: #4CAF50; 
+  color: white;
+}
+
+.like-btn {
+  background-color: #ddd; 
+  color: #000;
+  transition: background-color 0.3s;
+}
+
+.like-btn:hover {
+  background-color: #ccc; 
+}
+
+.like-count {
+  font-weight: bold;
+  margin-left: 10px; 
+  display: inline-block;
+  vertical-align: middle;
+} */

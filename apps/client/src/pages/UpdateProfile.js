@@ -3,8 +3,8 @@ import { useAuth } from "../contexts/AuthContext";
 import Alert from "react-bootstrap/Alert";
 import { Link, useHistory } from "react-router-dom";
 import axios from "axios";
-import { FaEdit } from 'react-icons/fa';
-import { apiUrl } from '../Global/config.js';
+import { FaEdit } from "react-icons/fa";
+import { apiUrl } from "../Global/config.js";
 
 function UpdateProfile() {
   const nameRef = useRef();
@@ -16,10 +16,10 @@ function UpdateProfile() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const history = useHistory();
-  const [user, setUser] = useState({ name: '', address: '', birthDate: '' });
+  const [user, setUser] = useState({ name: "", address: "", birthDate: "" });
   const [image, setImage] = useState(null);
-  const [password, setPassword] = useState("");  // State to control the password value
-  const [successMessage, setSuccessMessage] = useState("");  // To show success message
+  const [password, setPassword] = useState(""); // State to control the password value
+  const [successMessage, setSuccessMessage] = useState(""); // To show success message
   let cancelUpload;
 
   useEffect(() => {
@@ -56,23 +56,24 @@ function UpdateProfile() {
 
     try {
       let config = {
-        headers: { 'Content-Type': 'application/json' }
+        headers: { "Content-Type": "application/json" },
       };
 
       let formData = {
         name: nameRef.current.value,
         address: addressRef.current.value,
-        birthDate: brithRef.current.value
+        birthDate: brithRef.current.value,
       };
 
       // Update user data
       await axios.put(`${apiUrl}/users/${user.id}`, formData, config);
-
       // Handle avatar image upload
       if (image) {
         config = {
-          headers: { 'Content-Type': 'multipart/form-data' },
-          cancelToken: new axios.CancelToken((c) => { cancelUpload = c; })
+          headers: { "Content-Type": "multipart/form-data" },
+          cancelToken: new axios.CancelToken((c) => {
+            cancelUpload = c;
+          }),
         };
         formData = new FormData();
         formData.append("avatar", image);
@@ -81,10 +82,11 @@ function UpdateProfile() {
 
       // Update password if provided
       if (password) {
-        await updatePassword(password);
+        //await updatePassword(password);
+        currentUser.updatePassword(password);
       }
 
-      setSuccessMessage("Profile updated successfully!");  // Display success message
+      setSuccessMessage("Profile updated successfully!"); // Display success message
       history.push("/");
     } catch (err) {
       setError("Failed to update profile: " + err.response?.data?.message || err.message);
@@ -111,12 +113,16 @@ function UpdateProfile() {
         <main className="pa4 black-80">
           <div className="measure">
             <fieldset id="sign_up" className="ba b--transparent ph0 mh0">
-              <legend className="f1 fw6 ph0 mh0"><i className="fas fa-wrench"></i> Update Profile</legend>
+              <legend className="f1 fw6 ph0 mh0">
+                <i className="fas fa-wrench"></i> Update Profile
+              </legend>
               {error && <Alert variant="danger">{error}</Alert>}
-              {successMessage && <Alert variant="success">{successMessage}</Alert>} {/* Success message */}
-              
+              {successMessage && <Alert variant="success">{successMessage}</Alert>}{" "}
+              {/* Success message */}
               <div className="mt3">
-                <label className="db fw6 lh-copy f6" htmlFor="email-address">Email</label>
+                <label className="db fw6 lh-copy f6" htmlFor="email-address">
+                  Email
+                </label>
                 <span className="flex items-center pa2 ba bg-light-gray w-100 justify-between">
                   {user.email}
                   <FaEdit
@@ -126,11 +132,12 @@ function UpdateProfile() {
                   />
                 </span>
               </div>
-
               <div className="mt3">
-                <label className="db fw6 lh-copy f6" htmlFor="name">Name</label>
+                <label className="db fw6 lh-copy f6" htmlFor="name">
+                  Name
+                </label>
                 <input
-                  value={user.name}  // Changed to 'value' to ensure two-way data binding
+                  value={user.name} // Changed to 'value' to ensure two-way data binding
                   ref={nameRef}
                   className="pa2 input-reset ba hover:bg-gray-700 w-100"
                   type="text"
@@ -138,9 +145,10 @@ function UpdateProfile() {
                   onChange={() => setUser({ ...user, name: nameRef.current.value })}
                 />
               </div>
-
               <div className="mv3">
-                <label className="db fw6 lh-copy f6" htmlFor="password">Password</label>
+                <label className="db fw6 lh-copy f6" htmlFor="password">
+                  Password
+                </label>
                 <input
                   ref={passwordRef}
                   autoComplete="off"
@@ -151,9 +159,10 @@ function UpdateProfile() {
                   onChange={(e) => setPassword(e.target.value)} // Update the password state
                 />
               </div>
-
               <div className="mv3">
-                <label className="db fw6 lh-copy f6" htmlFor="password">Verify Password</label>
+                <label className="db fw6 lh-copy f6" htmlFor="password">
+                  Verify Password
+                </label>
                 <input
                   placeholder="Leave blank to keep the same"
                   ref={passwordConfirmRef}
@@ -162,9 +171,10 @@ function UpdateProfile() {
                   name="password"
                 />
               </div>
-
               <div className="mt5">
-                <label className="db fw6 lh-copy f6" htmlFor="email-address">Address</label>
+                <label className="db fw6 lh-copy f6" htmlFor="email-address">
+                  Address
+                </label>
                 <input
                   value={user.address}
                   ref={addressRef}
@@ -173,9 +183,10 @@ function UpdateProfile() {
                   onChange={() => setUser({ ...user, address: addressRef.current.value })}
                 />
               </div>
-
               <div className="mt3">
-                <label className="db fw6 lh-copy f6" htmlFor="email-address">BirthDay</label>
+                <label className="db fw6 lh-copy f6" htmlFor="email-address">
+                  BirthDay
+                </label>
                 <input
                   value={user.birthDate}
                   ref={brithRef}
@@ -184,9 +195,10 @@ function UpdateProfile() {
                   onChange={() => setUser({ ...user, birthDate: brithRef.current.value })}
                 />
               </div>
-
               <div className="mb-3">
-                <label className="form-label fw-bold" htmlFor="avatar">Avatar</label>
+                <label className="form-label fw-bold" htmlFor="avatar">
+                  Avatar
+                </label>
                 <input
                   className="form-control border border-secondary bg-transparent hover-bg-black hover-white"
                   type="file"
@@ -201,7 +213,9 @@ function UpdateProfile() {
               <input
                 disabled={loading}
                 onClick={handleSubmit}
-                className={`btn btn-primary ph3 pv2 grow pointer f6 dib ${loading ? 'disabled' : ''}`}
+                className={`btn btn-primary ph3 pv2 grow pointer f6 dib ${
+                  loading ? "disabled" : ""
+                }`}
                 type="submit"
                 value={loading ? "Updating..." : "Update"}
               />

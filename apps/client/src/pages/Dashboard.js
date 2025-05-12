@@ -73,9 +73,15 @@ export default function Dashboard() {
           <h2>{user.name || "No name"}</h2>
         </div>
         <div className="dashboard-info">
-          <p><strong>Email:</strong> {user.email || "No email"}</p>
-          <p><strong>Address:</strong> {user.address || "No address"}</p>
-          <p><strong>Birth Date:</strong> {user.birthDate || "No birthdate"}</p>
+          <p>
+            <strong>Email:</strong> {user.email || "No email"}
+          </p>
+          <p>
+            <strong>Address:</strong> {user.address || "No address"}
+          </p>
+          <p>
+            <strong>Birth Date:</strong> {user.birthDate || "No birthdate"}
+          </p>
         </div>
 
         <Link to="/update-profile" className="dashboard-button update-profile-btn">
@@ -83,7 +89,11 @@ export default function Dashboard() {
         </Link>
 
         <div className="w-100 text-center mt-3">
-          <Button variant="link" className="dashboard-button logout-btn" onClick={handleLogout}>
+          <Button
+            variant="link"
+            className="dashboard-button logout-btn"
+            onClick={handleLogout}
+          >
             <i className="fas fa-sign-out-alt"></i> Log Out
           </Button>
         </div>
