@@ -61,3 +61,10 @@ GazHan is a modern full-stack social media web application built from scratch, f
 ```bash
 git clone https://github.com/uriel-s/gazhan-client
 git clone https://github.com/uriel-s/gazhan-server
+```
+
+
+## 📬 Contact
+
+Feel free to connect on [LinkedIn](https://www.linkedin.com/in/uriel-s/)  
+or check out more of my work on [GitHub](https://github.com/uriel-s).
