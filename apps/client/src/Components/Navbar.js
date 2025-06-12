@@ -26,7 +26,7 @@ const Navbar = () => {
     <div>
       <nav className="navbar">
         <div className="navbar-logo">
-          Palhan <i className="fas fa-grip-lines-vertical"></i>
+          Palhan! <i className="fas fa-grip-lines-vertical"></i>
         </div>
 
         <div className={`navbar-menu ${isMenuActive ? "active" : ""}`}>

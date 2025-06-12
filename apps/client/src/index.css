@@ -490,22 +490,21 @@ h3 {
   border: none;
   cursor: pointer;
   padding: 5px;
-  margin-left: auto; /* Pushes it to the right */
-  color: var(--delete-btn-color, rgb(173, 6, 6)) !important; /* Use CSS variable for color */
-  transition: opacity 0.3s ease, background-color 0.3s ease; /* Smooth transitions */
+  margin-left: auto;  /* This pushes it to the right */
+  color: rgb(173, 6, 6) !important;
 }
 
 .delete-btn:hover {
   opacity: 0.7;
-  background-color: var(--delete-btn-hover-bg, rgba(64, 66, 160, 0.1)); /* Use CSS variable for hover background */
+  background-color: rgba(64, 66, 160, 0.1);
 }
 
 /* Post content */
 p {
-  font-size: 1rem; /* Use relative units for scalability */
-  color: var(--text-color, #555); /* Use CSS variable for text color */
+  font-size: 18px;
+  color: #555;
   line-height: 1.5;
-  margin-bottom: 1rem; /* Use relative units for spacing */
+  margin-bottom: 15px;
 }
 
 /* Post actions (like and comment buttons) */
@@ -513,7 +512,7 @@ p {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-top: 0.625rem; /* Use relative units */
+  margin-top: 10px;
 }
 
 .like-count-container {
