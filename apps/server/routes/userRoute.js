@@ -8,6 +8,7 @@ const {
   addNewFriend,
   removeFriend,
   getUserFriends,
+  searchUsers,
 } = require("../controllers/userController");
 const { AvatarMulter } = require("../utils/multer");
 
@@ -15,12 +16,14 @@ const { AvatarMulter } = require("../utils/multer");
 const userRoute = (app, db, bucket) => {
   // Register a new user
   app.post("/users", (req, res) => handleRegister(req, res, db));
+  // Get all users
+  app.get("/users", (req, res) => getAllUsers(req, res, db));
+
+  // Search users - must be before the dynamic route!
+  app.get("/users/search", (req, res) => searchUsers(req, res, db));
 
   // Get user details by  (ID)
   app.get("/users/:id", (req, res) => getUserbyID(req, res, db));
-
-  // Get all users
-  app.get("/users", (req, res) => getAllUsers(req, res, db));
 
   // Update user details
   app.put("/users/:id", async (req, res) => updateUser(req, res, db));

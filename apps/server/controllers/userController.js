@@ -234,6 +234,45 @@ const updateAvatar = async (req, res, bucket) => {
   stream.end(imageFile.buffer);
 };
 
+const searchUsers = async (req, res, db) => {
+  const query = req.query.q ? req.query.q.toLowerCase() : "";
+
+  if (!query || query.length < 2) {
+    return res
+      .status(400)
+      .json({ message: "Search query must be at least 2 characters long" });
+  }
+
+  try {
+    // Get all users
+    const snapshot = await db.collection("users").get();
+
+    if (snapshot.empty) {
+      return res.status(200).json({ users: [] });
+    }
+
+    // Filter users based on the search query (case-insensitive)
+    const matchingUsers = [];
+    snapshot.forEach((doc) => {
+      const user = doc.data();
+      // Search in name and email fields
+      if (
+        (user.name && user.name.toLowerCase().includes(query)) ||
+        (user.email && user.email.toLowerCase().includes(query))
+      ) {
+        // Remove sensitive information
+        const { email, birthDate, address, id, name } = user;
+        matchingUsers.push({ id, name, email, birthDate, address });
+      }
+    });
+
+    res.status(200).json({ users: matchingUsers });
+  } catch (error) {
+    console.error("Error searching users:", error);
+    res.status(500).json({ message: "Error searching users", error: error.message });
+  }
+};
+
 module.exports = {
   handleRegister,
   getUserbyID,
@@ -244,4 +283,5 @@ module.exports = {
   getUserFriends,
   updateAvatar,
   getAllUsers,
+  searchUsers,
 };

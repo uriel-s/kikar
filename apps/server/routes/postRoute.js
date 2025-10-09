@@ -7,6 +7,7 @@ const {
   getFirstComment,
   getAllComments,
   deletePost,
+  searchPosts,
 } = require("../controllers/postController");
 
 const postRoute = (app, db) => {
@@ -15,6 +16,9 @@ const postRoute = (app, db) => {
 
   // Route to get all posts (sorted by createdAt, from newest to oldest)
   app.get("/posts", (req, res) => getPosts(req, res, db));
+
+  // Search posts
+  app.get("/posts/search", (req, res) => searchPosts(req, res, db));
 
   // Like a post
   app.post("/posts/like", (req, res) => likePost(req, res, db));
