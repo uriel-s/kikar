@@ -1,20 +1,15 @@
-import React from 'react';
-import ReactDOM from 'react-dom';
-import './index.css';
+import React from "react";
+import ReactDOM from "react-dom";
+import "./index.css";
 
-import App from './App';
-import reportWebVitals from './reportWebVitals';
-import 'tachyons';
-import 'bootstrap/dist/css/bootstrap.min.css';
-
+import App from "./App";
+import "tachyons";
+import "bootstrap/dist/css/bootstrap.min.css";
 
 ReactDOM.render(
   <React.StrictMode>
     <App />
   </React.StrictMode>,
-  document.getElementById('root')
+  document.getElementById("root")
 );
-
-
-reportWebVitals();
 //dummy comment for test

@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useHistory, Link, useLocation } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
+import SearchBar from "./SearchBar";
 
 const Navbar = () => {
   const { logout, currentUser } = useAuth();
@@ -25,10 +26,15 @@ const Navbar = () => {
   return (
     <div>
       <nav className="navbar">
+        {" "}
         <div className="navbar-logo">
-          Palhan2 <i className="fas fa-grip-lines-vertical"></i>
+          Gazhan <i className="fas fa-grip-lines-vertical"></i>
         </div>
-
+        {currentUser && (
+          <div className="navbar-search">
+            <SearchBar />
+          </div>
+        )}
         <div className={`navbar-menu ${isMenuActive ? "active" : ""}`}>
           {currentUser ? (
             <>
@@ -66,7 +72,6 @@ const Navbar = () => {
             </>
           )}
         </div>
-
         <div className="navbar-toggle" onClick={toggleNavbar}>
           <div></div>
           <div></div>
