@@ -1,0 +1,296 @@
+/* Minimal styles needed for the footer to display correctly */
+.App {
+  padding-top: 0; /* Remove the extra padding */
+  min-height: 100vh; /* Ensure minimum height for proper footer positioning */
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+/* Canvas particle background styles */
+canvas#particles-canvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+  pointer-events: none;
+}
+
+.content {
+  flex: 1; /* This makes the content take up all available space */
+  padding-bottom: 20px; /* Add some space between content and footer */
+  padding-top: 60px; /* Add padding to push content below the fixed navbar */
+}
+
+/* Footer Styles */
+.footer {
+  background-color: #2c3e50;
+  color: #ecf0f1;
+  padding: 2rem 0 1rem 0;
+  width: 100%;
+  /* Remove any positioning that might cause issues */
+}
+
+.footer-container {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-around;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+.footer-section {
+  flex: 1;
+  min-width: 200px;
+  margin-bottom: 1.5rem;
+  padding: 0 1rem;
+}
+
+.footer-section h3 {
+  color: #3498db;
+  font-size: 1.2rem;
+  margin-bottom: 1rem;
+  position: relative;
+}
+
+.footer-section h3:after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: -5px;
+  width: 40px;
+  height: 2px;
+  background-color: #3498db;
+}
+
+.footer-section ul {
+  list-style: none;
+  padding: 0;
+}
+
+.footer-section ul li {
+  margin-bottom: 0.5rem;
+}
+
+.footer-section ul li a {
+  color: #ecf0f1;
+  text-decoration: none;
+  transition: color 0.3s ease;
+}
+
+.footer-section ul li a:hover {
+  color: #3498db;
+  text-decoration: none;
+}
+
+.footer-bottom {
+  text-align: center;
+  padding-top: 1.5rem;
+  margin-top: 1.5rem;
+  border-top: 1px solid #34495e;
+}
+
+/* Mobile responsive styles */
+@media screen and (max-width: 768px) {
+  .footer-container {
+    flex-direction: column;
+  }
+  
+  .footer-section {
+    text-align: center;
+  }
+  
+  .footer-section h3:after {
+    left: 50%;
+    transform: translateX(-50%);
+  }
+}
+
+/* SearchBar Styles */
+.search-bar {
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
+  transition: all 0.3s ease;
+}
+
+.search-container {
+  display: flex;
+  border-radius: 30px;
+  overflow: hidden;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  background-color: white;
+  align-items: center;
+  border: 1px solid #e0e0e0;
+  transition: all 0.3s ease;
+}
+
+.search-container:focus-within {
+  box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.3);
+  transform: scale(1.01);
+}
+
+.search-input {
+  flex: 1;
+  padding: 12px 20px;
+  border: none;
+  font-size: 16px;
+  outline: none;
+  border-radius: 30px 0 0 30px;
+}
+
+.search-type {
+  padding: 12px;
+  border: none;
+  border-left: 1px solid #e0e0e0;
+  background-color: white;
+  font-size: 14px;
+  cursor: pointer;
+  outline: none;
+  color: #555;
+  margin-right: 2px;
+}
+
+.search-button {
+  background-color: #3498db;
+  color: white;
+  border: none;
+  border-radius: 0 30px 30px 0;
+  padding: 10px 20px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  position: relative;
+  overflow: hidden;
+  min-width: 60px;
+}
+
+.search-button:hover {
+  background-color: #2980b9;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.search-icon {
+  transition: transform 0.3s ease;
+  border-radius: 50%;
+  filter: drop-shadow(0 0 1px rgba(255, 255, 255, 0.7));
+}
+
+.search-button:hover .search-icon {
+  transform: scale(1.2);
+  animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1) rotate(0deg);
+    opacity: 0.9;
+  }
+  50% {
+    transform: scale(1.2) rotate(10deg);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+    opacity: 0.9;
+  }
+}
+
+.search-button::after {
+  content: '';
+  position: absolute;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  width: 5px;
+  height: 5px;
+  opacity: 0;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  transition: all 0.5s ease;
+}
+
+.search-button:active::after {
+  width: 100px;
+  height: 100px;
+  opacity: 0.4;
+  transition: 0s;
+}
+
+/* NavBar Search Integration */
+.navbar-search {
+  flex: 1;
+  max-width: 500px;
+  margin: 0 20px;
+}
+
+/* Search Results Styles */
+.search-results-container {
+  padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.search-results-header {
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.search-results-header h1 {
+  font-size: 24px;
+  color: #333;
+}
+
+.search-results-info {
+  font-size: 14px;
+  color: #666;
+  margin-top: 5px;
+}
+
+.search-results-section {
+  margin-bottom: 30px;
+}
+
+.search-results-section h2 {
+  font-size: 20px;
+  color: #444;
+  margin-bottom: 15px;
+}
+
+.search-results-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.no-results {
+  text-align: center;
+  padding: 40px;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  color: #6c757d;
+  font-size: 18px;
+}
+
+.search-error {
+  color: #dc3545;
+  background-color: #f8d7da;
+  border: 1px solid #f5c6cb;
+  padding: 15px;
+  border-radius: 4px;
+  margin-bottom: 20px;
+}
+
+.search-loader {
+  display: flex;
+  justify-content: center;
+  padding: 40px 0;
+}
