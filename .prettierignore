@@ -1,0 +1,8 @@
+node_modules
+build
+dist
+coverage
+apps/server/src/generated
+package-lock.json
+apps/client/src/index.css
+apps/client/src/App.css

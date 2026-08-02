@@ -1,12 +1,11 @@
 import React, { useState } from "react";
-import { useHistory, Link, useLocation } from "react-router-dom";
+import { useHistory, Link } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import SearchBar from "./SearchBar";
 
 const Navbar = () => {
   const { logout, currentUser } = useAuth();
   const history = useHistory();
-  const location = useLocation();
   const [isMenuActive, setIsMenuActive] = useState(false);
 
   const handleLogout = async () => {

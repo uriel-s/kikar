@@ -1,75 +1,87 @@
-// AllUsers.js
-import React, { useState, useEffect } from "react";
-import axios from "axios";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import UserCard from "../Components/UserCard";
 import { useAuth } from "../contexts/AuthContext";
-import { apiUrl } from "../Global/config";
-const filterUsers = (users, filter, friendsList) => {
-  if (filter === "friends") return users.filter((user) => friendsList[user.id]);
-  if (filter === "non-friends") return users.filter((user) => !friendsList[user.id]);
-  return users;
-};
+import * as usersApi from "../api/users";
 
 const AllUsers = () => {
   const [users, setUsers] = useState([]);
-  const [filteredUsers, setFilteredUsers] = useState([]);
-  const [error, setError] = useState("");
+  const [friendIds, setFriendIds] = useState(new Set());
+  const [nextCursor, setNextCursor] = useState(null);
   const [filter, setFilter] = useState("all");
-  const [friendsList, setFriendsList] = useState({});
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState("");
   const { currentUser } = useAuth();
 
-  useEffect(() => {
-    const fetchData = async () => {
-      setIsLoading(true);
-      try {
-        const [usersRes, friendsRes] = await Promise.all([
-          axios.get(`${apiUrl}/users`),
-          axios.get(`${apiUrl}/users/${currentUser.uid}/friends`),
-        ]);
+  const uid = currentUser?.uid;
 
-        const friends = {};
-        friendsRes.data.friends.forEach((friendId) => (friends[friendId] = true));
+  const loadData = useCallback(async () => {
+    if (!uid) return;
 
-        setUsers(usersRes.data);
-        setFriendsList(friends);
-        setFilteredUsers(filterUsers(usersRes.data, filter, friends));
-      } catch (error) {
-        console.error("Error fetching data:", error);
-        setError("Failed to load data. Please try again later.");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    if (currentUser?.uid) {
-      fetchData();
-    }
-  }, [currentUser?.uid, filter]);
-
-  const handleFriendChange = async (friendId, action) => {
+    setIsLoading(true);
+    setError("");
     try {
-      if (action === "add") {
-        await axios.post(`${apiUrl}/users/${currentUser.uid}/friends`, { friendId });
-      } else if (action === "remove") {
-        await axios.delete(`${apiUrl}/users/${currentUser.uid}/friends/${friendId}`);
-      }
+      const [usersPage, friends] = await Promise.all([
+        usersApi.listUsers(),
+        usersApi.listFriends(uid),
+      ]);
 
-      const updatedFriendsRes = await axios.get(
-        `${apiUrl}/users/${currentUser.uid}/friends`
-      );
-      const updatedFriends = {};
-      updatedFriendsRes.data.friends.forEach(
-        (friendId) => (updatedFriends[friendId] = true)
-      );
+      setUsers(usersPage.users);
+      setNextCursor(usersPage.nextCursor);
+      // The API returns friend objects now, not bare ids.
+      setFriendIds(new Set(friends.map((friend) => friend.id)));
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [uid]);
 
-      setFriendsList(updatedFriends);
-      setFilteredUsers(filterUsers(users, filter, updatedFriends));
-    } catch (error) {
-      console.error("Error updating friend:", error);
-      setError(action === "add" ? "Failed to add friend" : "Failed to remove friend");
+  // The filter is applied in memory, so changing it no longer refetches
+  // everything the way the old effect's [filter] dependency did.
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  const loadMore = async () => {
+    if (!nextCursor) return;
+    try {
+      const page = await usersApi.listUsers({ cursor: nextCursor });
+      setUsers((current) => [...current, ...page.users]);
+      setNextCursor(page.nextCursor);
+    } catch (err) {
+      setError(err.message);
     }
   };
+
+  const handleFriendChange = async (friendId, action) => {
+    const previous = friendIds;
+
+    setFriendIds((current) => {
+      const next = new Set(current);
+      if (action === "add") next.add(friendId);
+      else next.delete(friendId);
+      return next;
+    });
+
+    try {
+      if (action === "add") {
+        await usersApi.addFriend(uid, friendId);
+      } else {
+        await usersApi.removeFriend(uid, friendId);
+      }
+    } catch (err) {
+      setFriendIds(previous);
+      setError(err.message);
+      throw err;
+    }
+  };
+
+  const visibleUsers = useMemo(() => {
+    const others = users.filter((user) => user.id !== uid);
+    if (filter === "friends") return others.filter((user) => friendIds.has(user.id));
+    if (filter === "non-friends") return others.filter((user) => !friendIds.has(user.id));
+    return others;
+  }, [users, filter, friendIds, uid]);
 
   if (isLoading) {
     return <div className="loading">Loading users...</div>;
@@ -86,7 +98,7 @@ const AllUsers = () => {
         <select
           id="user-filter"
           className="filter-select"
-          onChange={(e) => setFilter(e.target.value)}
+          onChange={(event) => setFilter(event.target.value)}
           value={filter}
         >
           <option value="all">All</option>
@@ -95,17 +107,28 @@ const AllUsers = () => {
         </select>
       </div>
 
-      <div className="user-card-container  ">
-        {filteredUsers.map((user) => (
-          <UserCard
-            key={user.id}
-            user={user}
-            isFriend={friendsList[user.id]}
-            onFriendChange={handleFriendChange}
-          />
-        ))}
+      <div className="user-card-container">
+        {visibleUsers.length === 0 ? (
+          <p className="no-results">No users to show.</p>
+        ) : (
+          visibleUsers.map((user) => (
+            <UserCard
+              key={user.id}
+              user={user}
+              isFriend={friendIds.has(user.id)}
+              onFriendChange={handleFriendChange}
+            />
+          ))
+        )}
       </div>
+
+      {nextCursor && (
+        <button className="load-more-btn" onClick={loadMore}>
+          Load more
+        </button>
+      )}
     </div>
   );
 };
+
 export default AllUsers;

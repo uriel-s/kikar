@@ -1,159 +1,141 @@
-import React, { useState, useEffect } from "react";
-import axios from "axios";
+import React, { useState, useEffect, useCallback } from "react";
 import PostCard from "../Components/PostCard";
 import AddPostForm from "../Components/AddPost";
-import { apiUrl } from "../Global/config";
 import { useAuth } from "../contexts/AuthContext";
+import * as postsApi from "../api/posts";
 
 const PostsPage = () => {
   const [posts, setPosts] = useState([]);
+  const [nextCursor, setNextCursor] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [error, setError] = useState("");
   const { currentUser } = useAuth();
 
-  const fetchPosts = async () => {
+  const loadFirstPage = useCallback(async () => {
     setIsLoading(true);
+    setError("");
     try {
-      const response = await axios.get(`${apiUrl}/posts`);
-      setPosts(response.data.posts);
-    } catch (error) {
-      console.error("Error fetching posts:", error);
-      setError("Failed to load posts.");
+      const { posts: page, nextCursor: cursor } = await postsApi.listPosts();
+      setPosts(page);
+      setNextCursor(cursor);
+    } catch (err) {
+      setError(err.message);
     } finally {
       setIsLoading(false);
     }
-  };
-
-  useEffect(() => {
-    fetchPosts();
   }, []);
 
-  const handleLike = async (postId, isLiked) => {
-    if (!currentUser) {
-      alert("You need to be logged in to like a post.");
-      return;
-    }
+  useEffect(() => {
+    loadFirstPage();
+  }, [loadFirstPage]);
+
+  const loadMore = async () => {
+    if (!nextCursor || isLoadingMore) return;
+
+    setIsLoadingMore(true);
     try {
-      const post = posts.find((p) => p.id === postId);
-      if (isLiked) {
-        await axios.post(`${apiUrl}/posts/unlike`, { postId, userId: currentUser.uid });
-        setPosts((prevPosts) =>
-          prevPosts.map((p) =>
-            p.id === postId
-              ? { ...p, likes: p.likes.filter((id) => id !== currentUser.uid) }
-              : p
-          )
-        );
-      } else {
-        await axios.post(`${apiUrl}/posts/like`, { postId, userId: currentUser.uid });
-        setPosts((prevPosts) =>
-          prevPosts.map((p) =>
-            p.id === postId ? { ...p, likes: [...p.likes, currentUser.uid] } : p
-          )
-        );
-      }
-    } catch (error) {
-      console.error("Error handling like/unlike:", error);
+      const { posts: page, nextCursor: cursor } = await postsApi.listPosts({
+        cursor: nextCursor,
+      });
+      setPosts((current) => [...current, ...page]);
+      setNextCursor(cursor);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setIsLoadingMore(false);
     }
   };
 
-  const handleComment = async (postId, commentText) => {
-    if (!currentUser) {
-      alert("You need to be logged in to comment.");
-      return;
-    }
+  const patchPost = (postId, changes) =>
+    setPosts((current) =>
+      current.map((post) => (post.id === postId ? { ...post, ...changes } : post))
+    );
+
+  const handlePostCreated = (post) => {
+    setPosts((current) => [post, ...current]);
+  };
+
+  /**
+   * Applies the like optimistically and rolls back if the request fails.
+   *
+   * The server owns the count, so its response is what finally lands — two
+   * people liking at once no longer produces two different totals on screen.
+   */
+  const handleLike = async (postId, isLiked) => {
+    const post = posts.find((candidate) => candidate.id === postId);
+    if (!post) return;
+
+    patchPost(postId, {
+      likedByMe: !isLiked,
+      likeCount: post.likeCount + (isLiked ? -1 : 1),
+    });
 
     try {
-      const userName = (await axios.get(`${apiUrl}/users/${currentUser.uid}`)).data.name;
+      const likeCount = isLiked
+        ? await postsApi.unlikePost(postId)
+        : await postsApi.likePost(postId);
+      patchPost(postId, { likeCount });
+    } catch (err) {
+      patchPost(postId, { likedByMe: post.likedByMe, likeCount: post.likeCount });
+      setError(err.message);
+    }
+  };
 
-      const response = await axios.post(`${apiUrl}/posts/comment`, {
-        postId,
-        userName: userName,
-        userId: currentUser.uid,
-        text: commentText,
-      });
-
-      const newComment = response.data.comment;
-
-      setPosts((prevPosts) =>
-        prevPosts.map((post) =>
-          post.id === postId
-            ? {
-                ...post,
-                comments: post.comments ? [...post.comments, newComment] : [newComment],
-              }
-            : post
-        )
-      );
-    } catch (error) {
-      console.error("Error submitting comment:", error);
+  const handleCommentAdded = (postId) => {
+    const post = posts.find((candidate) => candidate.id === postId);
+    if (post) {
+      patchPost(postId, { commentCount: post.commentCount + 1 });
     }
   };
 
   const handleDelete = async (postId) => {
-    if (!currentUser) {
-      alert("You need to be logged in to delete a post.");
-      return;
-    }
+    const snapshot = posts;
+    setPosts((current) => current.filter((post) => post.id !== postId));
 
     try {
-      // Get the authentication token
-      const token = await currentUser.getIdToken();
-
-      // Debug logging
-      console.log("Deleting post ID:", postId);
-      console.log("Current user ID:", currentUser.uid);
-
-      // Call the delete endpoint with the postId and userId
-      await axios.delete(`${apiUrl}/posts/${postId}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        data: {
-          userId: currentUser.uid, // Add user ID in request body as a fallback
-        },
-      });
-
-      // Update local state to remove the deleted post
-      setPosts((prevPosts) => prevPosts.filter((post) => post.id !== postId));
-    } catch (error) {
-      console.error("Error deleting post:", error);
-
-      if (error.response) {
-        if (error.response.status === 403) {
-          alert("You are not authorized to delete this post.");
-        } else if (error.response.status === 404) {
-          alert("Post not found.");
-          setPosts((prevPosts) => prevPosts.filter((post) => post.id !== postId));
-        } else {
-          alert("Failed to delete post. Please try again.");
-        }
-      } else {
-        alert("Failed to delete post. Please check your connection.");
+      await postsApi.deletePost(postId);
+    } catch (err) {
+      // A post someone else already deleted should stay gone on screen.
+      if (err.status !== 404) {
+        setPosts(snapshot);
       }
+      setError(err.message);
     }
   };
 
   if (isLoading) {
-    return <div>Loading posts...</div>;
+    return <div className="loading">Loading posts...</div>;
   }
 
   return (
     <div className="posts-page">
       {error && <div className="alert alert-error">{error}</div>}
-      <AddPostForm setPosts={fetchPosts} />
+
+      <AddPostForm onPostCreated={handlePostCreated} />
+
       <div className="posts-container">
-        {posts.map((post) => (
-          <PostCard
-            key={post.id}
-            post={post}
-            onLike={handleLike}
-            onComment={handleComment}
-            onDelete={handleDelete}
-            currentUser={currentUser}
-          />
-        ))}
+        {posts.length === 0 ? (
+          <p className="no-results">No posts yet. Be the first to write one.</p>
+        ) : (
+          posts.map((post) => (
+            <PostCard
+              key={post.id}
+              post={post}
+              currentUser={currentUser}
+              onLike={handleLike}
+              onCommentAdded={handleCommentAdded}
+              onDelete={handleDelete}
+            />
+          ))
+        )}
       </div>
+
+      {nextCursor && (
+        <button className="load-more-btn" onClick={loadMore} disabled={isLoadingMore}>
+          {isLoadingMore ? "Loading..." : "Load more"}
+        </button>
+      )}
     </div>
   );
 };

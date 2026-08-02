@@ -1,18 +1,9 @@
 import React, { useEffect, useRef, useState } from "react";
 
-const WavesBackground = ({ showControls = false }) => {  const canvasRef = useRef(null);
-  const mouseRef = useRef({ x: null, y: null });
-  // Wave configuration states
-  const [waveConfig, setWaveConfig] = useState({
-    waveCount: 5,     // Increased number of waves to fill screen better
-    colorTheme: 'blue', // Color theme: blue, purple, green, sunset
-    interactive: false, // Whether waves react to mouse
-    speedMultiplier: 2.5, // Speed multiplier increased for more visible movement
-    amplitude: 1.5,    // Amplitude multiplier increased for more visible waves
-  });
-
-  // Color themes for waves
-  const colorThemes = {
+// Module scope, not component scope: this is a constant, and rebuilding it on
+// every render made it a changing dependency of the animation effect, which
+// would tear down and restart the canvas loop on each re-render.
+const colorThemes = {
     blue: [
       'rgba(0, 102, 204, 0.3)',
       'rgba(0, 153, 204, 0.25)',
@@ -42,6 +33,18 @@ const WavesBackground = ({ showControls = false }) => {  const canvasRef = useRe
       'rgba(211, 84, 0, 0.1)'
     ]
   };
+
+const WavesBackground = ({ showControls = false }) => {
+  const canvasRef = useRef(null);
+  const mouseRef = useRef({ x: null, y: null });
+
+  const [waveConfig, setWaveConfig] = useState({
+    waveCount: 5,
+    colorTheme: 'blue',
+    interactive: false,
+    speedMultiplier: 2.5,
+    amplitude: 1.5,
+  });
 
   useEffect(() => {
     const canvas = canvasRef.current;

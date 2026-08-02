@@ -1,228 +1,228 @@
-import React, { useRef, useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import Alert from "react-bootstrap/Alert";
 import { Link, useHistory } from "react-router-dom";
-import axios from "axios";
-import { FaEdit } from "react-icons/fa";
-import { apiUrl } from "../Global/config.js";
+import * as usersApi from "../api/users";
+
+const MIN_PASSWORD_LENGTH = 6;
 
 function UpdateProfile() {
-  const nameRef = useRef();
-  const addressRef = useRef();
-  const brithRef = useRef();
-  const passwordRef = useRef();
-  const passwordConfirmRef = useRef();
-  const { currentUser, updatePassword, getId } = useAuth();
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
+  const { currentUser, updatePassword } = useAuth();
   const history = useHistory();
-  const [user, setUser] = useState({ name: "", address: "", birthDate: "" });
+
+  const [form, setForm] = useState({ name: "", address: "", birthDate: "" });
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [passwordConfirm, setPasswordConfirm] = useState("");
   const [image, setImage] = useState(null);
-  const [password, setPassword] = useState(""); // State to control the password value
-  const [successMessage, setSuccessMessage] = useState(""); // To show success message
-  let cancelUpload;
+  const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+
+  const uid = currentUser?.uid;
 
   useEffect(() => {
-    const getUser = async () => {
-      const UserId = getId();
-      try {
-        const res = await axios.get(`${apiUrl}/users/${UserId}`);
-        setUser(res.data);
+    if (!uid) return;
+    let cancelled = false;
 
-        // Set the value of nameRef only if the field exists
-        if (nameRef.current) {
-          nameRef.current.value = res.data.name;
-        }
-      } catch (err) {
-        setError("Failed to load user data.");
-      }
+    usersApi
+      .getUser(uid)
+      .then((user) => {
+        if (cancelled) return;
+        setEmail(user.email ?? "");
+        setForm({
+          name: user.name ?? "",
+          address: user.address ?? "",
+          // The API returns an ISO timestamp; <input type="date"> wants YYYY-MM-DD.
+          birthDate: user.birthDate ? user.birthDate.slice(0, 10) : "",
+        });
+      })
+      .catch((err) => {
+        if (!cancelled) setError(err.message);
+      })
+      .finally(() => {
+        if (!cancelled) setIsLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
     };
-    getUser();
-  }, [getId]);
+  }, [uid]);
 
-  const handleImageChange = useCallback((e) => {
-    if (e.target.files[0]) {
-      setImage(e.target.files[0]);
-    }
-  }, []);
+  const setField = (field) => (event) =>
+    setForm((current) => ({ ...current, [field]: event.target.value }));
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (password !== passwordConfirmRef.current.value) {
-      return setError("Passwords do not match");
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+
+    if (password && password !== passwordConfirm) {
+      setError("Passwords do not match");
+      return;
     }
-    setLoading(true);
+    if (password && password.length < MIN_PASSWORD_LENGTH) {
+      setError(`Password must be at least ${MIN_PASSWORD_LENGTH} characters`);
+      return;
+    }
+
+    setIsSaving(true);
     setError("");
 
     try {
-      let config = {
-        headers: { "Content-Type": "application/json" },
-      };
+      await usersApi.updateProfile(uid, {
+        name: form.name.trim(),
+        address: form.address.trim() || null,
+        birthDate: form.birthDate || null,
+      });
 
-      let formData = {
-        name: nameRef.current.value,
-        address: addressRef.current.value,
-        birthDate: brithRef.current.value,
-      };
-
-      // Update user data
-      await axios.put(`${apiUrl}/users/${user.id}`, formData, config);
-      // Handle avatar image upload
       if (image) {
-        config = {
-          headers: { "Content-Type": "multipart/form-data" },
-          cancelToken: new axios.CancelToken((c) => {
-            cancelUpload = c;
-          }),
-        };
-        formData = new FormData();
-        formData.append("avatar", image);
-        await axios.post(`${apiUrl}/users/avatar/${user.id}`, formData, config);
+        await usersApi.uploadAvatar(uid, image);
       }
 
-      // Update password if provided
+      // Last, because a password change can invalidate the session and would
+      // otherwise abort the rest of the save.
       if (password) {
-        //await updatePassword(password);
-        currentUser.updatePassword(password);
+        await updatePassword(password);
       }
 
-      setSuccessMessage("Profile updated successfully!"); // Display success message
       history.push("/");
     } catch (err) {
-      setError("Failed to update profile: " + err.response?.data?.message || err.message);
-    } finally {
-      setLoading(false);
+      // `+` binds tighter than `||`, so the old fallback here never ran and the
+      // message read "undefined" whenever the server sent no body.
+      setError(err.message || "Failed to update profile");
+      setIsSaving(false);
     }
   };
 
-  useEffect(() => {
-    return () => {
-      if (cancelUpload) {
-        cancelUpload("Operation canceled due to component unmounting.");
-      }
-    };
-  }, [cancelUpload]);
-
-  const handleEditEmail = () => {
-    alert("Edit Email is unavailable right now");
-  };
+  if (isLoading) {
+    return <div className="loading">Loading profile...</div>;
+  }
 
   return (
     <div className="mt6">
       <article className="grow br3 ba b--black-10 mv4 w-100 w-50-m w-25-l mw6 shadow-5 center">
         <main className="pa4 black-80">
-          <div className="measure">
-            <fieldset id="sign_up" className="ba b--transparent ph0 mh0">
+          <form className="measure" onSubmit={handleSubmit}>
+            <fieldset className="ba b--transparent ph0 mh0">
               <legend className="f1 fw6 ph0 mh0">
                 <i className="fas fa-wrench"></i> Update Profile
               </legend>
+
               {error && <Alert variant="danger">{error}</Alert>}
-              {successMessage && <Alert variant="success">{successMessage}</Alert>}{" "}
-              {/* Success message */}
+
               <div className="mt3">
-                <label className="db fw6 lh-copy f6" htmlFor="email-address">
+                <label className="db fw6 lh-copy f6" htmlFor="email">
                   Email
                 </label>
-                <span className="flex items-center pa2 ba bg-light-gray w-100 justify-between">
-                  {user.email}
-                  <FaEdit
-                    className="ml2 cursor-pointer icon-hover"
-                    onClick={handleEditEmail}
-                    title="Edit Email"
-                  />
-                </span>
+                {/* Changing an email address means re-verifying it through
+                    Firebase, which this form does not do, so it is read-only. */}
+                <input
+                  id="email"
+                  className="pa2 input-reset ba w-100 bg-light-gray"
+                  type="email"
+                  value={email}
+                  readOnly
+                  title="Email cannot be changed here"
+                />
               </div>
+
               <div className="mt3">
                 <label className="db fw6 lh-copy f6" htmlFor="name">
                   Name
                 </label>
                 <input
-                  value={user.name} // Changed to 'value' to ensure two-way data binding
-                  ref={nameRef}
-                  className="pa2 input-reset ba hover:bg-gray-700 w-100"
+                  id="name"
+                  className="pa2 input-reset ba w-100"
                   type="text"
-                  autoComplete="off"
-                  onChange={() => setUser({ ...user, name: nameRef.current.value })}
+                  value={form.name}
+                  onChange={setField("name")}
+                  required
                 />
               </div>
+
               <div className="mv3">
                 <label className="db fw6 lh-copy f6" htmlFor="password">
-                  Password
+                  New Password
                 </label>
                 <input
-                  ref={passwordRef}
-                  autoComplete="off"
-                  className="b pa2 input-reset ba hover:bg-gray-700 w-100"
+                  id="password"
+                  className="b pa2 input-reset ba w-100"
                   type="password"
-                  name="password"
-                  value={password} // Bind the value of the password field
-                  onChange={(e) => setPassword(e.target.value)} // Update the password state
-                />
-              </div>
-              <div className="mv3">
-                <label className="db fw6 lh-copy f6" htmlFor="password">
-                  Verify Password
-                </label>
-                <input
+                  autoComplete="new-password"
                   placeholder="Leave blank to keep the same"
-                  ref={passwordConfirmRef}
-                  className="b pa2 input-reset ba hover:bg-gray-700 w-100"
-                  type="password"
-                  name="password"
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
                 />
               </div>
-              <div className="mt5">
-                <label className="db fw6 lh-copy f6" htmlFor="email-address">
+
+              {password && (
+                <div className="mv3">
+                  <label className="db fw6 lh-copy f6" htmlFor="password-confirm">
+                    Verify New Password
+                  </label>
+                  <input
+                    id="password-confirm"
+                    className="b pa2 input-reset ba w-100"
+                    type="password"
+                    autoComplete="new-password"
+                    value={passwordConfirm}
+                    onChange={(event) => setPasswordConfirm(event.target.value)}
+                  />
+                </div>
+              )}
+
+              <div className="mt3">
+                <label className="db fw6 lh-copy f6" htmlFor="address">
                   Address
                 </label>
                 <input
-                  value={user.address}
-                  ref={addressRef}
-                  className="pa2 input-reset ba hover:bg-gray-700 w-100"
+                  id="address"
+                  className="pa2 input-reset ba w-100"
                   type="text"
-                  onChange={() => setUser({ ...user, address: addressRef.current.value })}
+                  value={form.address}
+                  onChange={setField("address")}
                 />
               </div>
+
               <div className="mt3">
-                <label className="db fw6 lh-copy f6" htmlFor="email-address">
-                  BirthDay
+                <label className="db fw6 lh-copy f6" htmlFor="birth-date">
+                  Birth Date
                 </label>
                 <input
-                  value={user.birthDate}
-                  ref={brithRef}
-                  className="pa2 input-reset ba hover:bg-gray-700 w-100"
+                  id="birth-date"
+                  className="pa2 input-reset ba w-100"
                   type="date"
-                  onChange={() => setUser({ ...user, birthDate: brithRef.current.value })}
+                  value={form.birthDate}
+                  onChange={setField("birthDate")}
                 />
               </div>
-              <div className="mb-3">
+
+              <div className="mb-3 mt3">
                 <label className="form-label fw-bold" htmlFor="avatar">
                   Avatar
                 </label>
                 <input
-                  className="form-control border border-secondary bg-transparent hover-bg-black hover-white"
-                  type="file"
-                  name="avatar"
                   id="avatar"
-                  accept="image/*"
-                  onChange={handleImageChange}
+                  className="form-control"
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  onChange={(event) => setImage(event.target.files?.[0] ?? null)}
                 />
               </div>
             </fieldset>
+
             <div className="text-center">
-              <input
-                disabled={loading}
-                onClick={handleSubmit}
-                className={`btn btn-primary ph3 pv2 grow pointer f6 dib ${
-                  loading ? "disabled" : ""
-                }`}
+              <button
+                disabled={isSaving}
+                className="btn btn-primary ph3 pv2 grow pointer f6 dib"
                 type="submit"
-                value={loading ? "Updating..." : "Update"}
-              />
+              >
+                {isSaving ? "Updating..." : "Update"}
+              </button>
             </div>
-          </div>
+          </form>
         </main>
       </article>
+
       <div className="d-flex justify-content-center mt-3">
         <Link to="/" className="btn btn-outline-secondary btn-lg">
           Cancel

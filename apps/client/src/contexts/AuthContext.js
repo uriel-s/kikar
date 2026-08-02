@@ -1,67 +1,54 @@
-import React, { useContext, useState, useEffect } from "react"
-import { auth } from "../firebase"
+import React, { useContext, useState, useEffect, useMemo, useCallback } from "react";
+import { auth } from "../firebase";
 
-const AuthContext = React.createContext()
+const AuthContext = React.createContext(null);
 
 export function useAuth() {
-  return useContext(AuthContext)
+  const context = useContext(AuthContext);
+  if (context === null) {
+    throw new Error("useAuth must be used inside an AuthProvider");
+  }
+  return context;
 }
 
 export function AuthProvider({ children }) {
-  const [currentUser, setCurrentUser] = useState()
-  const [loading, setLoading] = useState(true)
+  const [currentUser, setCurrentUser] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  function signup(email, password) {
-    return auth.createUserWithEmailAndPassword(email, password)
-  }
-  function getId(){
-    return auth.currentUser.uid
-  }
+  const signup = useCallback(
+    (email, password) => auth.createUserWithEmailAndPassword(email, password),
+    []
+  );
 
-  
-  
-  function login(email, password) {
-    return auth.signInWithEmailAndPassword(email, password)
-  }
+  const login = useCallback(
+    (email, password) => auth.signInWithEmailAndPassword(email, password),
+    []
+  );
 
-  function logout() {
-    return auth.signOut()
-  }
+  const logout = useCallback(() => auth.signOut(), []);
 
-  
+  const updatePassword = useCallback((password) => {
+    if (!auth.currentUser) {
+      return Promise.reject(new Error("Not signed in"));
+    }
+    // Read from auth.currentUser rather than the state snapshot: the snapshot is
+    // captured at render time and can be stale by the time this runs.
+    return auth.currentUser.updatePassword(password);
+  }, []);
 
-  function updateEmail(email) {
-    console.log("call update firebase eamil , " ,email)
-    return currentUser.updateEmail(email)
-  }
+  useEffect(
+    () =>
+      auth.onAuthStateChanged((user) => {
+        setCurrentUser(user);
+        setLoading(false);
+      }),
+    []
+  );
 
-  function updatePassword(password) {
-    console.log("call update firebase password , " ,password)
-    return currentUser.updatePassword(password)
-  }
+  const value = useMemo(
+    () => ({ currentUser, login, signup, logout, updatePassword }),
+    [currentUser, login, signup, logout, updatePassword]
+  );
 
-  useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged(user => {
-      setCurrentUser(user)
-      setLoading(false)
-    })
-
-    return unsubscribe
-  }, [])
-
-  const value = {
-    currentUser,
-    getId,
-    login,
-    signup,
-    logout,
-    updateEmail,
-    updatePassword
-  }
-
-  return (
-    <AuthContext.Provider value={value}>
-      {!loading && children}
-    </AuthContext.Provider>
-  )
+  return <AuthContext.Provider value={value}>{!loading && children}</AuthContext.Provider>;
 }

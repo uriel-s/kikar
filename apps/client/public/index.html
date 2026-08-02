@@ -6,25 +6,21 @@
     <meta name="theme-color" content="#000000" />
     <meta
       name="description"
-      content="Web site created using create-react-app"
+      content="GazHan - share posts, connect with friends, and follow what they are up to."
     />
-    <link 
-    rel="stylesheet" 
-    href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" 
-    integrity="sha384-DyZvNHTnjBy2E3Th0dZ2M07VguyIB4CkF37Vok2V4HAK39URqX1Mm2Fzz5BoM5M" 
-    crossorigin="anonymous">
     <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
-    <link
-    rel="stylesheet" href="https://use.fontawesome.com/releases/v5.8.1/css/all.css"
-    integrity="sha384-50oBUHEmvpQ+1lW4y57PTFmhCaXp0ML5d60M1M7uH2+nqUivzIebhndOJK28anvf"
-    crossorigin="anonymous"
-  />
 
-    <title>Palhan</title>
+    <!--
+      Bootstrap and Font Awesome are npm dependencies imported from src/index.js.
+      They used to be loaded from CDNs here as well, which meant Bootstrap 4.5
+      from stackpath and Bootstrap 5.1 from npm were applied to the same page at
+      once, with the two versions disagreeing on what classes like .ml-2 mean.
+    -->
+
+    <title>GazHan</title>
   </head>
   <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>
     <div id="root"></div>
-  
   </body>
 </html>

@@ -1,11 +1,10 @@
-// SearchResults.js
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useLocation } from "react-router-dom";
-import axios from "axios";
 import UserCard from "../Components/UserCard";
 import PostCard from "../Components/PostCard";
 import { useAuth } from "../contexts/AuthContext";
-import { apiUrl } from "../Global/config";
+import * as usersApi from "../api/users";
+import * as postsApi from "../api/posts";
 
 const SearchResults = () => {
   const [results, setResults] = useState({ users: [], posts: [] });
@@ -14,20 +13,19 @@ const SearchResults = () => {
   const location = useLocation();
   const { currentUser } = useAuth();
 
-  // Parse query parameters
-  const getQueryParams = () => {
-    const searchParams = new URLSearchParams(location.search);
+  const { query, type } = useMemo(() => {
+    const params = new URLSearchParams(location.search);
     return {
-      query: searchParams.get("q") || "",
-      type: searchParams.get("type") || "all",
+      query: params.get("q") ?? "",
+      type: params.get("type") ?? "all",
     };
-  };
-
-  const { query, type } = getQueryParams();
+  }, [location.search]);
 
   useEffect(() => {
-    const fetchSearchResults = async () => {
-      if (!query.trim()) {
+    let cancelled = false;
+
+    const run = async () => {
+      if (query.trim().length < 2) {
         setResults({ users: [], posts: [] });
         setIsLoading(false);
         return;
@@ -35,118 +33,80 @@ const SearchResults = () => {
 
       setIsLoading(true);
       setError("");
-
       try {
-        // Determine which endpoints to call based on search type
-        const endpoints = [];
-        if (type === "all" || type === "users") {
-          endpoints.push(
-            axios.get(`${apiUrl}/users/search?q=${encodeURIComponent(query)}`)
-          );
+        // Each result set is requested by name instead of being matched to a
+        // position in a conditionally-built array, which is what made the old
+        // version assign post results to the users list for type=posts.
+        const wantUsers = type === "all" || type === "users";
+        const wantPosts = type === "all" || type === "posts";
+
+        const [users, posts] = await Promise.all([
+          wantUsers ? usersApi.searchUsers(query) : Promise.resolve([]),
+          wantPosts ? postsApi.searchPosts(query) : Promise.resolve([]),
+        ]);
+
+        if (!cancelled) {
+          setResults({ users, posts });
         }
-        if (type === "all" || type === "posts") {
-          endpoints.push(
-            axios.get(`${apiUrl}/posts/search?q=${encodeURIComponent(query)}`)
-          );
-        }
-
-        const responses = await Promise.all(endpoints);
-
-        // Process responses based on search type
-        let newResults = { users: [], posts: [] };
-
-        if (type === "all" || type === "users") {
-          // First response is user results if users were included
-          const userResponse =
-            type === "users" ? responses[0] : type === "all" ? responses[0] : null;
-          if (userResponse && userResponse.data && userResponse.data.users) {
-            newResults.users = userResponse.data.users;
-          }
-        }
-
-        if (type === "all" || type === "posts") {
-          // Get post results from the appropriate response
-          const postResponse =
-            type === "posts" ? responses[0] : type === "all" ? responses[1] : null;
-          if (postResponse && postResponse.data && postResponse.data.posts) {
-            newResults.posts = postResponse.data.posts;
-          }
-        }
-
-        setResults(newResults);
       } catch (err) {
-        console.error("Error fetching search results:", err);
-        setError("Error during search. Please try again later.");
+        if (!cancelled) setError(err.message);
       } finally {
-        setIsLoading(false);
+        if (!cancelled) setIsLoading(false);
       }
     };
 
-    fetchSearchResults();
+    run();
+    // Guards against an earlier, slower search overwriting a later one.
+    return () => {
+      cancelled = true;
+    };
   }, [query, type]);
 
+  const patchPost = (postId, changes) =>
+    setResults((current) => ({
+      ...current,
+      posts: current.posts.map((post) =>
+        post.id === postId ? { ...post, ...changes } : post
+      ),
+    }));
+
   const handleLike = async (postId, isLiked) => {
-    try {
-      const endpoint = isLiked ? `${apiUrl}/posts/unlike` : `${apiUrl}/posts/like`;
-      await axios.post(endpoint, { postId, userId: currentUser.uid });
+    const post = results.posts.find((candidate) => candidate.id === postId);
+    if (!post) return;
 
-      // Update the posts in the state to reflect the change
-      setResults((prevResults) => ({
-        ...prevResults,
-        posts: prevResults.posts.map((post) => {
-          if (post.id === postId) {
-            const likes = [...post.likes];
-            if (isLiked) {
-              // Remove user from likes array
-              const userIndex = likes.indexOf(currentUser.uid);
-              if (userIndex !== -1) likes.splice(userIndex, 1);
-            } else {
-              // Add user to likes array
-              likes.push(currentUser.uid);
-            }
-            return { ...post, likes };
-          }
-          return post;
-        }),
-      }));
+    patchPost(postId, {
+      likedByMe: !isLiked,
+      likeCount: post.likeCount + (isLiked ? -1 : 1),
+    });
+
+    try {
+      const likeCount = isLiked
+        ? await postsApi.unlikePost(postId)
+        : await postsApi.likePost(postId);
+      patchPost(postId, { likeCount });
     } catch (err) {
-      console.error("Error updating like status:", err);
+      patchPost(postId, { likedByMe: post.likedByMe, likeCount: post.likeCount });
+      setError(err.message);
     }
   };
 
-  const handleComment = async (postId, comment) => {
-    try {
-      await axios.post(`${apiUrl}/posts/comment`, {
-        postId,
-        userId: currentUser.uid,
-        content: comment,
-      });
-
-      // Refresh the post data to show the new comment
-      const response = await axios.get(
-        `${apiUrl}/posts/search?q=${encodeURIComponent(query)}`
-      );
-      if (response.data && response.data.posts) {
-        setResults((prevResults) => ({
-          ...prevResults,
-          posts: response.data.posts,
-        }));
-      }
-    } catch (err) {
-      console.error("Error adding comment:", err);
-    }
+  const handleCommentAdded = (postId) => {
+    const post = results.posts.find((candidate) => candidate.id === postId);
+    if (post) patchPost(postId, { commentCount: post.commentCount + 1 });
   };
 
-  // Calculate total results
-  const totalResults = results.users.length + results.posts.length;
+  const total = results.users.length + results.posts.length;
 
   return (
     <div className="search-results-container">
       <div className="search-results-header">
-        <h1>Search Results for "{query}"</h1>
-        <p className="search-results-info">
-          Found {totalResults} results in {type === "all" ? "users and posts" : type}
-        </p>
+        <h1>Search results for "{query}"</h1>
+        {!isLoading && (
+          <p className="search-results-info">
+            Found {total} {total === 1 ? "result" : "results"} in{" "}
+            {type === "all" ? "users and posts" : type}
+          </p>
+        )}
       </div>
 
       {isLoading ? (
@@ -154,10 +114,9 @@ const SearchResults = () => {
       ) : error ? (
         <div className="search-error">{error}</div>
       ) : (
-        <div>
-          {/* Display User Results */}
+        <>
           {(type === "all" || type === "users") && (
-            <div className="search-results-section">
+            <section className="search-results-section">
               <h2>Users ({results.users.length})</h2>
               {results.users.length > 0 ? (
                 <div className="search-results-grid">
@@ -168,12 +127,11 @@ const SearchResults = () => {
               ) : (
                 <p className="no-results">No users found matching "{query}"</p>
               )}
-            </div>
+            </section>
           )}
 
-          {/* Display Post Results */}
           {(type === "all" || type === "posts") && (
-            <div className="search-results-section">
+            <section className="search-results-section">
               <h2>Posts ({results.posts.length})</h2>
               {results.posts.length > 0 ? (
                 <div className="search-results-grid">
@@ -183,16 +141,16 @@ const SearchResults = () => {
                       post={post}
                       currentUser={currentUser}
                       onLike={handleLike}
-                      onComment={handleComment}
+                      onCommentAdded={handleCommentAdded}
                     />
                   ))}
                 </div>
               ) : (
                 <p className="no-results">No posts found matching "{query}"</p>
               )}
-            </div>
+            </section>
           )}
-        </div>
+        </>
       )}
     </div>
   );

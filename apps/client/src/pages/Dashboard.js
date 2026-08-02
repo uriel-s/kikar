@@ -2,16 +2,41 @@ import React, { useState, useEffect } from "react";
 import { Button, Spinner } from "react-bootstrap";
 import { useAuth } from "../contexts/AuthContext";
 import { Link, useHistory } from "react-router-dom";
-import axios from "axios";
-import { getStorage, ref, getDownloadURL } from "firebase/storage";
+import Avatar from "../Components/Avatar";
+import * as usersApi from "../api/users";
 
 export default function Dashboard() {
-  const [error, setError] = useState("");
   const { currentUser, logout } = useAuth();
-  const [user, setUser] = useState({});
-  const [imageUrl, setImageUrl] = useState("");
-  const [imageError, setImageError] = useState(false);
+  const [user, setUser] = useState(null);
+  const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
   const history = useHistory();
+
+  const uid = currentUser?.uid;
+
+  useEffect(() => {
+    if (!uid) return;
+
+    let cancelled = false;
+
+    // One request. The avatar URL arrives on the user, so there is no second
+    // round trip to Firebase Storage to resolve it.
+    usersApi
+      .getUser(uid)
+      .then((loaded) => {
+        if (!cancelled) setUser(loaded);
+      })
+      .catch((err) => {
+        if (!cancelled) setError(err.message);
+      })
+      .finally(() => {
+        if (!cancelled) setIsLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [uid]);
 
   async function handleLogout() {
     setError("");
@@ -23,40 +48,7 @@ export default function Dashboard() {
     }
   }
 
-  useEffect(() => {
-    if (!currentUser || !currentUser.uid) return;
-
-    const getUser = async () => {
-      try {
-        const apiUrl = process.env.REACT_APP_API_URL || "http://localhost:5000";
-        const res = await axios.get(`${apiUrl}/users/${currentUser.uid}`);
-        setUser(res.data);
-      } catch (error) {
-        console.error("Error fetching user data:", error);
-      }
-    };
-    getUser();
-  }, [currentUser]);
-
-  useEffect(() => {
-    if (!currentUser || !currentUser.uid) return;
-
-    const fetchImageUrl = async () => {
-      try {
-        const storage = getStorage();
-        const profilePictureRef = ref(storage, `profile_pictures/${currentUser.uid}`);
-        const url = await getDownloadURL(profilePictureRef);
-        setImageUrl(url);
-      } catch (error) {
-        console.error("Error getting download URL:", error.message);
-        setImageError(true);
-        setImageUrl("https://www.gravatar.com/avatar/?d=mp&s=100");
-      }
-    };
-    fetchImageUrl();
-  }, [currentUser]);
-
-  if (!user.name) {
+  if (isLoading) {
     return (
       <div className="text-center">
         <Spinner animation="border" />
@@ -64,23 +56,42 @@ export default function Dashboard() {
     );
   }
 
+  // A signed-in account with no profile row reaches this instead of spinning
+  // forever, which is what the old `if (!user.name)` guard did.
+  if (!user) {
+    return (
+      <div className="dashboard-container">
+        <div className="dashboard-card">
+          <div className="alert alert-error">{error || "Profile not found."}</div>
+          <Button variant="link" className="dashboard-button" onClick={handleLogout}>
+            Log Out
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="dashboard-container">
       <div className="dashboard-card">
-        <img src={imageUrl} alt="Avatar" className="dashboard-avatar" />
-        {imageError && <div className="error-message">Failed to load profile image</div>}
+        <Avatar user={user} className="dashboard-avatar" />
+
         <div className="dashboard-header">
-          <h2>{user.name || "No name"}</h2>
+          <h2>{user.name}</h2>
         </div>
+
+        {error && <div className="alert alert-error">{error}</div>}
+
         <div className="dashboard-info">
           <p>
-            <strong>Email:</strong> {user.email || "No email"}
+            <strong>Email:</strong> {user.email}
           </p>
           <p>
-            <strong>Address:</strong> {user.address || "No address"}
+            <strong>Address:</strong> {user.address || "Not set"}
           </p>
           <p>
-            <strong>Birth Date:</strong> {user.birthDate || "No birthdate"}
+            <strong>Birth Date:</strong>{" "}
+            {user.birthDate ? user.birthDate.slice(0, 10) : "Not set"}
           </p>
         </div>
 

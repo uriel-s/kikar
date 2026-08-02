@@ -1,56 +1,42 @@
 import React, { useState } from "react";
-import axios from "axios";
-import { apiUrl } from "../Global/config";
-import { useAuth } from "../contexts/AuthContext";
+import * as postsApi from "../api/posts";
 
-const AddPostForm = ({ setPosts }) => {
+const MAX_LENGTH = 5000;
+
+const AddPostForm = ({ onPostCreated }) => {
   const [text, setText] = useState("");
   const [error, setError] = useState("");
-  const [successMessage, setSuccessMessage] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isFormVisible, setFormVisible] = useState(false);
-  const { currentUser } = useAuth();
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    currentUser.getIdToken(true).then((token) => {
-      console.log("Firebase Token:", token);
-    });
-
-    if (!currentUser) {
-      alert("You need to be logged in to post.");
-      return;
-    }
+  const handleSubmit = async (event) => {
+    event.preventDefault();
 
     if (!text.trim()) {
       setError("Post content cannot be empty.");
       return;
     }
 
+    setIsSubmitting(true);
+    setError("");
     try {
-      const response = await axios.post(
-        `${apiUrl}/posts`,
-        { content: text, author: currentUser.uid },
-        { headers: { "Content-Type": "application/json" } }
-      );
-
-      setPosts((prevPosts) => [response.data.post, ...prevPosts]);
+      // The author is taken from the verified token server-side, so nothing
+      // about identity is sent from here.
+      const post = await postsApi.createPost(text);
+      onPostCreated(post);
       setText("");
-      setSuccessMessage("Post added successfully!");
-      setError("");
-      setFormVisible(false); // Close the form after adding a post
-    } catch (error) {
-      setError("Error submitting post. Please try again.");
-      console.error("Error submitting post:", error);
+      setFormVisible(false);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   return (
     <div className="add-post-form">
-      {/* Feedback messages */}
-      {successMessage && <div className="alert alert-success">{successMessage}</div>}
       {error && <div className="alert alert-error">{error}</div>}
 
-      {/* Toggle button */}
       <button onClick={() => setFormVisible(!isFormVisible)} className="toggle-form-btn">
         {isFormVisible ? "Close Post Form" : "Create New Post"}
       </button>
@@ -59,17 +45,24 @@ const AddPostForm = ({ setPosts }) => {
         <form onSubmit={handleSubmit}>
           <textarea
             value={text}
-            onChange={(e) => setText(e.target.value)}
+            onChange={(event) => setText(event.target.value)}
             placeholder="Write your post here..."
+            maxLength={MAX_LENGTH}
             required
-          ></textarea>
+          />
+          <div className="char-count">
+            {text.length} / {MAX_LENGTH}
+          </div>
 
           <div className="buttons">
-            <button type="submit">Post</button>
+            <button type="submit" disabled={isSubmitting || !text.trim()}>
+              {isSubmitting ? "Posting..." : "Post"}
+            </button>
             <button
               type="button"
               onClick={() => {
                 setText("");
+                setError("");
                 setFormVisible(false);
               }}
             >
