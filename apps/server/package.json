@@ -1,34 +1,45 @@
 {
-  "name": "server",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-    "test": "jest",
-    "test-watch": "jest --watch",
-    "start": "nodemon index"
+  "name": "@gazhan/server",
+  "version": "2.0.0",
+  "private": true,
+  "description": "GazHan API - Express server backing the GazHan social platform",
+  "license": "MIT",
+  "main": "src/server.js",
+  "engines": {
+    "node": ">=20"
   },
-  "author": "",
-  "license": "ISC",
-  "devDependencies": {
-    "jest": "^29.7.0",
-    "jest-mock": "^29.7.0",
-    "nodemon": "^2.0.13",
-    "supertest": "^7.0.0"
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "db:deploy": "prisma migrate deploy",
+    "db:studio": "prisma studio",
+    "db:import": "node scripts/importFromFirestore.js"
   },
   "dependencies": {
-    "axios": "^0.21.4",
-    "bcrypt": "^5.0.1",
-    "body-parser": "^1.19.0",
-    "cors": "^2.8.5",
-    "dotenv": "^10.0.0",
-    "express": "^4.17.1",
-    "express-validator": "^6.12.2",
-    "firebase": "^9.1.3",
-    "firebase-admin": "^10.3.0",
-    "helmet": "^8.0.0",
-    "jsonwebtoken": "^8.5.1",
-    "multer": "^1.4.5-lts.1",
-    "save": "^2.4.0"
+    "@prisma/adapter-pg": "^7.9.1",
+    "@prisma/client": "^7.9.1",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "express-rate-limit": "^8.6.1",
+    "firebase-admin": "^14.2.0",
+    "helmet": "^8.3.0",
+    "multer": "^2.2.0",
+    "pg": "^8.22.0",
+    "pino": "^10.3.1",
+    "pino-http": "^11.0.0",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "jest": "^30.4.2",
+    "nodemon": "^3.1.14",
+    "pino-pretty": "^13.1.3",
+    "prisma": "^7.9.1",
+    "supertest": "^7.2.2"
   }
 }

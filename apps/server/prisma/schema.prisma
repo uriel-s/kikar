@@ -1,0 +1,112 @@
+// GazHan data model.
+//
+// Identity stays in Firebase Auth: User.id IS the Firebase UID, so there is no
+// second source of truth for who a person is and no password ever touches this
+// database. Everything else lives here.
+//
+// The Firestore version stored likes, comments, and friendships as arrays
+// embedded in the parent document. That made every like a read-modify-write of
+// the whole document (two concurrent likes lost one) and made "which posts did
+// this user like" unanswerable without scanning the collection. They are real
+// tables here.
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+// Prisma 7 keeps the connection string out of the schema: migrations read it
+// from prisma.config.js and the runtime gets it through the pg driver adapter
+// wired up in src/lib/prisma.js.
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  /// Firebase Auth UID.
+  id        String   @id
+  email     String   @unique
+  name      String
+  birthDate DateTime? @db.Date
+  address   String?
+  avatarUrl String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  posts     Post[]
+  likes     Like[]
+  comments  Comment[]
+  // Both sides of the friendship join, see Friendship below.
+  friendsA  Friendship[] @relation("FriendshipUserA")
+  friendsB  Friendship[] @relation("FriendshipUserB")
+
+  // Backs case-insensitive name/email search.
+  @@index([name])
+  @@map("users")
+}
+
+model Post {
+  id        String   @id @default(uuid()) @db.Uuid
+  authorId  String
+  content   String   @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  author   User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  likes    Like[]
+  comments Comment[]
+
+  // The feed is "newest first", and always paginated.
+  @@index([createdAt(sort: Desc)])
+  @@index([authorId])
+  @@map("posts")
+}
+
+model Like {
+  postId    String   @db.Uuid
+  userId    String
+  createdAt DateTime @default(now())
+
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // The composite key is what makes double-liking impossible at the database
+  // level rather than in a check-then-write race in application code.
+  @@id([postId, userId])
+  @@index([userId])
+  @@map("likes")
+}
+
+model Comment {
+  id        String   @id @default(uuid()) @db.Uuid
+  postId    String   @db.Uuid
+  authorId  String
+  content   String   @db.Text
+  createdAt DateTime @default(now())
+
+  post   Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  author User @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([postId, createdAt])
+  @@map("comments")
+}
+
+/// One row per friendship, not two.
+///
+/// Rows are stored with userAId < userBId (enforced by a CHECK constraint added
+/// in the initial migration). A pair can therefore only be inserted one way, so
+/// "A is a friend of B but B is not a friend of A" cannot be represented — which
+/// the old two-arrays-kept-in-sync approach allowed whenever the second write
+/// failed.
+model Friendship {
+  userAId   String
+  userBId   String
+  createdAt DateTime @default(now())
+
+  userA User @relation("FriendshipUserA", fields: [userAId], references: [id], onDelete: Cascade)
+  userB User @relation("FriendshipUserB", fields: [userBId], references: [id], onDelete: Cascade)
+
+  @@id([userAId, userBId])
+  @@index([userBId])
+  @@map("friendships")
+}

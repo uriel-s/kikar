@@ -37,3 +37,6 @@ yarn-error.log*
 !.vscode/extensions.json
 .DS_Store
 Thumbs.db
+
+# Prisma generated client
+apps/server/src/generated/
