@@ -1,0 +1,27 @@
+{
+  "name": "gazhan",
+  "version": "2.0.0",
+  "private": true,
+  "description": "GazHan - full stack social networking platform",
+  "license": "MIT",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "npm-run-all --parallel dev:*",
+    "dev:server": "npm run dev --workspace=@gazhan/server",
+    "dev:client": "npm run dev --workspace=@gazhan/client",
+    "build": "npm run build --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "lint": "eslint .",
+    "format": "prettier --write ."
+  },
+  "devDependencies": {
+    "npm-run-all": "^4.1.5",
+    "prettier": "^3.4.2"
+  }
+}
