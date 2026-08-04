@@ -15,6 +15,10 @@
 
 ## What happened
 
+> Repository names below (`gazhan-client`, `gazhan-server`) are the originals.
+> This project was renamed to **Kikar** during the rebuild; the old names are
+> kept here because they are the actual URLs the code was published under.
+
 `serviceAccountKey.json` was committed to `uriel-s/gazhan-server` in commit
 `f900495` ("make it better", 2021-10-22). It was later removed from the working
 tree and added to `.gitignore` — but removing a file in a later commit does not

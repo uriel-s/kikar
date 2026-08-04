@@ -1,8 +1,8 @@
 {
-  "name": "gazhan",
+  "name": "kikar",
   "version": "2.0.0",
   "private": true,
-  "description": "GazHan - full stack social networking platform",
+  "description": "Kikar - full stack social networking platform",
   "license": "MIT",
   "workspaces": [
     "apps/*",
@@ -13,8 +13,8 @@
   },
   "scripts": {
     "dev": "npm-run-all --parallel dev:*",
-    "dev:server": "npm run dev --workspace=@gazhan/server",
-    "dev:client": "npm run dev --workspace=@gazhan/client",
+    "dev:server": "npm run dev --workspace=@kikar/server",
+    "dev:client": "npm run dev --workspace=@kikar/client",
     "build": "npm run build --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
     "lint": "eslint .",

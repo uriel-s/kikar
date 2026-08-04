@@ -1,8 +1,8 @@
 {
-  "name": "@gazhan/client",
+  "name": "@kikar/client",
   "version": "2.0.0",
   "private": true,
-  "description": "GazHan web client",
+  "description": "Kikar web client",
   "license": "MIT",
   "engines": {
     "node": ">=20"

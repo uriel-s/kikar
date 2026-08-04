@@ -50,7 +50,7 @@ const Terms = () => {
         <h2>7. Contact Us</h2>
         <p>
           If you have any questions about these Terms, please contact us at
-          support@gazhan.com.
+          support@kikar.com.
         </p>
       </div>
     </div>

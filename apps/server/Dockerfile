@@ -9,7 +9,7 @@ WORKDIR /app
 # were tested.
 COPY package.json package-lock.json ./
 COPY apps/server/package.json ./apps/server/
-RUN npm ci --workspace=@gazhan/server --omit=dev
+RUN npm ci --workspace=@kikar/server --omit=dev
 
 # ---- build ------------------------------------------------------------------
 FROM node:22-alpine AS build
@@ -17,12 +17,12 @@ WORKDIR /app
 
 COPY package.json package-lock.json ./
 COPY apps/server/package.json ./apps/server/
-RUN npm ci --workspace=@gazhan/server
+RUN npm ci --workspace=@kikar/server
 
 COPY apps/server ./apps/server
 # The Prisma client is generated code; generating it here keeps it out of the
 # repository and guarantees it matches the schema in this image.
-RUN npm run db:generate --workspace=@gazhan/server
+RUN npm run db:generate --workspace=@kikar/server
 
 # ---- runtime ----------------------------------------------------------------
 FROM node:22-alpine AS runtime

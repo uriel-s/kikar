@@ -31,7 +31,7 @@ bundle. A build targeting production is a different artifact from a staging one.
 ```bash
 REACT_APP_API_URL=https://api.example.com \
 REACT_APP_FIREBASE_API_KEY=... \
-npm run build --workspace=@gazhan/client
+npm run build --workspace=@kikar/client
 
 aws s3 sync apps/client/build s3://your-bucket --delete \
   --cache-control "public, max-age=31536000, immutable" \
@@ -51,9 +51,9 @@ key, and fails before React Router ever runs.
 ## API
 
 ```bash
-docker build -f apps/server/Dockerfile -t gazhan-api .
-docker tag gazhan-api <account>.dkr.ecr.<region>.amazonaws.com/gazhan-api:latest
-docker push <account>.dkr.ecr.<region>.amazonaws.com/gazhan-api:latest
+docker build -f apps/server/Dockerfile -t kikar-api .
+docker tag kikar-api <account>.dkr.ecr.<region>.amazonaws.com/kikar-api:latest
+docker push <account>.dkr.ecr.<region>.amazonaws.com/kikar-api:latest
 ```
 
 Task definition notes:
@@ -77,7 +77,7 @@ only from the ECS task's security group. Not publicly accessible.
 Migrations run as a one-off task before the new revision goes live:
 
 ```bash
-npm run db:deploy --workspace=@gazhan/server
+npm run db:deploy --workspace=@kikar/server
 ```
 
 `migrate deploy` applies only what is pending and never prompts, which is what

@@ -106,7 +106,7 @@ const Contact = () => {
       <div className="card my-4 p-4">
         <h2>Our Information</h2>
         <p>
-          <strong>Email:</strong> support@gazhan.com
+          <strong>Email:</strong> support@kikar.com
         </p>
         <p>
           <strong>Phone:</strong> +972 12 345 6789

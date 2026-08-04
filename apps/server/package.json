@@ -1,8 +1,8 @@
 {
-  "name": "@gazhan/server",
+  "name": "@kikar/server",
   "version": "2.0.0",
   "private": true,
-  "description": "GazHan API - Express server backing the GazHan social platform",
+  "description": "Kikar API - Express server backing the Kikar social platform",
   "license": "MIT",
   "main": "src/server.js",
   "engines": {

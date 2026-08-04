@@ -1,4 +1,4 @@
-# GazHan
+# Kikar
 
 A social platform where people write posts, like and comment on each other's
 posts, and connect as friends.
@@ -42,7 +42,7 @@ carries a Firebase ID token, which the server verifies with `firebase-admin`.
 
 ```bash
 git clone <this repository>
-cd gazhan
+cd kikar
 npm install
 
 cp .env.example .env
@@ -74,9 +74,9 @@ are applied automatically on startup.
 ### Piece by piece
 
 ```bash
-docker compose up db -d                        # just PostgreSQL
-npm run db:migrate --workspace=@gazhan/server  # create the schema
-npm run dev                                    # client and server together
+docker compose up db -d                       # just PostgreSQL
+npm run db:migrate --workspace=@kikar/server  # create the schema
+npm run dev                                   # client and server together
 ```
 
 ### Importing the old Firestore data
@@ -84,8 +84,8 @@ npm run dev                                    # client and server together
 If you have data in the original Firestore project:
 
 ```bash
-npm run db:import --workspace=@gazhan/server -- --dry-run   # report only
-npm run db:import --workspace=@gazhan/server                # write
+npm run db:import --workspace=@kikar/server -- --dry-run   # report only
+npm run db:import --workspace=@kikar/server                # write
 ```
 
 The script unpacks the embedded `likes`, `comments`, and `friends` arrays into
@@ -186,7 +186,7 @@ Search uses `pg_trgm` GIN indexes. The old implementation downloaded the entire
 ## Testing
 
 ```bash
-npm run test --workspace=@gazhan/server
+npm run test --workspace=@kikar/server
 ```
 
 44 tests over three areas:

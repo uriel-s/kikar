@@ -27,10 +27,10 @@ jobs:
 
       # The Prisma client is generated, not committed, so it has to exist before
       # anything that imports it can run.
-      - run: npm run db:generate --workspace=@gazhan/server
+      - run: npm run db:generate --workspace=@kikar/server
 
       - name: Run tests
-        run: npm run test --workspace=@gazhan/server
+        run: npm run test --workspace=@kikar/server
 
   client:
     name: Client - build
@@ -58,7 +58,7 @@ jobs:
           REACT_APP_FIREBASE_STORAGE_BUCKET: ci-placeholder
           REACT_APP_FIREBASE_MESSAGING_SENDER_ID: ci-placeholder
           REACT_APP_FIREBASE_APP_ID: ci-placeholder
-        run: npm run build --workspace=@gazhan/client
+        run: npm run build --workspace=@kikar/client
 
   migrations:
     name: Server - migrations apply cleanly
@@ -67,13 +67,13 @@ jobs:
       postgres:
         image: postgres:17-alpine
         env:
-          POSTGRES_USER: gazhan
-          POSTGRES_PASSWORD: gazhan
-          POSTGRES_DB: gazhan_test
+          POSTGRES_USER: kikar
+          POSTGRES_PASSWORD: kikar
+          POSTGRES_DB: kikar_test
         ports:
           - 5432:5432
         options: >-
-          --health-cmd "pg_isready -U gazhan"
+          --health-cmd "pg_isready -U kikar"
           --health-interval 5s
           --health-timeout 5s
           --health-retries 10
@@ -91,8 +91,8 @@ jobs:
       # schema and the migrations have not drifted apart.
       - name: Apply migrations
         env:
-          DATABASE_URL: postgresql://gazhan:gazhan@localhost:5432/gazhan_test?schema=public
-        run: npm run db:deploy --workspace=@gazhan/server
+          DATABASE_URL: postgresql://kikar:kikar@localhost:5432/kikar_test?schema=public
+        run: npm run db:deploy --workspace=@kikar/server
 
   docker:
     name: Docker images build

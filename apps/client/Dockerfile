@@ -6,7 +6,7 @@ WORKDIR /app
 
 COPY package.json package-lock.json ./
 COPY apps/client/package.json ./apps/client/
-RUN npm ci --workspace=@gazhan/client
+RUN npm ci --workspace=@kikar/client
 
 COPY apps/client ./apps/client
 
@@ -21,7 +21,7 @@ ARG REACT_APP_FIREBASE_STORAGE_BUCKET
 ARG REACT_APP_FIREBASE_MESSAGING_SENDER_ID
 ARG REACT_APP_FIREBASE_APP_ID
 
-RUN npm run build --workspace=@gazhan/client
+RUN npm run build --workspace=@kikar/client
 
 # ---- runtime ----------------------------------------------------------------
 # nginx serves the static bundle. The old image kept the whole Node toolchain

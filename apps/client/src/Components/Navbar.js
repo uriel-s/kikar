@@ -27,7 +27,7 @@ const Navbar = () => {
       <nav className="navbar">
         {" "}
         <div className="navbar-logo">
-          Gazhan <i className="fas fa-grip-lines-vertical"></i>
+          Kikar <i className="fas fa-grip-lines-vertical"></i>
         </div>
         {currentUser && (
           <div className="navbar-search">

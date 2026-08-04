@@ -1,4 +1,4 @@
-// GazHan data model.
+// Kikar data model.
 //
 // Identity stays in Firebase Auth: User.id IS the Firebase UID, so there is no
 // second source of truth for who a person is and no password ever touches this
