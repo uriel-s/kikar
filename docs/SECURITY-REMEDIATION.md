@@ -1,5 +1,18 @@
 # Leaked Firebase service account key
 
+> **Status: resolved.** The key belonged to project `moveo-de052`, and its
+> service account (`firebase-adminsdk-ckkgm`) has since been deleted — the
+> project's service account list is empty. A key cannot authenticate without
+> its service account, so the leaked credential is permanently dead. It has
+> also been removed from this repository's history.
+>
+> Nothing below requires action. It is kept as a record of what happened and
+> what the checks were.
+>
+> One thing worth knowing: the deletion date is not recorded here, so there is
+> no way to tell how long the key was both public *and* live. If anything of
+> value ever lived in `moveo-de052`, its audit logs are the place to look.
+
 ## What happened
 
 `serviceAccountKey.json` was committed to `uriel-s/gazhan-server` in commit
@@ -19,26 +32,46 @@ security rule**. Whoever holds it can read and delete all data in the project,
 read and write every file in the storage bucket, and mint custom auth tokens
 that impersonate any user.
 
-## Status
+Note which project it belonged to: **`moveo-de052`**, an earlier Firebase
+project for this same app, not `palhan-b30d2` which the application actually
+uses. The Palhan credentials were never committed and were never at risk.
 
-The key is **not** present in the rebuilt monorepo — its history was rewritten
-with `git-filter-repo` before the two repositories were merged, so the blob does
-not exist in this repository at all.
+## How it was verified as dead
 
-It is still live in the two original GitHub repositories until you act on the
-steps below.
+1. **The key is a real credential.** The committed file is 2,346 bytes and
+   contains `private_key` with actual RSA key material, plus `client_email`,
+   `private_key_id`, and `project_id` — not a placeholder.
+2. **It identifies `moveo-de052`.** `client_email` is
+   `firebase-adminsdk-ckkgm@moveo-de052.iam.gserviceaccount.com`, key id
+   `6c648ecfa8a4e3e202249ac5da9076f4f623850c`.
+3. **Its key id does not match anything active in Palhan.** The Palhan service
+   account shows a different key id, confirming the two are unrelated.
+4. **The owning service account no longer exists.** The IAM service account
+   list for `moveo-de052` is empty. Deleting a service account permanently
+   invalidates every key issued to it.
 
-## What you need to do
+The `moveo-de052` project itself still exists — an unauthenticated probe with
+its public web API key returns its authorized domains — but with no service
+accounts, there is nothing for the leaked key to authenticate as.
 
-The key must be assumed compromised. It was publicly readable for roughly four
-years, and GitHub is continuously scraped for exactly this. Rotating it is not
-optional, and it is the step that actually matters — rewriting history without
-rotating leaves a working credential in every clone, fork, and cache that
-already exists.
+## History rewrite
 
-### 1. Revoke the key (do this first)
+The key is **not** present in this repository. Its blob was stripped with
+`git-filter-repo` before the two source repositories were merged, and a scan of
+all 58 commits finds no private key material anywhere.
 
-1. [Firebase Console](https://console.firebase.google.com/) → your project
+The original `uriel-s/gazhan-server` on GitHub still contains it in history. That
+now matters only for tidiness rather than security, since the credential is
+dead — but see [Deal with the old repositories](#4-deal-with-the-old-repositories)
+below.
+
+## Reference: what would have been required if the key were live
+
+Kept for the record. None of this is needed now.
+
+### 1. Revoke the key
+
+1. [Firebase Console](https://console.firebase.google.com/) → the project
 2. ⚙️ **Project settings** → **Service accounts**
 3. **Manage service account permissions** — this opens Google Cloud IAM
 4. Find the `firebase-adminsdk-...` service account → **Keys**
@@ -46,7 +79,8 @@ already exists.
 6. **Add key → Create new key → JSON**, and store it somewhere that is not a git
    repository
 
-Once deleted, the leaked key stops working immediately, everywhere.
+Revocation is the step that matters. Rewriting history without revoking leaves a
+working credential in every clone, fork, and cache that already exists.
 
 ### 2. Check whether it was used
 
@@ -72,8 +106,7 @@ FIREBASE_SERVICE_ACCOUNT_PATH=/absolute/path/outside/the/repo.json
 
 ### 4. Deal with the old repositories
 
-Now that history is rewritten here, the old repositories are the remaining
-exposure. Pick one:
+The old repositories still carry the (now dead) key in their history. Pick one:
 
 **Simplest — delete or archive them.** The full history lives in this monorepo,
 so nothing is lost. Point the GitHub profile at the new repository.

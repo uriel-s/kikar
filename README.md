@@ -223,8 +223,12 @@ PostgreSQL service to prove they run from empty, and builds both images.
   every matched user's email, home address, and date of birth to any caller.
 - **Errors echoed internals.** The handler returned `err.message` verbatim.
 - **A Firebase service account key was committed** and remained reachable in the
-  published history. It has been removed from the rewritten history, but a key
-  that was ever public must be treated as compromised and rotated.
+  published history from 2021. It has been removed from the rewritten history.
+  The key belonged to `moveo-de052`, an earlier Firebase project for this app,
+  whose service account has since been deleted — which permanently invalidates
+  every key issued to it. See
+  [docs/SECURITY-REMEDIATION.md](docs/SECURITY-REMEDIATION.md) for how that was
+  verified.
 </details>
 
 <details>
@@ -320,7 +324,8 @@ Stated plainly rather than implied away:
 ## Further reading
 
 - [docs/SECURITY-REMEDIATION.md](docs/SECURITY-REMEDIATION.md) — the leaked
-  service account key: what it exposed, and the steps to rotate it
+  service account key: what it was, how it was confirmed dead, and the
+  procedure had it still been live
 - [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) — deploying to AWS, with costs
 
 ---
