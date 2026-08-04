@@ -11,6 +11,13 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+# Least privilege for GITHUB_TOKEN. Without this, jobs inherit whatever the
+# repository default is — which can include write access to contents, issues,
+# and packages. Nothing here needs more than reading the checkout, so a
+# compromised action in the dependency tree has nothing to write to.
+permissions:
+  contents: read
+
 jobs:
   server:
     name: Server - test
