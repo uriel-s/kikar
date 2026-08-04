@@ -189,7 +189,7 @@ Search uses `pg_trgm` GIN indexes. The old implementation downloaded the entire
 npm run test --workspace=@kikar/server
 ```
 
-44 tests over three areas:
+52 tests over four areas:
 
 - **`auth.test.js`** — every data route rejects missing, malformed, and forged
   tokens; `/health` stays open.
@@ -200,6 +200,9 @@ npm run test --workspace=@kikar/server
 - **`validation.test.js`** — bad input is rejected at the edge, page sizes are
   capped, unknown fields are refused, and internal error text never reaches the
   response body.
+- **`avatarUpload.test.js`** — an upload is identified by its magic bytes, so
+  arbitrary content declaring `Content-Type: image/png` is refused; a user
+  cannot replace someone else's avatar.
 
 CI additionally builds the client, applies the migrations against a real
 PostgreSQL service to prove they run from empty, and builds both images.
@@ -315,9 +318,10 @@ Stated plainly rather than implied away:
 - **Create React App is deprecated.** It builds and runs fine, but it is no
   longer maintained. Vite is the natural next step and would cut the install
   from roughly 2,300 packages to a few hundred.
-- **RDS TLS is not certificate-verified.** `DATABASE_SSL=true` enables TLS but
-  sets `rejectUnauthorized: false`; verifying properly needs the RDS CA bundle
-  in the image.
+- **Avatars are checked but not re-encoded.** Uploads are identified by their
+  magic bytes rather than the declared Content-Type, but the original file is
+  stored as-is — a malformed image carrying a valid signature still gets through.
+  Re-encoding through `sharp` would close that.
 
 ---
 

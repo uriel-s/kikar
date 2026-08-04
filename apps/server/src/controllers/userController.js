@@ -1,5 +1,6 @@
 const { Prisma } = require("../generated/prisma");
 const ApiError = require("../lib/ApiError");
+const { detectImageType } = require("../lib/imageType");
 
 const UNIQUE_VIOLATION = "P2002";
 const RECORD_NOT_FOUND = "P2025";
@@ -125,10 +126,18 @@ const createUserController = ({ users, storage }) => ({
       throw ApiError.badRequest("No image uploaded");
     }
 
+    // multer's fileFilter only saw the Content-Type the client claimed. This is
+    // the check that actually holds: the bytes have to be a real JPEG, PNG, or
+    // WebP, and the type we store is the one we detected, never the declared one.
+    const contentType = detectImageType(req.file.buffer);
+    if (!contentType) {
+      throw ApiError.badRequest("File is not a valid JPEG, PNG, or WebP image");
+    }
+
     const avatarUrl = await storage.uploadAvatar({
       uid: req.user.uid,
       buffer: req.file.buffer,
-      contentType: req.file.mimetype,
+      contentType,
     });
 
     const user = await users.setAvatarUrl(req.user.uid, avatarUrl);

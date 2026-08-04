@@ -37,6 +37,14 @@ const schema = z.object({
     .default("false")
     .transform((value) => value === "true"),
 
+  // Only set this to false for a database fronted by a private CA. Turning it
+  // off keeps the connection encrypted but stops verifying who is on the other
+  // end of it.
+  DATABASE_SSL_REJECT_UNAUTHORIZED: z
+    .enum(["true", "false"])
+    .default("true")
+    .transform((value) => value === "true"),
+
   FIREBASE_STORAGE_BUCKET: z.string().min(1, "FIREBASE_STORAGE_BUCKET is required"),
 
   // Exactly one of these must be set — see refine below.

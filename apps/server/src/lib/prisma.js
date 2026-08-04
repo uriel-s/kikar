@@ -11,10 +11,17 @@ const { PrismaClient } = require("../generated/prisma");
 const createPrismaClient = (env) => {
   const adapter = new PrismaPg({
     connectionString: env.DATABASE_URL,
-    // RDS presents an Amazon-signed certificate. Verifying it properly needs the
-    // RDS CA bundle mounted into the image; until then, TLS is on but the chain
-    // is not verified. Local development connects without TLS at all.
-    ...(env.DATABASE_SSL ? { ssl: { rejectUnauthorized: false } } : {}),
+    // Certificate verification is on by default. RDS certificates chain to
+    // Amazon Root CA 1, which Node already trusts, so this works without
+    // mounting a CA bundle. Encrypting the connection while accepting any
+    // certificate would leave it open to anyone on the network path — which is
+    // most of what TLS is there to prevent.
+    //
+    // DATABASE_SSL_REJECT_UNAUTHORIZED=false exists for hosts using a private
+    // CA, and is a deliberate, logged downgrade rather than the default.
+    ...(env.DATABASE_SSL
+      ? { ssl: { rejectUnauthorized: env.DATABASE_SSL_REJECT_UNAUTHORIZED } }
+      : {}),
   });
 
   return new PrismaClient({ adapter });
