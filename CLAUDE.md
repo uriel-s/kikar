@@ -36,10 +36,16 @@ Firestore data; it is idempotent.
 
 ### `bash .claude/checks.sh` — the definition of "green"
 
-One command answers "is this repository in a good state". It mirrors
-`.github/workflows/ci.yml` step for step, so green here means green in CI.
+One command answers "is this repository in a good state".
 **Prefer it over the individual commands above** — there is one definition of
-green, not two.
+green, not two, and CI's `lint` job invokes this very script so the two cannot
+drift.
+
+Green here is necessary but not sufficient. `test`, `lint`, `format` and `build`
+run in both places; `sec` runs only here; and CI additionally runs `migrations`
+(`db:deploy` against a real Postgres 17) and `docker` (both images), neither of
+which this script starts services for. A migration drift or a broken Dockerfile
+is still caught only by CI.
 
 ```bash
 bash .claude/checks.sh all           # lint, format, arch, types, sec, test, build

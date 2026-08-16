@@ -1,6 +1,16 @@
 #!/usr/bin/env bash
-# Toolchain contract for the Claude command system. Mirrors CI so "green here"
-# means "green in CI". subcommands: test | lint | format | arch | types | sec | build | all
+# Toolchain contract for the Claude command system.
+# subcommands: test | lint | format | arch | types | sec | build | all
+#
+# Relationship to CI, stated exactly because the earlier "mirrors CI step for
+# step" claim was false in both directions and CLAUDE.md repeated it:
+#   - test, lint, format, build  — run in both, same commands
+#   - sec                        — here only (npm audit is not a CI job)
+#   - migrations, docker         — CI only; both need services (Postgres 17,
+#                                  Buildx) that this script deliberately does
+#                                  not start
+# So green here is necessary but not sufficient: a migration drift or a broken
+# Dockerfile is still only caught by CI.
 # Checks whose tool isn't installed are SKIPPED with a warning. `all` runs every
 # check and reports ALL failures, not just the first. (exit 0 = green)
 #
@@ -42,7 +52,13 @@ ensure_prisma_client() {
   fi
 }
 
-run_lint()   { npx eslint .; }
+# --max-warnings pins the warning count the same way `test` pins the suite size.
+# Two are expected today, both react-hooks/set-state-in-effect on effects that
+# TanStack Query replaces wholesale in a later stage. Without the flag ESLint
+# exits 0 on any number of warnings, which would make a warn-level rule —
+# react-hooks/exhaustive-deps among them — incapable of ever turning this gate
+# red. The exit code is the only thing an automated caller reads.
+run_lint()   { npx eslint . --max-warnings 2; }
 run_format() { npx prettier --check .; }
 
 run_arch() { echo "SKIP: no import-linter equivalent wired up"; }
