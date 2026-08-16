@@ -13,6 +13,7 @@ const js = require("@eslint/js");
 const globals = require("globals");
 const react = require("eslint-plugin-react");
 const reactHooks = require("eslint-plugin-react-hooks");
+const jsxA11y = require("eslint-plugin-jsx-a11y");
 const prettier = require("eslint-config-prettier");
 
 module.exports = [
@@ -84,11 +85,29 @@ module.exports = [
       },
       parserOptions: { ecmaFeatures: { jsx: true } },
     },
-    plugins: { react, "react-hooks": reactHooks },
+    plugins: { react, "react-hooks": reactHooks, "jsx-a11y": jsxA11y },
     settings: { react: { version: "detect" } },
     rules: {
       ...react.configs.flat.recommended.rules,
       ...reactHooks.configs.recommended.rules,
+
+      // Accessibility. These were already enforced before this config existed —
+      // Create React App's `eslintConfig: { extends: ["react-app"] }` pulled them
+      // in, and CI=true made the build fail on them. Dropping that block without
+      // reinstating these here would have quietly ended a11y linting: a form
+      // control with no associated label would start passing review.
+      ...jsxA11y.flatConfigs.recommended.rules,
+
+      // Both fire on the same node: Navbar's hamburger is a `<div onClick>`.
+      // The correct fix is a real `<button>`, and that is a behaviour change —
+      // keyboard focus and activation where there is none today — which this
+      // stage promised not to make, with no client tests to catch a regression.
+      // Stage 7 rewrites all 21 components; that is where it becomes a button.
+      // Left as warnings rather than disable comments because the warning count
+      // is pinned in checks.sh: a second `<div onClick>` anywhere pushes the
+      // total past the pin and fails the gate, so this cannot quietly spread.
+      "jsx-a11y/click-events-have-key-events": "warn",
+      "jsx-a11y/no-static-element-interactions": "warn",
 
       // The codebase uses no prop-types and is scheduled to move to TypeScript,
       // which is what will actually type these props. Turning the rule on now

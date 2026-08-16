@@ -53,12 +53,16 @@ ensure_prisma_client() {
 }
 
 # --max-warnings pins the warning count the same way `test` pins the suite size.
-# Two are expected today, both react-hooks/set-state-in-effect on effects that
-# TanStack Query replaces wholesale in a later stage. Without the flag ESLint
-# exits 0 on any number of warnings, which would make a warn-level rule —
-# react-hooks/exhaustive-deps among them — incapable of ever turning this gate
-# red. The exit code is the only thing an automated caller reads.
-run_lint()   { npx eslint . --max-warnings 2; }
+# Four are expected today, each deferred to the stage that rewrites the code
+# rather than patched now (see the reasoning at each rule in eslint.config.js):
+#   2x react-hooks/set-state-in-effect  — AllUsers, PostsPage; TanStack Query
+#   2x jsx-a11y/*                       — Navbar's <div onClick>; Tailwind stage
+# Without the flag ESLint exits 0 on any number of warnings, which would leave
+# every warn-level rule — react-hooks/exhaustive-deps among them — structurally
+# incapable of turning this gate red. The exit code is the only thing an
+# automated caller reads. Raising this number is a deliberate act, like the
+# test baseline: it means accepting a new piece of debt, not absorbing one.
+run_lint()   { npx eslint . --max-warnings 4; }
 run_format() { npx prettier --check .; }
 
 run_arch() { echo "SKIP: no import-linter equivalent wired up"; }

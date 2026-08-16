@@ -288,8 +288,14 @@ const WavesBackground = ({ showControls = false }) => {
           <h3 style={{ margin: "0 0 10px 0", textAlign: "center" }}>הגדרות גלים</h3>
 
           <div>
-            <label style={{ display: "block", marginBottom: "5px" }}>צבע הגלים:</label>
+            <label
+              htmlFor="wave-color-theme"
+              style={{ display: "block", marginBottom: "5px" }}
+            >
+              צבע הגלים:
+            </label>
             <select
+              id="wave-color-theme"
               value={waveConfig.colorTheme}
               onChange={(e) => handleConfigChange("colorTheme", e.target.value)}
               style={{
@@ -308,10 +314,11 @@ const WavesBackground = ({ showControls = false }) => {
             </select>
           </div>
           <div>
-            <label style={{ display: "block", marginBottom: "5px" }}>
+            <label htmlFor="wave-count" style={{ display: "block", marginBottom: "5px" }}>
               מספר גלים: {waveConfig.waveCount}
             </label>
             <input
+              id="wave-count"
               type="range"
               min="3"
               max="10"
@@ -321,10 +328,14 @@ const WavesBackground = ({ showControls = false }) => {
             />
           </div>
           <div>
-            <label style={{ display: "block", marginBottom: "5px" }}>
+            <label
+              htmlFor="wave-amplitude"
+              style={{ display: "block", marginBottom: "5px" }}
+            >
               גובה גלים: {waveConfig.amplitude.toFixed(1)}
             </label>
             <input
+              id="wave-amplitude"
               type="range"
               min="0.4"
               max="2.5"
@@ -339,10 +350,11 @@ const WavesBackground = ({ showControls = false }) => {
 
           <div>
             {" "}
-            <label style={{ display: "block", marginBottom: "5px" }}>
+            <label htmlFor="wave-speed" style={{ display: "block", marginBottom: "5px" }}>
               מהירות גלים: {waveConfig.speedMultiplier.toFixed(1)}
             </label>
             <input
+              id="wave-speed"
               type="range"
               min="0.3"
               max="3.0"
