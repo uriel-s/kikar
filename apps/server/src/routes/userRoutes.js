@@ -21,11 +21,7 @@ const createUserRoutes = ({ controller, uploadAvatar }) => {
   );
 
   router.get("/:id/friends", validate(schemas.userId), controller.listFriends);
-  router.get(
-    "/:id/friends/:friendId",
-    validate(schemas.friendPair),
-    controller.isFriend
-  );
+  router.get("/:id/friends/:friendId", validate(schemas.friendPair), controller.isFriend);
 
   // Friending acts on the caller, so the :id in the path must be the caller.
   router.post(

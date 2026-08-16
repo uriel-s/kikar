@@ -10,7 +10,7 @@
 > what the checks were.
 >
 > One thing worth knowing: the deletion date is not recorded here, so there is
-> no way to tell how long the key was both public *and* live. If anything of
+> no way to tell how long the key was both public _and_ live. If anything of
 > value ever lived in `moveo-de052`, its audit logs are the place to look.
 
 ## What happened
