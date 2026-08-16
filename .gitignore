@@ -40,3 +40,21 @@ Thumbs.db
 
 # Prisma generated client
 apps/server/src/generated/
+
+# Claude Code working files — per-run state, regenerated every session
+.dev-log.md
+.dev-plan.md
+.dev-plan.*.done.md
+.dev-state.md
+.work-context.md
+
+# /dev session artifacts (per-run logs and state snapshots)
+.dev-archive/
+
+# Personal Claude Code tooling. checks.sh and test-baseline are deliberately
+# NOT ignored: checks.sh is this project's definition of "green" — it mirrors
+# .github/workflows/ci.yml and CLAUDE.md points at it — and the baseline is the
+# refactor's safety net. Everything else under .claude/ is per-developer.
+.claude/*
+!.claude/checks.sh
+!.claude/test-baseline
