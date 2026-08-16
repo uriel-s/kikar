@@ -1,8 +1,6 @@
 const request = require("supertest");
 const { buildTestApp, authHeader } = require("./helpers/testApp");
 
-const POST_ID = "6f1a2b3c-4d5e-4f60-8123-456789abcdef";
-
 describe("request validation", () => {
   it("rejects an empty post", async () => {
     const create = jest.fn();
@@ -184,6 +182,10 @@ describe("pagination shape", () => {
 
     expect(res.body.nextCursor).toBeNull();
     // Counts, not raw arrays of every liker.
-    expect(res.body.posts[0]).toMatchObject({ likeCount: 2, commentCount: 1, likedByMe: true });
+    expect(res.body.posts[0]).toMatchObject({
+      likeCount: 2,
+      commentCount: 1,
+      likedByMe: true,
+    });
   });
 });

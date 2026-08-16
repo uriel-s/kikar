@@ -31,7 +31,6 @@ const normalize = (err) => {
  * answered with a generic 500 — the previous handler echoed err.message to the
  * caller, exposing internals like Firestore query failures.
  */
-// eslint-disable-next-line no-unused-vars -- Express identifies error handlers by arity
 const errorHandler = (err, req, res, _next) => {
   const apiError = normalize(err);
 

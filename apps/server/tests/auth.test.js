@@ -19,12 +19,15 @@ describe("authentication", () => {
     ["delete", "/api/posts/6f1a2b3c-4d5e-4f60-8123-456789abcdef"],
   ];
 
-  it.each(protectedRoutes)("%s %s rejects a request with no token", async (method, path) => {
-    const res = await request(app)[method](path);
+  it.each(protectedRoutes)(
+    "%s %s rejects a request with no token",
+    async (method, path) => {
+      const res = await request(app)[method](path);
 
-    expect(res.status).toBe(401);
-    expect(res.body.error.message).toMatch(/missing bearer token/i);
-  });
+      expect(res.status).toBe(401);
+      expect(res.body.error.message).toMatch(/missing bearer token/i);
+    }
+  );
 
   it.each(protectedRoutes)("%s %s rejects a forged token", async (method, path) => {
     const res = await request(app)[method](path).set("Authorization", "Bearer forged");

@@ -1,0 +1,21 @@
+# Line endings.
+#
+# The repository stores LF. Without this file git decides per-checkout on
+# Windows, so a file saved by one editor lands in the index with CRLF and every
+# subsequent diff reports the whole file as rewritten. `text=auto` lets git
+# detect text files; `eol=lf` fixes what it writes.
+* text=auto eol=lf
+
+# Binary assets — never normalize, never diff.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+*.wasm binary
+
+# Generated. Collapsed in review, and excluded from language statistics.
+package-lock.json linguist-generated
+apps/server/src/generated/** linguist-generated

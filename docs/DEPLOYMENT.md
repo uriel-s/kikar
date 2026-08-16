@@ -88,13 +88,13 @@ database.
 
 Roughly, for a demo-scale deployment in `eu-north-1`:
 
-| Service              | Configuration            | Monthly (USD) |
-|----------------------|--------------------------|---------------|
-| RDS PostgreSQL       | `db.t4g.micro`, 20 GB    | ~15 |
-| ECS Fargate          | 0.25 vCPU, 0.5 GB        | ~9 |
-| ALB                  |                          | ~18 |
-| S3 + CloudFront      | low traffic              | ~1 |
-| **Total**            |                          | **~43** |
+| Service         | Configuration         | Monthly (USD) |
+| --------------- | --------------------- | ------------- |
+| RDS PostgreSQL  | `db.t4g.micro`, 20 GB | ~15           |
+| ECS Fargate     | 0.25 vCPU, 0.5 GB     | ~9            |
+| ALB             |                       | ~18           |
+| S3 + CloudFront | low traffic           | ~1            |
+| **Total**       |                       | **~43**       |
 
 The ALB is the largest single line item and only exists to terminate TLS and
 health-check one container. Two cheaper alternatives:

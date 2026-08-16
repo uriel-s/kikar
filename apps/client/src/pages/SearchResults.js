@@ -100,7 +100,7 @@ const SearchResults = () => {
   return (
     <div className="search-results-container">
       <div className="search-results-header">
-        <h1>Search results for "{query}"</h1>
+        <h1>Search results for &quot;{query}&quot;</h1>
         {!isLoading && (
           <p className="search-results-info">
             Found {total} {total === 1 ? "result" : "results"} in{" "}
@@ -125,7 +125,7 @@ const SearchResults = () => {
                   ))}
                 </div>
               ) : (
-                <p className="no-results">No users found matching "{query}"</p>
+                <p className="no-results">No users found matching &quot;{query}&quot;</p>
               )}
             </section>
           )}
@@ -146,7 +146,7 @@ const SearchResults = () => {
                   ))}
                 </div>
               ) : (
-                <p className="no-results">No posts found matching "{query}"</p>
+                <p className="no-results">No posts found matching &quot;{query}&quot;</p>
               )}
             </section>
           )}

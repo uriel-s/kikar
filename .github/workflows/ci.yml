@@ -19,6 +19,36 @@ permissions:
   contents: read
 
 jobs:
+  # Until this job existed, no CI job ran ESLint. The client's lint gate was an
+  # accident of Create React App: `eslintConfig` in apps/client/package.json was
+  # picked up by react-scripts' bundled ESLint 8, and CI=true turned its warnings
+  # into build failures. Moving to an ESLint 9 flat config removed that block —
+  # eslint-webpack-plugin uses the legacy eslintrc loader and never reads
+  # eslint.config.js — which would have left the repository with a lint setup
+  # that nothing enforced.
+  #
+  # Runs checks.sh rather than eslint/prettier directly so there is one
+  # definition of "green" and it cannot drift from what CLAUDE.md tells
+  # contributors to run locally.
+  lint:
+    name: Lint and format
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Lint
+        run: bash .claude/checks.sh lint
+
+      - name: Format
+        run: bash .claude/checks.sh format
+
   server:
     name: Server - test
     runs-on: ubuntu-latest

@@ -11,7 +11,7 @@ function Signin() {
   const [loading, setLoading] = useState(false);
   const history = useHistory();
 
-  // Firebase signin and link to dashboard 
+  // Firebase signin and link to dashboard
   async function handleSubmit(e) {
     e.preventDefault();
     try {

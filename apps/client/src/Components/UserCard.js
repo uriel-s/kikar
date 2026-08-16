@@ -41,7 +41,13 @@ const UserCard = ({ user, isFriend, onFriendChange }) => {
                     disabled={isLoading}
                     title="Remove friend"
                   >
-                    {isLoading ? "Removing..." : <><FaUserTimes /> Unfriend</>}
+                    {isLoading ? (
+                      "Removing..."
+                    ) : (
+                      <>
+                        <FaUserTimes /> Unfriend
+                      </>
+                    )}
                   </button>
                 ) : (
                   <button
@@ -49,7 +55,13 @@ const UserCard = ({ user, isFriend, onFriendChange }) => {
                     onClick={() => changeFriendship("add")}
                     disabled={isLoading}
                   >
-                    {isLoading ? "Adding..." : <><FaUserPlus /> Add Friend</>}
+                    {isLoading ? (
+                      "Adding..."
+                    ) : (
+                      <>
+                        <FaUserPlus /> Add Friend
+                      </>
+                    )}
                   </button>
                 )}
               </div>

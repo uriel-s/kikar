@@ -1,7 +1,6 @@
 const { Prisma } = require("../generated/prisma");
 const ApiError = require("../lib/ApiError");
 
-const RECORD_NOT_FOUND = "P2025";
 const FOREIGN_KEY_VIOLATION = "P2003";
 
 const isPrismaError = (err, code) =>

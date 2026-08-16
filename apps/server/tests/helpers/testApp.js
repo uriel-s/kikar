@@ -47,4 +47,11 @@ const buildTestApp = ({ prisma, users } = {}) =>
 
 const authHeader = (uid) => ({ Authorization: `Bearer valid:${uid}` });
 
-module.exports = { buildTestApp, authHeader, fakeAuth, fakeBucket, TEST_ENV, silentLogger };
+module.exports = {
+  buildTestApp,
+  authHeader,
+  fakeAuth,
+  fakeBucket,
+  TEST_ENV,
+  silentLogger,
+};

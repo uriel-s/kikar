@@ -113,4 +113,10 @@ const page = (rows, limit, cursorOf) => {
   };
 };
 
-module.exports = { createUserRepository, PUBLIC_FIELDS, PRIVATE_FIELDS, canonicalPair, page };
+module.exports = {
+  createUserRepository,
+  PUBLIC_FIELDS,
+  PRIVATE_FIELDS,
+  canonicalPair,
+  page,
+};

@@ -3,8 +3,7 @@
 A social platform where people write posts, like and comment on each other's
 posts, and connect as friends.
 
-Originally two repositories built in 2021–2025; consolidated and rebuilt in
-2026. This document describes what the code actually does — see
+Originally two repositories built in 2021–2025; consolidated and rebuilt in 2026. This document describes what the code actually does — see
 [What changed in v2](#what-changed-in-v2) for the rebuild, and
 [Known gaps](#known-gaps) for what is deliberately still missing.
 
@@ -12,19 +11,19 @@ Originally two repositories built in 2021–2025; consolidated and rebuilt in
 
 ## Stack
 
-| Layer      | Choice                                        | Why |
-|------------|-----------------------------------------------|-----|
-| Client     | React 18, React Router 5, Create React App     | Existing UI, upgraded in place |
-| API        | Node 22, Express 5                             | Express 5 forwards async errors to the error handler natively |
-| Data       | PostgreSQL 17, Prisma 7                        | Relational data with real constraints and indexed search |
-| Identity   | Firebase Auth                                  | Keeps passwords out of this system entirely |
-| Files      | Firebase Storage                               | Avatar images |
-| Validation | zod                                            | One schema language for both request bodies and environment config |
-| Logging    | pino                                           | Structured JSON in production, readable in development |
-| Container  | Docker, nginx                                  | Multi-stage builds, non-root runtime |
+| Layer      | Choice                                     | Why                                                                |
+| ---------- | ------------------------------------------ | ------------------------------------------------------------------ |
+| Client     | React 18, React Router 5, Create React App | Existing UI, upgraded in place                                     |
+| API        | Node 22, Express 5                         | Express 5 forwards async errors to the error handler natively      |
+| Data       | PostgreSQL 17, Prisma 7                    | Relational data with real constraints and indexed search           |
+| Identity   | Firebase Auth                              | Keeps passwords out of this system entirely                        |
+| Files      | Firebase Storage                           | Avatar images                                                      |
+| Validation | zod                                        | One schema language for both request bodies and environment config |
+| Logging    | pino                                       | Structured JSON in production, readable in development             |
+| Container  | Docker, nginx                              | Multi-stage builds, non-root runtime                               |
 
 **Identity is on Firebase, data is in PostgreSQL.** A user's `id` in the
-database *is* their Firebase UID, so there is no second source of truth for who
+database _is_ their Firebase UID, so there is no second source of truth for who
 someone is, and no password ever reaches this codebase. Every API request
 carries a Firebase ID token, which the server verifies with `firebase-admin`.
 
@@ -126,27 +125,27 @@ network.
 Every route below requires `Authorization: Bearer <firebase-id-token>`.
 `/health` is the only public endpoint.
 
-| Method   | Path                             | Notes |
-|----------|----------------------------------|-------|
-| `GET`    | `/health`                        | Public — for load balancer checks |
-| `POST`   | `/api/users`                     | Creates the caller's own profile |
-| `GET`    | `/api/users`                     | Paginated |
-| `GET`    | `/api/users/search?q=`           | Minimum 2 characters |
-| `GET`    | `/api/users/:id`                 | Private fields only when `:id` is the caller |
-| `PATCH`  | `/api/users/:id`                 | Caller only |
-| `PUT`    | `/api/users/:id/avatar`          | Caller only, multipart, 5 MB limit |
-| `GET`    | `/api/users/:id/friends`         | |
-| `GET`    | `/api/users/:id/friends/:friendId` | Friendship check |
-| `POST`   | `/api/users/:id/friends`         | Caller only |
-| `DELETE` | `/api/users/:id/friends/:friendId` | Caller only |
-| `GET`    | `/api/posts`                     | Newest first, keyset-paginated |
-| `POST`   | `/api/posts`                     | Author taken from the token |
-| `GET`    | `/api/posts/search?q=`           | |
-| `DELETE` | `/api/posts/:postId`             | Author only |
-| `PUT`    | `/api/posts/:postId/like`        | Idempotent |
-| `DELETE` | `/api/posts/:postId/like`        | Idempotent |
-| `GET`    | `/api/posts/:postId/comments`    | Paginated |
-| `POST`   | `/api/posts/:postId/comments`    | |
+| Method   | Path                               | Notes                                        |
+| -------- | ---------------------------------- | -------------------------------------------- |
+| `GET`    | `/health`                          | Public — for load balancer checks            |
+| `POST`   | `/api/users`                       | Creates the caller's own profile             |
+| `GET`    | `/api/users`                       | Paginated                                    |
+| `GET`    | `/api/users/search?q=`             | Minimum 2 characters                         |
+| `GET`    | `/api/users/:id`                   | Private fields only when `:id` is the caller |
+| `PATCH`  | `/api/users/:id`                   | Caller only                                  |
+| `PUT`    | `/api/users/:id/avatar`            | Caller only, multipart, 5 MB limit           |
+| `GET`    | `/api/users/:id/friends`           |                                              |
+| `GET`    | `/api/users/:id/friends/:friendId` | Friendship check                             |
+| `POST`   | `/api/users/:id/friends`           | Caller only                                  |
+| `DELETE` | `/api/users/:id/friends/:friendId` | Caller only                                  |
+| `GET`    | `/api/posts`                       | Newest first, keyset-paginated               |
+| `POST`   | `/api/posts`                       | Author taken from the token                  |
+| `GET`    | `/api/posts/search?q=`             |                                              |
+| `DELETE` | `/api/posts/:postId`               | Author only                                  |
+| `PUT`    | `/api/posts/:postId/like`          | Idempotent                                   |
+| `DELETE` | `/api/posts/:postId/like`          | Idempotent                                   |
+| `GET`    | `/api/posts/:postId/comments`      | Paginated                                    |
+| `POST`   | `/api/posts/:postId/comments`      |                                              |
 
 Errors are always `{ "error": { "message": string, "details"?: [...] } }`.
 Internal failures return a generic message; the details go to the logs.
@@ -172,7 +171,7 @@ arrays inside the parent document, which caused two specific problems:
   starting array, and the second write erased the first. `likes` now has a
   composite primary key of `(postId, userId)`, so a duplicate is rejected by
   Postgres rather than resolved by whoever writes last.
-- **Half-written friendships.** Befriending appended to *both* users' `friends`
+- **Half-written friendships.** Befriending appended to _both_ users' `friends`
   arrays in two separate, untransacted writes. If the second failed, A was
   friends with B while B was not friends with A. A friendship is now one row
   with `userAId < userBId` enforced by a `CHECK` constraint, so the asymmetric
@@ -232,6 +231,7 @@ PostgreSQL service to prove they run from empty, and builds both images.
   every key issued to it. See
   [docs/SECURITY-REMEDIATION.md](docs/SECURITY-REMEDIATION.md) for how that was
   verified.
+
 </details>
 
 <details>
@@ -242,7 +242,7 @@ PostgreSQL service to prove they run from empty, and builds both images.
   parameter (`commnetID`) that the route did not define.
 - `GET /posts` returned **404** when there were simply no posts yet.
 - Avatar upload listed the whole storage prefix and deleted the first object
-  whose name *contained* the user's id — a substring match that could delete
+  whose name _contained_ the user's id — a substring match that could delete
   another user's picture — then wrote its response from inside a stream callback
   after a possible earlier response.
 - The signup flow created the Firebase account first and the profile second with
@@ -256,6 +256,7 @@ PostgreSQL service to prove they run from empty, and builds both images.
 - Comment submission pushed the raw input string into a list of comment
   objects, which is why the markup carried a `JSON.stringify` fallback for
   comments that had no `.content`.
+
 </details>
 
 <details>
@@ -270,6 +271,7 @@ PostgreSQL service to prove they run from empty, and builds both images.
   every user who had never uploaded one. The URL is a column now.
 - **Nothing was paginated.** Every list returned the entire collection.
 - **Search scanned everything.** Now indexed.
+
 </details>
 
 <details>
@@ -280,7 +282,7 @@ PostgreSQL service to prove they run from empty, and builds both images.
   were imported. `package.json` was still named `"face"`, from a different
   project.
 - The server carried `axios`, `bcrypt`, `body-parser`, `express-validator`,
-  `jsonwebtoken`, the Firebase *client* SDK, and a package called `save`, none
+  `jsonwebtoken`, the Firebase _client_ SDK, and a package called `save`, none
   of them used.
 - `react-scripts` 4 → 5, which removes the `--openssl-legacy-provider` flag the
   start and build scripts needed to run at all.
@@ -296,6 +298,7 @@ PostgreSQL service to prove they run from empty, and builds both images.
   undefined variable and had no importers, `config/firebase.js` required a
   `serviceAccountKey.json` that does not exist, and `models/userModel.js` was a
   comment.
+
 </details>
 
 ---
