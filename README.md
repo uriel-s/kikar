@@ -51,7 +51,7 @@ cp .env.example .env
 You need two things from Firebase:
 
 1. **Web config** (Project settings → General → Your apps) → the
-   `REACT_APP_FIREBASE_*` values.
+   `VITE_FIREBASE_*` values.
 2. **Service account key** (Project settings → Service accounts → Generate new
    private key) → either paste the JSON into `FIREBASE_SERVICE_ACCOUNT_JSON` or
    save the file outside the repository and point

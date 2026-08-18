@@ -70,10 +70,10 @@ specific to this repository and worth knowing:
   is gitignored). Nothing that imports it — server or tests — runs until
   `db:generate` has been run once.
 - **The client needs its own `.env`.** `src/config/env.js` and `prisma.config.js`
-  load the _root_ `.env` explicitly, but Create React App only reads
-  `apps/client/.env`. A root-only `.env` leaves the client throwing
-  "Missing Firebase configuration" at startup. Copy the `REACT_APP_*` values into
-  `apps/client/.env` as well.
+  load the _root_ `.env` explicitly, but Vite only reads env files from the
+  app root (`apps/client/`), not the monorepo root. A root-only `.env` leaves
+  the client throwing "Missing Firebase configuration" at startup. Copy the
+  `VITE_*` values into `apps/client/.env` as well.
 - **`react-scripts` lives in `devDependencies`, not `dependencies`.** CRA's
   generator puts it in the wrong one. Moving it is what makes
   `npm audit --omit=dev` mean anything: every high-severity advisory in this
