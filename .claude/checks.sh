@@ -159,13 +159,13 @@ assert_test_count() {
 # values because src/firebase.js fails fast on missing configuration and the
 # build only needs them to be present — the same values CI uses.
 run_build() {
-  REACT_APP_API_URL=http://localhost:5000 \
-  REACT_APP_FIREBASE_API_KEY=ci-placeholder \
-  REACT_APP_FIREBASE_AUTH_DOMAIN=ci-placeholder \
-  REACT_APP_FIREBASE_PROJECT_ID=ci-placeholder \
-  REACT_APP_FIREBASE_STORAGE_BUCKET=ci-placeholder \
-  REACT_APP_FIREBASE_MESSAGING_SENDER_ID=ci-placeholder \
-  REACT_APP_FIREBASE_APP_ID=ci-placeholder \
+  VITE_API_URL=http://localhost:5000 \
+  VITE_FIREBASE_API_KEY=ci-placeholder \
+  VITE_FIREBASE_AUTH_DOMAIN=ci-placeholder \
+  VITE_FIREBASE_PROJECT_ID=ci-placeholder \
+  VITE_FIREBASE_STORAGE_BUCKET=ci-placeholder \
+  VITE_FIREBASE_MESSAGING_SENDER_ID=ci-placeholder \
+  VITE_FIREBASE_APP_ID=ci-placeholder \
     npm run build --workspace="$CLIENT"
 }
 
