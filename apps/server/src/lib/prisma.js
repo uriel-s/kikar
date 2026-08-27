@@ -8,7 +8,7 @@ const { PrismaClient } = require("../generated/prisma");
  * by pg, which is what lets the same client talk to a local container and to
  * RDS with TLS without a different build.
  */
-const createPrismaClient = (env) => {
+const createPrismaClient = (env, poolOptions = {}) => {
   const adapter = new PrismaPg({
     connectionString: env.DATABASE_URL,
     // Certificate verification is on by default. RDS certificates chain to
@@ -22,6 +22,13 @@ const createPrismaClient = (env) => {
     ...(env.DATABASE_SSL
       ? { ssl: { rejectUnauthorized: env.DATABASE_SSL_REJECT_UNAUTHORIZED } }
       : {}),
+
+    // Last, so a caller can override the pg pool defaults. The only caller that
+    // does is the Vercel handler, which sets `max: 1`: serverless multiplies the
+    // pool size by the number of live instances instead of sharing one, so the
+    // pg default of ten per instance is how a deployment exhausts the database's
+    // connection limit under mild load.
+    ...poolOptions,
   });
 
   return new PrismaClient({ adapter });
