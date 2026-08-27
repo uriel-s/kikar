@@ -15,8 +15,14 @@ which cannot be scripted — it is roughly fifteen minutes of clicking.
 | `apps/server/prisma.config.js`  | Runs migrations through `DIRECT_URL`, not the pooler                |
 | `apps/server/src/config/env.js` | Accepts the optional `DIRECT_URL`                                   |
 
-Verified locally without a network or a database: the handler boots, `/health`
-answers `200 {"status":"ok"}`, and `/api/users` without a token answers `401`.
+Verified locally without a network or a database, and re-verified by
+`checks.sh smoke` on every push: the handler boots, `/health` answers
+`200 {"status":"ok"}`, and `/api/users` without a token answers `401`.
+
+Two limits change meaning on this target and are worth knowing before you rely
+on them. The rate limiter is per-instance here rather than global — see the note
+at `apps/server/src/app.js`. And Vercel caps a request body at 4.5 MB while the
+avatar limit is 5 MB; see the last section.
 
 ## The one thing that decides whether this works
 
@@ -56,21 +62,27 @@ framework preset as "Other" and change nothing it offers to detect.
 
 **3. Environment variables** in Vercel, for Production and Preview both:
 
-| Variable                        | Value                                                 |
-| ------------------------------- | ----------------------------------------------------- |
-| `DATABASE_URL`                  | Neon **pooled** string                                |
-| `DIRECT_URL`                    | Neon **direct** string                                |
-| `DATABASE_SSL`                  | `true` — Neon always requires TLS                     |
-| `FIREBASE_SERVICE_ACCOUNT_JSON` | the whole service account JSON, on one line           |
-| `FIREBASE_STORAGE_BUCKET`       | `<project>.appspot.com`                               |
-| `CORS_ORIGINS`                  | your Vercel URL — fill in after the first deploy      |
-| `NODE_ENV`                      | `production`                                          |
-| `VITE_API_URL`                  | leave **empty**: same origin, so `/api` is enough     |
-| `VITE_FIREBASE_*`               | the six web-config values, same as `apps/client/.env` |
+| Variable                        | Value                                                                     |
+| ------------------------------- | ------------------------------------------------------------------------- |
+| `DATABASE_URL`                  | Neon **pooled** string                                                    |
+| `DIRECT_URL`                    | Neon **direct** string                                                    |
+| `DATABASE_SSL`                  | `true` — Neon always requires TLS                                         |
+| `FIREBASE_SERVICE_ACCOUNT_JSON` | the whole service account JSON, on one line                               |
+| `FIREBASE_STORAGE_BUCKET`       | `<project>.appspot.com`                                                   |
+| `CORS_ORIGINS`                  | your Vercel URL — fill in after the first deploy                          |
+| `VITE_API_URL`                  | leave unset — a production build already resolves to a same-origin `/api` |
+| `VITE_FIREBASE_*`               | the six web-config values, same as `apps/client/.env`                     |
 
 Do not set `FIREBASE_SERVICE_ACCOUNT_PATH`. `env.js` requires exactly one of the
 two and fails at boot if both are present — which is the error you will see if
 you paste both out of habit.
+
+**Do not add `NODE_ENV=production`.** It looks harmless and it breaks the build:
+npm's `omit` config defaults to `dev` whenever `NODE_ENV` is `production`, so
+`npm ci` would skip devDependencies — and `vite` is one of them. The build then
+fails with `vite: not found`. Vercel already sets `NODE_ENV` correctly in the
+function runtime, so there is nothing to add. `vercel.json` passes
+`--include=dev` as a second line of defence.
 
 **4. Deploy.** Then set `CORS_ORIGINS` to the URL Vercel gave you and redeploy,
 because the first deploy is what tells you the domain.
@@ -93,19 +105,19 @@ post something                         the pooled DB connection works
 ## Verify on the first deploy
 
 One thing could not be checked from here, because it depends on how Vercel
-rewrites a path before handing it to a function: whether Express sees
-`/api/users` or just `/api`.
+rewrites a path before handing it to a function: whether Express receives
+`/api/users` or just the rewritten `/api`.
 
-If `/health` answers but every `/api/*` route returns 404, that is what
-happened. The fix is one line in `api/index.js` — restore the original path
-before Express routes it:
+The symptom to watch for is **everything answering 401, `/health` included**.
+`requireAuth` is mounted before the `/api/*` routers, so if every request
+arrives as a bare `/api`, it is rejected by auth before any route matches — and
+`/health`, which lives at the root, never matches at all.
 
-```js
-module.exports = (req, res) => {
-  req.url = req.headers["x-vercel-original-path"] || req.url;
-  return getApp()(req, res);
-};
-```
+If that happens, log `req.url` at the top of the handler in `api/index.js` to
+see what actually arrives, and adjust the rewrite from there. Do not reach for
+`x-vercel-original-path`: that header does not exist, and an earlier draft of
+this document recommended it — a fix that would have appeared to change nothing
+while the outage continued.
 
 ## Known limit, decided later
 

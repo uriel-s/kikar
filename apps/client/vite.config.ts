@@ -29,6 +29,17 @@ function loadJsFilesAsJsx(): Plugin {
 // explicit for clarity.
 export default defineConfig({
   plugins: [loadJsFilesAsJsx(), react()],
+
+  // Vite's default port is 5173, and the server's CORS allowlist is
+  // http://localhost:3000 — in env.js's default, .env.example and
+  // docker-compose alike. Left unset, every cross-origin response in local
+  // development is blocked by the browser, which reads as "the API is down"
+  // rather than as a configuration problem. CRA got 3000 from PORT in
+  // apps/client/.env; Vite ignores PORT entirely, so it is pinned here.
+  //
+  // strictPort so a port clash fails loudly instead of silently sliding to
+  // 3001 and reintroducing the same CORS failure.
+  server: { port: 3000, strictPort: true },
   // The dependency pre-bundling scan runs on raw esbuild before any Rollup-style
   // plugin (including loadJsFilesAsJsx above) sees the files, so it needs its
   // own loader mapping for the same CRA-style .js-with-JSX files.
