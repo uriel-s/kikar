@@ -1,5 +1,7 @@
 const fs = require("node:fs");
-const admin = require("firebase-admin");
+const { cert, getApps, initializeApp } = require("firebase-admin/app");
+const { getAuth } = require("firebase-admin/auth");
+const { getStorage } = require("firebase-admin/storage");
 
 /**
  * Reads the service account from whichever source the environment supplies.
@@ -37,16 +39,16 @@ const loadServiceAccount = (env) => {
  * PostgreSQL, reached through the repository layer.
  */
 const initializeFirebase = (env) => {
-  if (admin.apps.length === 0) {
-    admin.initializeApp({
-      credential: admin.credential.cert(loadServiceAccount(env)),
+  if (getApps().length === 0) {
+    initializeApp({
+      credential: cert(loadServiceAccount(env)),
       storageBucket: env.FIREBASE_STORAGE_BUCKET,
     });
   }
 
   return {
-    auth: admin.auth(),
-    bucket: admin.storage().bucket(),
+    auth: getAuth(),
+    bucket: getStorage().bucket(),
   };
 };
 
