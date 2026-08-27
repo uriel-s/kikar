@@ -57,6 +57,12 @@ const createApp = ({ env, auth, bucket, prisma, logger }) => {
 
   app.use(
     rateLimit({
+      // Note the store: express-rate-limit's default is in-process memory. On a
+      // long-lived server that makes this a real global cap. On Vercel it is
+      // per-instance and resets on every cold start, so the effective limit is
+      // 300 x live containers and it loosens exactly when traffic rises. Making
+      // it mean the same thing there needs a shared store (Upstash, @vercel/kv)
+      // or a limit at the platform edge.
       windowMs: 15 * 60 * 1000,
       limit: 300,
       standardHeaders: "draft-7",

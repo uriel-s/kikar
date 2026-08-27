@@ -1,7 +1,17 @@
 import axios from "axios";
 import { auth } from "../firebase";
 
-const baseURL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+// Same origin by default in a production build: the API is served from /api on
+// the same domain, so a relative base is both correct and immune to a mistyped
+// deployment URL. The localhost fallback applies only to `vite dev`, where the
+// client is on 3000 and the server on 5000. VITE_API_URL overrides both, which
+// is what a split deployment (client and API on different hosts) needs.
+//
+// The empty string matters: it is falsy, so a bare `|| "http://localhost:5000"`
+// would send every request from the deployed site to localhost — and on HTTPS
+// the browser blocks that as mixed content before it even fails to connect.
+const configured = import.meta.env.VITE_API_URL;
+const baseURL = configured || (import.meta.env.DEV ? "http://localhost:5000" : "");
 
 // No default Content-Type on purpose. Axios picks the right one per request:
 // application/json for plain objects, and multipart/form-data *with a boundary*

@@ -53,4 +53,27 @@ const getApp = () => {
   return app;
 };
 
-module.exports = (req, res) => getApp()(req, res);
+module.exports = (req, res) => {
+  // server.js ends in `main().catch(err => console.error(err.message))` so that
+  // a configuration failure prints one readable line. Without the equivalent
+  // here, a bad env var throws out of the handler and the caller gets the
+  // platform's generic failure page instead of this API's documented
+  // `{ error: { message } }` shape — and the operator has to go digging in
+  // function logs to learn that FIREBASE_STORAGE_BUCKET was misspelled.
+  //
+  // `app` is only assigned after a successful build, so a failed boot is
+  // retried on the next request rather than cached.
+  let handler;
+  try {
+    handler = getApp();
+  } catch (err) {
+    console.error(err.message);
+    // 503, not 500: the process is misconfigured, not the request. Body carries
+    // no internal detail, per the rule in CLAUDE.md.
+    return res
+      .status(503)
+      .json({ error: { message: "Service temporarily unavailable" } });
+  }
+
+  return handler(req, res);
+};

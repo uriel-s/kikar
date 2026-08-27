@@ -183,14 +183,28 @@ assert_test_count() {
 # values because src/firebase.js fails fast on missing configuration and the
 # build only needs them to be present — the same values CI uses.
 run_build() {
-  VITE_API_URL=http://localhost:5000 \
+  # VITE_API_URL is deliberately EMPTY. That is the production shape: client and
+  # API share an origin on Vercel, so the base URL resolves to a relative /api.
+  # This gate used to build with a localhost value, which is precisely what hid
+  # a bug that pointed every deployed API call at the visitor's own machine.
+  # Build the shape that ships, not a convenient one.
+  VITE_API_URL= \
   VITE_FIREBASE_API_KEY=ci-placeholder \
   VITE_FIREBASE_AUTH_DOMAIN=ci-placeholder \
   VITE_FIREBASE_PROJECT_ID=ci-placeholder \
   VITE_FIREBASE_STORAGE_BUCKET=ci-placeholder \
   VITE_FIREBASE_MESSAGING_SENDER_ID=ci-placeholder \
   VITE_FIREBASE_APP_ID=ci-placeholder \
-    npm run build --workspace="$CLIENT"
+    npm run build --workspace="$CLIENT" || return 1
+
+  # Vite inlines env values at build time, so a leftover localhost default is
+  # visible in the emitted bundle and nowhere else — the client has no tests,
+  # and a build that merely succeeds proves nothing about what it resolved to.
+  if grep -rq "localhost:5000" apps/client/dist/assets 2>/dev/null; then
+    echo "checks.sh: the client bundle contains localhost:5000." >&2
+    echo "  A production build must resolve the API to a same-origin /api." >&2
+    return 1
+  fi
 }
 
 # The jest suite proves the application logic; this proves the process can

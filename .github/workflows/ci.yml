@@ -89,20 +89,12 @@ jobs:
 
       - run: npm ci
 
+      # Runs checks.sh rather than the build directly, so CI and the local
+      # contract cannot drift — and so CI inherits the assertion that the
+      # bundle does not carry a localhost API URL. checks.sh supplies the
+      # placeholder Firebase values; src/firebase.js only needs them present.
       - name: Build
-        # Placeholder Firebase values: the build only needs them to be present,
-        # since src/firebase.js fails fast on missing configuration. Real values
-        # are supplied when building the deployment image.
-        env:
-          CI: true
-          VITE_API_URL: http://localhost:5000
-          VITE_FIREBASE_API_KEY: ci-placeholder
-          VITE_FIREBASE_AUTH_DOMAIN: ci-placeholder
-          VITE_FIREBASE_PROJECT_ID: ci-placeholder
-          VITE_FIREBASE_STORAGE_BUCKET: ci-placeholder
-          VITE_FIREBASE_MESSAGING_SENDER_ID: ci-placeholder
-          VITE_FIREBASE_APP_ID: ci-placeholder
-        run: npm run build --workspace=@kikar/client
+        run: bash .claude/checks.sh build
 
   migrations:
     name: Server - migrations apply cleanly
