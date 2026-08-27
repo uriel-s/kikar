@@ -13,6 +13,12 @@ module.exports = {
     path: path.join(__dirname, "prisma", "migrations"),
   },
   datasource: {
-    url: process.env.DATABASE_URL,
+    // Migrations need a direct connection. Neon's pooled endpoint is pgbouncer
+    // in transaction mode, which cannot hold the session-level state a
+    // migration needs — DDL through it fails in ways that read as random.
+    // DIRECT_URL is Neon's non-pooled address. Anywhere without a pooler there
+    // is no DIRECT_URL and DATABASE_URL is already direct, so this falls
+    // through to it unchanged.
+    url: process.env.DIRECT_URL || process.env.DATABASE_URL,
   },
 };

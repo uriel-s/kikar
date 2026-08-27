@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Toolchain contract for the Claude command system.
-# subcommands: test | lint | format | arch | types | sec | build | all
+# subcommands: test | lint | format | arch | types | sec | smoke | build | all
 #
 # Relationship to CI, stated exactly because the earlier "mirrors CI step for
 # step" claim was false in both directions and CLAUDE.md repeated it:
@@ -193,6 +193,14 @@ run_build() {
     npm run build --workspace="$CLIENT"
 }
 
+# The jest suite proves the application logic; this proves the process can
+# actually start. They are different questions, and 52 green tests answering the
+# first one is exactly how a total startup crash reached main: testApp.js injects
+# a fake token verifier, so src/config/firebase.js is the one module the suite
+# never loads. Plain node rather than jest because firebase-admin/auth reaches
+# jose 6, which is ESM-only; see the header of the script itself.
+run_smoke() { node apps/server/tests/startup.smoke.js; }
+
 run_all() {
   local rc=0
   run_lint   || rc=1
@@ -201,6 +209,7 @@ run_all() {
   run_types  || rc=1
   run_sec    || rc=1
   run_test   || rc=1
+  run_smoke  || rc=1
   run_build  || rc=1
   return $rc
 }
@@ -212,7 +221,8 @@ case "${1:-all}" in
   arch)   run_arch ;;
   types)  run_types ;;
   sec|security) run_sec ;;
+  smoke)  run_smoke ;;
   build)  run_build ;;
   all)    run_all ;;
-  *) echo "usage: checks.sh {test|lint|format|arch|types|sec|build|all}" >&2; exit 2 ;;
+  *) echo "usage: checks.sh {test|lint|format|arch|types|sec|smoke|build|all}" >&2; exit 2 ;;
 esac

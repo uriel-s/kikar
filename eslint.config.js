@@ -31,9 +31,12 @@ module.exports = [
 
   js.configs.recommended,
 
-  // Repository tooling: config files at the root and in each workspace.
+  // Repository tooling and deployment adapters: config files at the root and in
+  // each workspace, plus api/ — the Vercel serverless entry point, which has to
+  // sit at the repository root because that is where the platform looks for
+  // functions. All CommonJS on Node, like the server it wraps.
   {
-    files: ["*.js", "apps/*/*.js"],
+    files: ["*.js", "apps/*/*.js", "api/**/*.js"],
     languageOptions: {
       ecmaVersion: 2024,
       sourceType: "commonjs",
@@ -75,14 +78,12 @@ module.exports = [
     languageOptions: {
       ecmaVersion: 2024,
       sourceType: "module",
-      globals: {
-        ...globals.browser,
-        // Create React App substitutes `process.env.REACT_APP_*` at build time
-        // through webpack, so the identifier is real here even though the code
-        // runs in a browser. Vite replaces this with `import.meta.env`, at which
-        // point this line goes away.
-        process: "readonly",
-      },
+      // No `process` global. Under CRA it had to be declared, because webpack
+      // substituted `process.env.REACT_APP_*` at build time and the identifier
+      // was genuinely real. Vite uses `import.meta.env` instead, so declaring it
+      // now would only hide a leftover `process.env` from no-undef — and a
+      // leftover is exactly what would be silently undefined in the browser.
+      globals: globals.browser,
       parserOptions: { ecmaFeatures: { jsx: true } },
     },
     plugins: { react, "react-hooks": reactHooks, "jsx-a11y": jsxA11y },

@@ -1,0 +1,12 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "installCommand": "npm ci && npm run db:generate --workspace=@kikar/server",
+  "buildCommand": "npm run build --workspace=@kikar/client",
+  "outputDirectory": "apps/client/dist",
+  "framework": null,
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "/api" },
+    { "source": "/health", "destination": "/api" },
+    { "source": "/((?!api/|health$|assets/).*)", "destination": "/index.html" }
+  ]
+}

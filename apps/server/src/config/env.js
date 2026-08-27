@@ -31,6 +31,13 @@ const schema = z.object({
       "DATABASE_URL must be a postgres:// or postgresql:// connection string"
     ),
 
+  // Optional, and only meaningful on a pooled host such as Neon, where
+  // DATABASE_URL points at pgbouncer. Migrations cannot run through a
+  // transaction-mode pooler, so prisma.config.js reaches for this instead and
+  // falls back to DATABASE_URL when it is absent. The running application never
+  // uses it: it wants the pooled address.
+  DIRECT_URL: z.string().optional(),
+
   // RDS terminates TLS; a local docker-compose Postgres does not.
   DATABASE_SSL: z
     .enum(["true", "false"])
