@@ -24,8 +24,8 @@
 #     before running anything that imports it.
 set -u
 
-# react-scripts and jest both switch to interactive watch mode without this, and
-# an automated caller would hang forever waiting on a keypress.
+# jest switches to interactive watch mode without this, and an automated caller
+# would hang forever waiting on a keypress.
 export CI=true
 
 SERVER="@kikar/server"
@@ -33,6 +33,7 @@ CLIENT="@kikar/client"
 GENERATED="apps/server/src/generated/prisma"
 SCHEMA="apps/server/prisma/schema.prisma"
 BASELINE_FILE=".claude/test-baseline"
+AUDIT_BASELINE=".claude/audit-baseline"
 
 # True if a tool is runnable from the local install. --no-install stops npx from
 # silently downloading something that is not actually a dependency.
@@ -75,32 +76,55 @@ run_types() {
   fi
 }
 
-# Gates on production dependencies only — that is the code that actually ships
-# and runs. Build-tool advisories are reported but do not fail the run: every
-# one of them is transitive through react-scripts, `npm audit fix` cannot reach
-# them while CRA is the bundler, and failing here would leave the whole contract
-# permanently red for a reason no stage before the Vite migration can fix.
+# Gates on production dependencies — the code that actually ships and runs.
+# While CRA was the bundler every high-severity advisory was transitive through
+# its build chain, so `--omit=dev` reported nothing and this gate passed by
+# being empty. With react-scripts gone what remains is real: `@prisma/client`
+# pulls the `prisma` CLI into the production tree, and it carries a high
+# `deepmerge-ts` advisory.
 #
-# Once Vite replaces react-scripts, drop the --omit=dev and the informational
-# block: there will be nothing left to exempt.
+# There is no upstream fix to take. `@prisma/config` pins `deepmerge-ts` to
+# 7.1.5 exactly — still true in prisma 7.10.0 — `npm audit fix --force` "fixes"
+# it by downgrading Prisma 7 to 6, and npm ignores an `overrides` entry for it
+# here. The reachable harm is close to nil: @prisma/config merges
+# prisma.config.js, a local trusted file, never attacker input.
+#
+# So the known advisories are pinned BY NAME rather than the gate being lowered,
+# the same way the test count and the warning count are pinned. Anything new —
+# or anything that disappears — fails the run and has to be looked at on
+# purpose. When Prisma ships a fixed @prisma/config, empty the baseline file.
 run_sec() {
-  local rc=0
-  npm audit --omit=dev --audit-level=high || rc=1
+  local expected actual
+  expected="$(grep -vE '^[[:space:]]*(#|$)' "$AUDIT_BASELINE" 2>/dev/null | tr -d '\r' | sort)"
+  actual="$(npm audit --omit=dev --json 2>/dev/null |
+    node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{try{const v=JSON.parse(s).vulnerabilities||{};console.log(Object.values(v).filter(x=>x.severity==='high'||x.severity==='critical').map(x=>x.name).sort().join('\n'))}catch(e){process.exit(1)}})")"
 
-  local dev_high
-  dev_high="$(npm audit --json 2>/dev/null |
-    node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{try{const m=JSON.parse(s).metadata.vulnerabilities;console.log((m.high||0)+(m.critical||0))}catch{console.log(0)}})")"
-  if [ "${dev_high:-0}" -gt 0 ]; then
-    echo "NOTE: $dev_high high/critical advisories in build tooling (react-scripts chain), not gated. Resolved by the Vite migration."
+  if [ $? -ne 0 ]; then
+    echo "checks.sh: could not read npm audit output" >&2
+    return 1
   fi
 
-  return $rc
+  if [ "$actual" = "$expected" ]; then
+    if [ -n "$actual" ]; then
+      echo "checks.sh: $(printf '%s\n' "$actual" | grep -c .) production high/critical advisories, all pinned in $AUDIT_BASELINE"
+    else
+      echo "checks.sh: no production high/critical advisories"
+    fi
+    return 0
+  fi
+
+  echo "checks.sh: production high/critical advisories no longer match $AUDIT_BASELINE." >&2
+  echo "  pinned: $(printf '%s ' $expected)" >&2
+  echo "  found:  $(printf '%s ' $actual)" >&2
+  echo "  This is an accepted-risk list, not a scratchpad — investigate before editing it." >&2
+  return 1
 }
 
-# Scoped to the server workspace on purpose. The root `npm test` fans out to
-# every workspace, which includes the client's react-scripts runner — that has no
-# tests to run and stalls the whole script. CI runs the scoped form for the same
-# reason.
+# Scoped to the server workspace on purpose: it is the only workspace with tests,
+# and CI runs the same scoped form. (Under CRA this also avoided a hang — the
+# root `npm test` fanned out into react-scripts' watch-mode runner. Vite ships no
+# test runner, so the client now has no `test` script at all and `--if-present`
+# skips it.)
 #
 # Extra args narrow the run to specific paths (`checks.sh test tests/auth.test.js`),
 # so callers never need to bypass this wrapper and lose the environment setup.
@@ -159,13 +183,13 @@ assert_test_count() {
 # values because src/firebase.js fails fast on missing configuration and the
 # build only needs them to be present — the same values CI uses.
 run_build() {
-  REACT_APP_API_URL=http://localhost:5000 \
-  REACT_APP_FIREBASE_API_KEY=ci-placeholder \
-  REACT_APP_FIREBASE_AUTH_DOMAIN=ci-placeholder \
-  REACT_APP_FIREBASE_PROJECT_ID=ci-placeholder \
-  REACT_APP_FIREBASE_STORAGE_BUCKET=ci-placeholder \
-  REACT_APP_FIREBASE_MESSAGING_SENDER_ID=ci-placeholder \
-  REACT_APP_FIREBASE_APP_ID=ci-placeholder \
+  VITE_API_URL=http://localhost:5000 \
+  VITE_FIREBASE_API_KEY=ci-placeholder \
+  VITE_FIREBASE_AUTH_DOMAIN=ci-placeholder \
+  VITE_FIREBASE_PROJECT_ID=ci-placeholder \
+  VITE_FIREBASE_STORAGE_BUCKET=ci-placeholder \
+  VITE_FIREBASE_MESSAGING_SENDER_ID=ci-placeholder \
+  VITE_FIREBASE_APP_ID=ci-placeholder \
     npm run build --workspace="$CLIENT"
 }
 

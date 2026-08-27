@@ -25,20 +25,20 @@ because Firebase does not export password hashes.
 
 ## Client
 
-CRA inlines `REACT_APP_*` at build time, so the environment is baked into the
+Vite inlines `VITE_*` at build time, so the environment is baked into the
 bundle. A build targeting production is a different artifact from a staging one.
 
 ```bash
-REACT_APP_API_URL=https://api.example.com \
-REACT_APP_FIREBASE_API_KEY=... \
+VITE_API_URL=https://api.example.com \
+VITE_FIREBASE_API_KEY=... \
 npm run build --workspace=@kikar/client
 
-aws s3 sync apps/client/build s3://your-bucket --delete \
+aws s3 sync apps/client/dist s3://your-bucket --delete \
   --cache-control "public, max-age=31536000, immutable" \
   --exclude index.html
 
 # index.html points at the current bundle hashes, so it must never be cached.
-aws s3 cp apps/client/build/index.html s3://your-bucket/index.html \
+aws s3 cp apps/client/dist/index.html s3://your-bucket/index.html \
   --cache-control "no-store, must-revalidate"
 
 aws cloudfront create-invalidation --distribution-id ABC --paths "/index.html"

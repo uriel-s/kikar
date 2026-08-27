@@ -1,0 +1,12 @@
+# Production high/critical advisories that are knowingly accepted, by package
+# name. `checks.sh sec` fails when this list stops matching reality in EITHER
+# direction: a new advisory is a finding, and one that disappears means the
+# exemption is stale and should be removed.
+#
+# All three entries are a single chain. @prisma/client depends on the prisma
+# CLI, which depends on @prisma/config, which pins a vulnerable deepmerge-ts.
+# The reasoning for accepting it is in checks.sh, at run_sec. Recheck on every
+# Prisma upgrade and delete these lines the moment it clears.
+@prisma/config
+deepmerge-ts
+prisma

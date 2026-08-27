@@ -1,7 +1,7 @@
 import axios from "axios";
 import { auth } from "../firebase";
 
-const baseURL = process.env.REACT_APP_API_URL || "http://localhost:5000";
+const baseURL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 // No default Content-Type on purpose. Axios picks the right one per request:
 // application/json for plain objects, and multipart/form-data *with a boundary*

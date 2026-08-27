@@ -5,7 +5,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Project
 
 Kikar — a social platform (posts, likes, comments, friendships). npm-workspaces
-monorepo: `apps/client` (React 18 / CRA) and `apps/server` (Express 5 / Prisma 7 /
+monorepo: `apps/client` (React 18 / Vite 6) and `apps/server` (Express 5 / Prisma 7 /
 PostgreSQL 17). Version 2 is a rebuild of two older repositories; `README.md`
 documents what changed and what is deliberately still missing.
 
@@ -70,15 +70,18 @@ specific to this repository and worth knowing:
   is gitignored). Nothing that imports it — server or tests — runs until
   `db:generate` has been run once.
 - **The client needs its own `.env`.** `src/config/env.js` and `prisma.config.js`
-  load the _root_ `.env` explicitly, but Create React App only reads
-  `apps/client/.env`. A root-only `.env` leaves the client throwing
-  "Missing Firebase configuration" at startup. Copy the `REACT_APP_*` values into
-  `apps/client/.env` as well.
-- **`react-scripts` lives in `devDependencies`, not `dependencies`.** CRA's
-  generator puts it in the wrong one. Moving it is what makes
-  `npm audit --omit=dev` mean anything: every high-severity advisory in this
-  repository is transitive through the CRA build chain, so auditing production
-  dependencies alone is the only signal about code that actually ships.
+  load the _root_ `.env` explicitly, but Vite only reads env files from the
+  app root (`apps/client/`), not the monorepo root. A root-only `.env` leaves
+  the client throwing "Missing Firebase configuration" at startup. Copy the
+  `VITE_*` values into `apps/client/.env` as well.
+- **`npm audit --omit=dev` is not clean, and that is not a mistake.** While CRA
+  was the bundler every high-severity advisory was transitive through its build
+  chain, so auditing production dependencies alone reported nothing. With
+  `react-scripts` gone the remaining ones are real: `@prisma/client` pulls the
+  `prisma` CLI into the production tree, and it carries a high `deepmerge-ts`
+  advisory that has no upstream fix. `checks.sh sec` pins those by name in
+  `.claude/audit-baseline` rather than lowering the gate, so a _new_ advisory
+  still fails.
 
 ## Development Workflow
 
