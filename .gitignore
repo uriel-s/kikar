@@ -58,3 +58,4 @@ apps/server/src/generated/
 .claude/*
 !.claude/checks.sh
 !.claude/test-baseline
+!.claude/audit-baseline

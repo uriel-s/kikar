@@ -11,16 +11,16 @@ Originally two repositories built in 2021–2025; consolidated and rebuilt in 20
 
 ## Stack
 
-| Layer      | Choice                                     | Why                                                                |
-| ---------- | ------------------------------------------ | ------------------------------------------------------------------ |
-| Client     | React 18, React Router 5, Create React App | Existing UI, upgraded in place                                     |
-| API        | Node 22, Express 5                         | Express 5 forwards async errors to the error handler natively      |
-| Data       | PostgreSQL 17, Prisma 7                    | Relational data with real constraints and indexed search           |
-| Identity   | Firebase Auth                              | Keeps passwords out of this system entirely                        |
-| Files      | Firebase Storage                           | Avatar images                                                      |
-| Validation | zod                                        | One schema language for both request bodies and environment config |
-| Logging    | pino                                       | Structured JSON in production, readable in development             |
-| Container  | Docker, nginx                              | Multi-stage builds, non-root runtime                               |
+| Layer      | Choice                           | Why                                                                |
+| ---------- | -------------------------------- | ------------------------------------------------------------------ |
+| Client     | React 18, React Router 5, Vite 6 | Existing UI, upgraded in place                                     |
+| API        | Node 22, Express 5               | Express 5 forwards async errors to the error handler natively      |
+| Data       | PostgreSQL 17, Prisma 7          | Relational data with real constraints and indexed search           |
+| Identity   | Firebase Auth                    | Keeps passwords out of this system entirely                        |
+| Files      | Firebase Storage                 | Avatar images                                                      |
+| Validation | zod                              | One schema language for both request bodies and environment config |
+| Logging    | pino                             | Structured JSON in production, readable in development             |
+| Container  | Docker, nginx                    | Multi-stage builds, non-root runtime                               |
 
 **Identity is on Firebase, data is in PostgreSQL.** A user's `id` in the
 database _is_ their Firebase UID, so there is no second source of truth for who
@@ -318,9 +318,6 @@ Stated plainly rather than implied away:
   a 401 the UI reports as an error rather than redirecting to sign-in.
 - **The client has no tests.** The server suite covers the security-critical
   paths; the React components are unverified.
-- **Create React App is deprecated.** It builds and runs fine, but it is no
-  longer maintained. Vite is the natural next step and would cut the install
-  from roughly 2,300 packages to a few hundred.
 - **Avatars are checked but not re-encoded.** Uploads are identified by their
   magic bytes rather than the declared Content-Type, but the original file is
   stored as-is — a malformed image carrying a valid signature still gets through.
