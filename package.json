@@ -19,7 +19,7 @@
     "test": "npm run test --workspaces --if-present",
     "lint": "eslint .",
     "format": "prettier --write .",
-    "postinstall": "patch-package --error-on-warn"
+    "postinstall": "node scripts/apply-patches.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",

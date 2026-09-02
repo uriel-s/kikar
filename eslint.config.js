@@ -54,7 +54,7 @@ module.exports = [
   // module, and firebase-admin's dependency chain reaches one. See the header
   // of api/index.mjs.
   {
-    files: ["api/**/*.mjs"],
+    files: ["api/**/*.mjs", "scripts/**/*.mjs"],
     languageOptions: {
       ecmaVersion: 2024,
       sourceType: "module",
