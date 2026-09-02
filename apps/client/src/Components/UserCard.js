@@ -24,7 +24,10 @@ const UserCard = ({ user, isFriend, onFriendChange }) => {
         {error && <div className="error-message mb3">{error}</div>}
 
         <div className="user-card-content">
-          <Avatar user={user} className="rounded-circle user-img" />
+          {/* 100px is what `.user-card img` gave this. That selector is scoped
+              to img, so it stopped matching when the photoless fallback became
+              a span — the size has to come from the prop now. */}
+          <Avatar user={user} size={100} className="rounded-circle user-img" />
 
           <div className="user-info">
             <h3 className="f3 fw6 ph0 mh0">{user.name}</h3>

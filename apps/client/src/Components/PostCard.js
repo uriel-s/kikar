@@ -73,7 +73,12 @@ const PostCard = ({ post, currentUser, onLike, onCommentAdded, onDelete }) => {
     <article className="post-card">
       <main className="pa3 black-80">
         <div className="post-card-header">
-          <Avatar user={post.author} className="user-img" />
+          {/* Sized here, not by .user-img. That class is width/height 100%, and
+              this header has no .avatar-container around it to be 100% OF, so
+              the avatar has always rendered at ~139px and squeezed the name
+              into a two-line column beside it. The grey Gravatar silhouette hid
+              it; a coloured disc does not. */}
+          <Avatar user={post.author} size={44} className="user-img" />
           <h3>{post.author.name}</h3>
 
           {canDelete && (
