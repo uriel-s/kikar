@@ -90,6 +90,40 @@ because the first deploy is what tells you the domain.
 **5. Firebase** — add the Vercel domain under Authentication → Settings →
 Authorized domains, or sign-in will be rejected by Firebase rather than by us.
 
+## Two settings that are not in this repository
+
+Both of these were found the hard way, on a deploy that returned
+`FUNCTION_INVOCATION_FAILED` for every API request while the pages loaded fine.
+
+### Node.js version — the project setting overrides package.json
+
+Vercel keeps a Node.js Version under **Settings → General**, and it wins over
+`engines.node`. A project imported while the repository declared `>=20` is
+pinned to Node 20 and stays there even after the declaration is corrected.
+
+That matters here specifically: `jose` 6 is ESM-only and `jwks-rsa` reaches it
+with `require()`, which is only supported from Node 22.12. On Node 20 the
+function cannot load its modules at all — so the failure arrives as the
+platform's `FUNCTION_INVOCATION_FAILED` rather than this API's own error shape,
+because it happens before any project code runs.
+
+Set it to **22.x**, then redeploy. Changing the setting does not rebuild on its
+own.
+
+### Region — match the function to the database
+
+The function runs in the region the project was created with, which is not
+necessarily near Neon. The `x-vercel-id` response header names it (`fra1` is
+Frankfurt, `iad1` is Washington). If it does not match the Neon region, every
+query crosses that distance twice.
+
+Either create the Neon project in the matching region, or move the function by
+adding to `vercel.json`:
+
+```json
+"regions": ["iad1"]
+```
+
 ## Check it in this order
 
 Each step isolates a different layer, so the first failure tells you where to

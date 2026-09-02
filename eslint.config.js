@@ -23,6 +23,11 @@ module.exports = [
       "**/build/**",
       "**/dist/**",
       "**/coverage/**",
+      // git worktrees live here. Each one is a full checkout of this same
+      // repository, so without this every file is linted twice and the warning
+      // count pinned in checks.sh doubles for a reason that has nothing to do
+      // with the code.
+      "**/.claude/worktrees/**",
       // Prisma generates this on every `db:generate`; it is gitignored and not
       // ours to lint.
       "apps/server/src/generated/**",
