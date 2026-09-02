@@ -92,7 +92,7 @@ const uuidFor = (key) => {
 const USERS = {
   dana: { id: "seed-dana-levi", email: "dana.levi@kikar.test", name: "Dana Levi" },
   noam: { id: "seed-noam-barak", email: "noam.barak@kikar.test", name: "Noam Barak" },
-  maya: { id: "seed-maya-cohen", email: "maya.cohen@kikar.test", name: "Maya Cohen" },
+  maya: { id: "seed-maya-vardi", email: "maya.vardi@kikar.test", name: "Maya Vardi" },
   itai: { id: "seed-itai-shalev", email: "itai.shalev@kikar.test", name: "Itai Shalev" },
   rotem: {
     id: "seed-rotem-azulay",
@@ -100,9 +100,9 @@ const USERS = {
     name: "Rotem Azulay",
   },
   yonatan: {
-    id: "seed-yonatan-peretz",
-    email: "yonatan.peretz@kikar.test",
-    name: "Yonatan Peretz",
+    id: "seed-yonatan-mizrahi",
+    email: "yonatan.mizrahi@kikar.test",
+    name: "Yonatan Mizrahi",
   },
   shira: {
     id: "seed-shira-ben-ami",
