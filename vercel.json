@@ -4,11 +4,6 @@
   "buildCommand": "npm run build --workspace=@kikar/client",
   "outputDirectory": "apps/client/dist",
   "framework": null,
-  "functions": {
-    "api/index.js": {
-      "runtime": "nodejs22.x"
-    }
-  },
   "rewrites": [
     {
       "source": "/api/(.*)",
