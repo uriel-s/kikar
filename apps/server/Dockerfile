@@ -16,6 +16,7 @@ COPY apps/server/package.json ./apps/server/
 # production dependency for the same reason: this stage installs --omit=dev, and
 # a missing binary here fails the build outright.
 COPY patches ./patches
+COPY scripts ./scripts
 RUN npm ci --workspace=@kikar/server --omit=dev
 
 # ---- build ------------------------------------------------------------------
@@ -25,6 +26,7 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 COPY apps/server/package.json ./apps/server/
 COPY patches ./patches
+COPY scripts ./scripts
 RUN npm ci --workspace=@kikar/server
 
 COPY apps/server ./apps/server

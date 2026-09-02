@@ -10,6 +10,7 @@ COPY apps/client/package.json ./apps/client/
 # without the directory it reports "no patch files" and exits 0, so the image
 # would ship unpatched code with no signal at all.
 COPY patches ./patches
+COPY scripts ./scripts
 RUN npm ci --workspace=@kikar/client
 
 COPY apps/client ./apps/client
