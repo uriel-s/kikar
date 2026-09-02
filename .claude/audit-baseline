@@ -3,10 +3,29 @@
 # direction: a new advisory is a finding, and one that disappears means the
 # exemption is stale and should be removed.
 #
-# All three entries are a single chain. @prisma/client depends on the prisma
-# CLI, which depends on @prisma/config, which pins a vulnerable deepmerge-ts.
-# The reasoning for accepting it is in checks.sh, at run_sec. Recheck on every
-# Prisma upgrade and delete these lines the moment it clears.
+# Every entry is one chain. @prisma/client depends on the prisma CLI, which
+# carries tooling and drivers for databases this project never touches, and each
+# of those brings its own dependencies. That is the whole reason these appear in
+# a --omit=dev audit at all. The only fix npm offers is prisma 7 -> 6, a major
+# downgrade of the ORM. Recheck on every Prisma upgrade and delete lines the
+# moment they clear.
+#
+#   prisma, @prisma/config, deepmerge-ts
+#       Stack exhaustion merging recursive objects. @prisma/config reads
+#       prisma.config.js, a local trusted file, never attacker input.
+#
+#   mysql2
+#       Auth-plugin downgrade and a decompression bomb in the MySQL wire
+#       protocol. This application speaks to PostgreSQL through
+#       @prisma/adapter-pg and never opens a MySQL connection, so no code path
+#       reaches it. The driver ships because the CLI supports every database.
+#
+#   fast-uri
+#       SSRF and host confusion in URI parsing, reached through ajv inside
+#       @prisma/dev - Prisma's own development tooling, which is not on this
+#       application'''s request path.
 @prisma/config
 deepmerge-ts
+fast-uri
+mysql2
 prisma

@@ -5,7 +5,7 @@
   "description": "Kikar web client",
   "license": "MIT",
   "engines": {
-    "node": ">=20"
+    "node": ">=22.12"
   },
   "dependencies": {
     "@fortawesome/fontawesome-free": "^7.3.1",
