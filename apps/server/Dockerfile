@@ -9,6 +9,13 @@ WORKDIR /app
 # were tested.
 COPY package.json package-lock.json ./
 COPY apps/server/package.json ./apps/server/
+# patches/ has to be here before npm ci: the root postinstall runs patch-package,
+# which fixes jwks-rsa's require() of an ESM-only jose. Without the directory the
+# install still succeeds — patch-package reports "no patch files" and exits 0 —
+# and the image would then quietly run unpatched code. patch-package is a
+# production dependency for the same reason: this stage installs --omit=dev, and
+# a missing binary here fails the build outright.
+COPY patches ./patches
 RUN npm ci --workspace=@kikar/server --omit=dev
 
 # ---- build ------------------------------------------------------------------
@@ -17,6 +24,7 @@ WORKDIR /app
 
 COPY package.json package-lock.json ./
 COPY apps/server/package.json ./apps/server/
+COPY patches ./patches
 RUN npm ci --workspace=@kikar/server
 
 COPY apps/server ./apps/server

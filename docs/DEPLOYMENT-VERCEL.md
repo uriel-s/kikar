@@ -10,7 +10,7 @@ which cannot be scripted — it is roughly fifteen minutes of clicking.
 
 | File                            | What it does                                                        |
 | ------------------------------- | ------------------------------------------------------------------- |
-| `api/index.js`                  | Wraps `createApp()` as a serverless function, one pooled connection |
+| `api/index.mjs`                 | Wraps `createApp()` as a serverless function, one pooled connection |
 | `vercel.json`                   | Builds the client, routes `/api/*` and `/health` to the function    |
 | `apps/server/prisma.config.js`  | Runs migrations through `DIRECT_URL`, not the pooler                |
 | `apps/server/src/config/env.js` | Accepts the optional `DIRECT_URL`                                   |
@@ -116,18 +116,14 @@ Both of these were found the hard way, on a deploy that returned
 
 ### Node.js version — the project setting overrides package.json
 
-Vercel keeps a Node.js Version under **Settings → General**, and it wins over
-`engines.node`. A project imported while the repository declared `>=20` is
-pinned to Node 20 and stays there even after the declaration is corrected.
+Vercel keeps a Node.js Version under **Settings → General** and it wins over
+`engines.node`, so raising that field alone does not move a project that was
+imported under an older default. Changing the setting does not rebuild anything
+either; a redeploy is needed.
 
-That matters here specifically: `jose` 6 is ESM-only and `jwks-rsa` reaches it
-with `require()`, which is only supported from Node 22.12. On Node 20 the
-function cannot load its modules at all — so the failure arrives as the
-platform's `FUNCTION_INVOCATION_FAILED` rather than this API's own error shape,
-because it happens before any project code runs.
-
-Set it to **22.x**, then redeploy. Changing the setting does not rebuild on its
-own.
+Worth knowing, but **it was not the cause of the outage above** — the deployed
+function already ran Node 24. This section is here so nobody spends time on it
+twice.
 
 ### Region — match the function to the database
 
@@ -166,7 +162,7 @@ The symptom to watch for is **everything answering 401, `/health` included**.
 arrives as a bare `/api`, it is rejected by auth before any route matches — and
 `/health`, which lives at the root, never matches at all.
 
-If that happens, log `req.url` at the top of the handler in `api/index.js` to
+If that happens, log `req.url` at the top of the handler in `api/index.mjs` to
 see what actually arrives, and adjust the rewrite from there. Do not reach for
 `x-vercel-original-path`: that header does not exist, and an earlier draft of
 this document recommended it — a fix that would have appeared to change nothing

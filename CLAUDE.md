@@ -242,7 +242,8 @@ replacing is a plain overwrite. 5 MB cap, enforced by multer and surfaced as 413
 - Comments in this codebase explain _why_, usually citing the v1 bug the current
   shape exists to prevent. Follow that when the reasoning is non-obvious;
   do not add comments that restate the code.
-- Node 22 (`.nvmrc`); `engines` requires >= 20.
+- Node 22 (`.nvmrc`); `engines` requires >= 22.12, which is where `require()`
+  of an ES module became supported — firebase-admin's dependency chain needs it.
 
 ## Tests
 

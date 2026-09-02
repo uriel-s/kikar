@@ -6,6 +6,10 @@ WORKDIR /app
 
 COPY package.json package-lock.json ./
 COPY apps/client/package.json ./apps/client/
+# patches/ must precede npm ci — the root postinstall runs patch-package, and
+# without the directory it reports "no patch files" and exits 0, so the image
+# would ship unpatched code with no signal at all.
+COPY patches ./patches
 RUN npm ci --workspace=@kikar/client
 
 COPY apps/client ./apps/client
