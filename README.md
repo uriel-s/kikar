@@ -92,6 +92,20 @@ The script unpacks the embedded `likes`, `comments`, and `friends` arrays into
 rows, reports anything referencing a document that no longer exists, and is
 safe to re-run.
 
+### Demo data
+
+If you do not, and you just want something on the screen:
+
+```bash
+npm run db:seed --workspace=@kikar/server -- --dry-run   # report only
+npm run db:seed --workspace=@kikar/server                # write
+```
+
+Eight users, twenty posts, and the likes, comments, and friendships between
+them. Post ages are relative, so re-running re-anchors the timeline to today;
+like the import, it is safe to re-run. Every seed row has a `seed-` id and a
+`@kikar.test` address, so it cannot be mistaken for a real account.
+
 ---
 
 ## Layout
@@ -103,7 +117,7 @@ apps/
     src/lib/         Axios instance that attaches the Firebase ID token
   server/
     prisma/          Schema and SQL migrations
-    scripts/         Firestore import
+    scripts/         Firestore import, demo seed
     src/
       config/        Environment parsing, Firebase initialization
       controllers/   HTTP handling, no data access
