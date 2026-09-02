@@ -90,6 +90,25 @@ because the first deploy is what tells you the domain.
 **5. Firebase** — add the Vercel domain under Authentication → Settings →
 Authorized domains, or sign-in will be rejected by Firebase rather than by us.
 
+## The one that actually broke it: require() of an ESM-only package
+
+The API returned `FUNCTION_INVOCATION_FAILED` for every request, `/health`
+included, because the server could not start at all:
+
+    ERR_REQUIRE_ESM: require() of ES Module .../jose/... from .../jwks-rsa/src/utils.js
+
+jose 6 ships ESM only and jwks-rsa still reaches it with `require()`. Node has
+supported that since 22.12, so it works on any modern developer machine — but a
+Vercel function is loaded through the platform's own CommonJS loader, which does
+not implement it. `patches/jwks-rsa+4.1.0.patch` fixes the two call sites, and
+`postinstall: patch-package` reapplies it on every install, Vercel's included.
+
+**The error message is misleading and cost four wrong fixes here.** It reads
+exactly like an outdated Node version, and it is not: the deployed function runs
+Node 24. If something like this happens again, deploy a probe that imports
+nothing and reports what it can load, before changing anything. That took five
+minutes to write and settled in one request what four attempts had not.
+
 ## Two settings that are not in this repository
 
 Both of these were found the hard way, on a deploy that returned
