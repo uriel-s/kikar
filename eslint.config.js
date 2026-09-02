@@ -49,6 +49,18 @@ module.exports = [
     },
   },
 
+  // The Vercel entry point is ESM on purpose — see the header of api/index.mjs.
+  // A CommonJS entry is loaded through the platform's own loader, which cannot
+  // require() an ES module, and firebase-admin reaches one.
+  {
+    files: ["api/**/*.mjs"],
+    languageOptions: {
+      ecmaVersion: 2024,
+      sourceType: "module",
+      globals: globals.node,
+    },
+  },
+
   // Server — CommonJS on Node.
   {
     files: ["apps/server/**/*.js"],

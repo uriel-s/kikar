@@ -8,7 +8,7 @@
  * entirely — every request failed — and the suite stayed green throughout.
  * Dependency injection buys isolation; this is the blind spot it costs.
  *
- * `api/index.js` has the same problem for the same reason, and it matters more:
+ * `api/index.mjs` has the same problem for the same reason, and it matters more:
  * it is the entry point that actually runs in production. A wrong relative
  * require or a changed env contract there would first surface as a dead site.
  *
@@ -124,8 +124,12 @@ const checkVercelHandler = async () => {
   process.env.DATABASE_URL = "postgresql://smoke:smoke@127.0.0.1:5432/smoke";
   process.env.CORS_ORIGINS = "https://kikar.example";
 
-  const handler = require("../../../api/index.js");
-  assert.equal(typeof handler, "function", "api/index.js must export a handler");
+  // Dynamic import, not require: the entry point is ESM precisely because a
+  // CommonJS one cannot load on Vercel. Requiring it from this CommonJS script
+  // would test the shape that does not ship.
+  const mod = await import("../../../api/index.mjs");
+  const handler = mod.default;
+  assert.equal(typeof handler, "function", "api/index.mjs must export a handler");
 
   const server = http.createServer(handler);
   await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
@@ -159,11 +163,11 @@ const checkVercelHandler = async () => {
 const main = async () => {
   try {
     await checkVercelHandler();
-    results.push([true, "api/index.js answers 200 on /health and 401 on /api/users"]);
+    results.push([true, "api/index.mjs answers 200 on /health and 401 on /api/users"]);
   } catch (err) {
     results.push([
       false,
-      "api/index.js answers 200 on /health and 401 on /api/users",
+      "api/index.mjs answers 200 on /health and 401 on /api/users",
       err.message.split("\n")[0],
     ]);
   }
