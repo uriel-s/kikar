@@ -1,4 +1,5 @@
 import react from "@vitejs/plugin-react";
+import tailwindcss from "@tailwindcss/vite";
 import { defineConfig, type Plugin } from "vite";
 import { transform } from "esbuild";
 
@@ -28,7 +29,11 @@ function loadJsFilesAsJsx(): Plugin {
 // build.outDir "dist" matches Vite's own default and the refactor plan; kept
 // explicit for clarity.
 export default defineConfig({
-  plugins: [loadJsFilesAsJsx(), react()],
+  // Tailwind v4 has no PostCSS step and no tailwind.config.js: the Vite plugin
+  // is the whole build integration, and the configuration lives in
+  // src/styles/theme.css as an @theme block. Nothing here needs a content/
+  // sources list — v4 discovers source files itself, honouring .gitignore.
+  plugins: [loadJsFilesAsJsx(), react(), tailwindcss()],
 
   // Vite's default port is 5173, and the server's CORS allowlist is
   // http://localhost:3000 — in env.js's default, .env.example and

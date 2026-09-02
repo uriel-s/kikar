@@ -1,0 +1,199 @@
+/*
+ * Slate — the Kikar design vocabulary.
+ *
+ * This file defines tokens and nothing else. It is imported from index.js
+ * BEFORE ./index.css on purpose: the 877-line hand-written stylesheet still
+ * owns every screen and is deleted screen by screen, so wherever the two
+ * collide the old one has to keep winning until the screen it serves has been
+ * rebuilt. The single deliberate exception is the body typeface at the bottom
+ * of this file.
+ *
+ * Tailwind v4 has no JS config: `@theme` IS the config. Each variable's
+ * namespace prefix decides which utilities get generated, so `--color-ground`
+ * yields bg-ground/text-ground/border-ground, `--radius-notice` yields
+ * rounded-notice and `--shadow-notice` yields shadow-notice. Renaming a prefix
+ * silently deletes a family of utilities.
+ */
+
+@import "tailwindcss";
+
+/*
+ * SLATE DAY — the default.
+ *
+ * `static` because nothing consumes these tokens yet. Tailwind only emits the
+ * theme variables it sees used, so without it the whole palette would be
+ * tree-shaken out of the build and the dark block below would be overriding
+ * variables that do not exist in light mode.
+ */
+@theme static {
+  /* The paved plaza floor everything else sits on. */
+  --color-ground: oklch(0.858 0.01 250);
+  /* A notice: the sheet of paper pinned up on the plaza wall. */
+  --color-paper: oklch(0.98 0.005 250);
+  /* The die-cut border around a notice. */
+  --color-keyline: oklch(0.995 0.003 250);
+
+  --color-ink: oklch(0.245 0.014 252);
+  --color-muted: oklch(0.47 0.014 252);
+  --color-chip: oklch(0.98 0.005 250);
+
+  /* Deeper than Slate Night's mint: at L 0.800 mint disappears on a light
+     ground. The two themes are not one hue at two lightnesses. */
+  --color-accent: oklch(0.56 0.13 168);
+  --color-on-accent: oklch(0.985 0.02 168);
+
+  /* Warm in BOTH themes, and never re-tinted to the accent — mint on a like
+     reads as a status tick, not as affection. */
+  --color-like: oklch(0.52 0.155 22);
+
+  /*
+   * Text INSIDE a notice gets its own pair rather than reusing ink/muted. A
+   * notice is light paper in both themes, so its text is dark in both themes;
+   * reusing --color-ink would flip it to near-white at night and print white
+   * on white.
+   */
+  --color-paper-ink: oklch(0.235 0.014 252);
+  --color-paper-muted: oklch(0.49 0.014 252);
+
+  /* Consumed by the `paving` utility below rather than applied directly. */
+  --color-paving-line: oklch(0.42 0.02 250 / 0.1);
+  --color-paving-wash: oklch(0.985 0.006 250 / 0.55);
+
+  /* A hard offset with no blur — a notice sits ON the plaza, it does not
+     float above it. */
+  --shadow-notice: 0 6px 0 oklch(0.42 0.02 250 / 0.2);
+
+  --font-display: "Archivo Black", "Arial Black", sans-serif;
+  --font-body: "Public Sans", "Segoe UI", system-ui, sans-serif;
+
+  --radius-notice: 26px;
+  --radius-keyline-wrapper: 32px;
+  --radius-pill: 999px;
+}
+
+/*
+ * SLATE NIGHT.
+ *
+ * A plain `:root`, not a second `@theme`: `@theme` may only appear at the top
+ * level of a stylesheet, and it does not need repeating — Tailwind emits the
+ * block above as ordinary custom properties on :root, so overriding them is
+ * ordinary CSS. Unlayered rules also outrank Tailwind's own `@layer theme`,
+ * so this wins with no specificity games.
+ */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-ground: oklch(0.255 0.012 252);
+
+    /* Paper and its keyline do NOT darken. A notice staying light paper at
+       night is the whole reason it still reads as a notice, so these are
+       restated identically here rather than omitted by accident. */
+    --color-paper: oklch(0.98 0.005 250);
+    --color-keyline: oklch(0.995 0.003 250);
+
+    --color-ink: oklch(0.945 0.008 250);
+    --color-muted: oklch(0.69 0.01 250);
+    --color-chip: oklch(0.365 0.014 252);
+
+    --color-accent: oklch(0.8 0.125 168);
+    --color-on-accent: oklch(0.22 0.04 168);
+
+    /* Also deliberately unchanged — see the day value. */
+    --color-like: oklch(0.52 0.155 22);
+
+    --color-paving-line: oklch(0.86 0.01 250 / 0.06);
+    --color-paving-wash: oklch(0.62 0.03 250 / 0.17);
+
+    --shadow-notice: 0 6px 0 oklch(0.135 0.012 252 / 0.5);
+  }
+}
+
+/*
+ * The plaza floor: concentric courses of paving plus radial joints, all struck
+ * from one vanishing point 22% down the element rather than from its centre,
+ * which is what makes the surface read as ground receding instead of as a
+ * target. The three layers stay in this order — joints, courses, wash —
+ * because the wash is what stops the repeat from banding at the edges.
+ */
+@utility paving {
+  background-color: var(--color-ground);
+  background-image:
+    repeating-conic-gradient(
+      from 0deg at 50% 22%,
+      var(--color-paving-line) 0 0.3deg,
+      transparent 0.3deg 5deg
+    ),
+    repeating-radial-gradient(
+      circle at 50% 22%,
+      transparent 0 62px,
+      var(--color-paving-line) 62px 64px
+    ),
+    radial-gradient(circle at 50% 22%, var(--color-paving-wash), transparent 62%);
+}
+
+/*
+ * LEGACY BRIDGE — delete this block together with index.css, not before.
+ *
+ * Preflight ships inside `@import "tailwindcss"` and it is wanted; the rebuilt
+ * screens are written against it. It lands in @layer base, so bootstrap,
+ * tachyons and index.css — all unlayered — still outrank it and almost
+ * nothing moves. What does move is the handful of resets none of them compete
+ * for, and three of those are load-bearing on screens that have not been
+ * rebuilt yet:
+ *
+ *   - `img,svg,canvas { display: block }` un-centres the Dashboard avatar,
+ *     which is an inline <img> centred by .dashboard-card's text-align.
+ *   - `ul,ol { list-style: none }` strips the bullets off the only two bare
+ *     lists in the app, on Privacy and Terms.
+ *   - the form-control reset flattens every button that index.css does not
+ *     style — AddPost's .toggle-form-btn is a plain browser button today.
+ *
+ * `revert` rather than restated values, so this is provably "what the browser
+ * did before Tailwind" rather than a second opinion about it. It sits in
+ * @layer base rather than unlayered on purpose: same layer as preflight and
+ * later, so it wins there, while every Tailwind utility (@layer utilities)
+ * still wins over it — a `bg-paper`/`rounded-notice` button built in a later
+ * sub-task must not be dragged back to browser chrome by this block.
+ */
+@layer base {
+  img,
+  svg,
+  canvas {
+    display: revert;
+  }
+
+  ul,
+  ol {
+    list-style: revert;
+  }
+
+  button,
+  input,
+  select,
+  textarea {
+    color: revert;
+    background-color: revert;
+    padding: revert;
+    border: revert;
+    border-radius: revert;
+  }
+}
+
+/*
+ * `html body` rather than `body`: index.css is imported after this file and
+ * pins the body to "Courier New", so an equal-specificity rule here would lose
+ * and the new typeface would never reach the screen. One extra element
+ * deliberately outranks it — for the typeface only.
+ */
+html body {
+  font-family: var(--font-body);
+}
+
+/*
+ * Slate's ink, stated for the point at which index.css is gone. It does not
+ * apply yet, and must not: index.css hard-codes a near-black background with
+ * light text, and Slate Day's ink is dark, so winning here would print dark
+ * text on a dark ground on every screen at once.
+ */
+body {
+  color: var(--color-ink);
+}
