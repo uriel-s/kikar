@@ -46,6 +46,12 @@
      reads as a status tick, not as affection. */
   --color-like: oklch(0.52 0.155 22);
 
+  /* What goes ON --color-like: a destructive button's label. It cannot borrow
+     --color-on-accent, because that one flips to a dark mint in Slate Night
+     while --color-like deliberately stays put — dark ink on a mid-red button,
+     at night only. */
+  --color-on-like: oklch(0.985 0.02 22);
+
   /*
    * Text INSIDE a notice gets its own pair rather than reusing ink/muted. A
    * notice is light paper in both themes, so its text is dark in both themes;
@@ -68,6 +74,10 @@
 
   --radius-notice: 26px;
   --radius-keyline-wrapper: 32px;
+  /* Inputs and anything else with a text baseline inside it. The scale jumped
+     straight from a notice to a pill, and a 40px-tall input at either of those
+     is a lozenge — 26px on a 40px box clamps to 20px, which is a pill. */
+  --radius-control: 14px;
   --radius-pill: 999px;
 }
 
@@ -97,8 +107,11 @@
     --color-accent: oklch(0.8 0.125 168);
     --color-on-accent: oklch(0.22 0.04 168);
 
-    /* Also deliberately unchanged — see the day value. */
+    /* Also deliberately unchanged — see the day values. Restated rather than
+       omitted for the same reason paper is: "the night theme leaves this one
+       alone" has to be visible here, not inferred from an absence. */
     --color-like: oklch(0.52 0.155 22);
+    --color-on-like: oklch(0.985 0.02 22);
 
     --color-paving-line: oklch(0.86 0.01 250 / 0.06);
     --color-paving-wash: oklch(0.62 0.03 250 / 0.17);
