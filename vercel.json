@@ -6,6 +6,10 @@
   "framework": null,
   "rewrites": [
     {
+      "source": "/api/version",
+      "destination": "/api/version"
+    },
+    {
       "source": "/api/(.*)",
       "destination": "/api"
     },
