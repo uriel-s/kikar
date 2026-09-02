@@ -98,10 +98,21 @@ record("reports an unparseable service account instead of failing later", () => 
   );
 });
 
+record("the jwks-rsa patch is actually applied", () => {
+  // patch-package only fails the install in CI; on a developer machine a patch
+  // that stops applying prints red text and exits 0. And nothing else would
+  // notice: every check here runs on Node >= 22.12, where the unpatched code
+  // works perfectly. This assertion is the only thing standing between a
+  // dependency bump and a Vercel deployment that dies on boot again.
+  const fs = require("node:fs");
+  const patched = fs.readFileSync(require.resolve("jwks-rsa/src/utils.js"), "utf8");
+  assert.match(patched, /PATCHED/, "run npm install to reapply patches/");
+});
+
 // ------------------------------------------------------- the Vercel handler
 
 /**
- * Boots `api/index.js` over a real HTTP server.
+ * Boots `api/index.mjs` over a real HTTP server.
  *
  * These are the two requests the deployment guide tells you to make first, run
  * here so the answer is known before a deploy rather than after one. `/health`

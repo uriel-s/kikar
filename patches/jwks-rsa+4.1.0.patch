@@ -1,8 +1,8 @@
 diff --git a/node_modules/jwks-rsa/src/integrations/passport.js b/node_modules/jwks-rsa/src/integrations/passport.js
-index 79d75da..a3fec7a 100644
+index 79d75da..ac69696 100644
 --- a/node_modules/jwks-rsa/src/integrations/passport.js
 +++ b/node_modules/jwks-rsa/src/integrations/passport.js
-@@ -1,4 +1,23 @@
+@@ -1,4 +1,30 @@
 -const jose = require('jose');
 +// PATCHED (see patches/jwks-rsa+4.1.0.patch and docs/DEPLOYMENT-VERCEL.md).
 +//
@@ -22,13 +22,20 @@ index 79d75da..a3fec7a 100644
 +} catch (err) {
 +  if (err.code !== 'ERR_REQUIRE_ESM') throw err;
 +  jose = {};
-+  import('jose').then((mod) => Object.assign(jose, mod));
++  // The rejection handler is not optional: an unhandled rejection terminates the
++  // process under Node's default policy, and this runs long after the module
++  // appeared to load cleanly. Leaving the binding empty instead is safe —
++  // secretProvider throws on the missing function, catches it, and calls back
++  // with a null key, which every jsonwebtoken verify path rejects.
++  import('jose')
++    .then((mod) => Object.assign(jose, mod))
++    .catch(() => {});
 +}
  const { ArgumentError } = require('../errors');
  const { JwksClient } = require('../JwksClient');
  const supportedAlg = require('./config');
 diff --git a/node_modules/jwks-rsa/src/utils.js b/node_modules/jwks-rsa/src/utils.js
-index ef3ffb5..00970ab 100644
+index ef3ffb5..dc8720c 100644
 --- a/node_modules/jwks-rsa/src/utils.js
 +++ b/node_modules/jwks-rsa/src/utils.js
 @@ -1,4 +1,15 @@
@@ -48,20 +55,16 @@ index ef3ffb5..00970ab 100644
  const JwksError = require('./errors/JwksError');
  
  function resolveAlg(jwk) {
-@@ -41,6 +52,7 @@ async function retrieveSigningKeys(jwks) {
+@@ -39,6 +50,12 @@ async function retrieveSigningKeys(jwks) {
+     .filter(({ use }) => use === 'sig' || use === undefined)
+     .filter(({ kty }) => kty === 'RSA' || kty === 'EC' || kty === 'OKP');
  
++  // Loaded once, above the loop and outside the try. Inside it, a failed import
++  // would be swallowed by the per-key `catch { continue; }`, retrieveSigningKeys
++  // would return [], and the caller would report "The JWKS endpoint did not
++  // contain any signing keys" — blaming the endpoint for a module-loading fault.
++  const jose = await loadJose();
++
    for (const jwk of jwks) {
      try {
-+      const jose = await loadJose();
        const key = await jose.importJWK({ ...jwk, ext: true }, resolveAlg(jwk));
-       if (key.type !== 'public') {
-         continue;
-@@ -48,7 +60,7 @@ async function retrieveSigningKeys(jwks) {
-       let getSpki;
-       switch (key[Symbol.toStringTag]) {
-         case 'CryptoKey': {
--          const spki = await jose.exportSPKI(key);
-+          const spki = await (await loadJose()).exportSPKI(key);
-           getSpki = () => spki;
-           break;
-         }

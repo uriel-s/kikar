@@ -30,6 +30,7 @@
     "firebase-admin": "^14.2.0",
     "helmet": "^8.3.0",
     "multer": "^2.2.0",
+    "patch-package": "^8.0.1",
     "pg": "^8.22.0",
     "pino": "^10.3.1",
     "pino-http": "^11.0.0",

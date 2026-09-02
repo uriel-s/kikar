@@ -36,10 +36,9 @@ module.exports = [
 
   js.configs.recommended,
 
-  // Repository tooling and deployment adapters: config files at the root and in
-  // each workspace, plus api/ — the Vercel serverless entry point, which has to
-  // sit at the repository root because that is where the platform looks for
-  // functions. All CommonJS on Node, like the server it wraps.
+  // Repository tooling: config files at the root and in each workspace.
+  // `api/**/*.js` is kept deliberately — api/ holds only index.mjs today, but a
+  // CommonJS helper added there should get Node globals rather than none.
   {
     files: ["*.js", "apps/*/*.js", "api/**/*.js"],
     languageOptions: {
@@ -49,9 +48,11 @@ module.exports = [
     },
   },
 
-  // The Vercel entry point is ESM on purpose — see the header of api/index.mjs.
-  // A CommonJS entry is loaded through the platform's own loader, which cannot
-  // require() an ES module, and firebase-admin reaches one.
+  // The Vercel entry point, which sits at the repository root because that is
+  // where the platform looks for functions. It is ESM on purpose: a CommonJS
+  // entry is loaded through Vercel's own loader, which cannot require() an ES
+  // module, and firebase-admin's dependency chain reaches one. See the header
+  // of api/index.mjs.
   {
     files: ["api/**/*.mjs"],
     languageOptions: {
