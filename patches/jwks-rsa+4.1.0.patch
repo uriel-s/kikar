@@ -1,0 +1,67 @@
+diff --git a/node_modules/jwks-rsa/src/integrations/passport.js b/node_modules/jwks-rsa/src/integrations/passport.js
+index 79d75da..a3fec7a 100644
+--- a/node_modules/jwks-rsa/src/integrations/passport.js
++++ b/node_modules/jwks-rsa/src/integrations/passport.js
+@@ -1,4 +1,23 @@
+-const jose = require('jose');
++// PATCHED (see patches/jwks-rsa+4.1.0.patch and docs/DEPLOYMENT-VERCEL.md).
++//
++// Same cause as src/utils.js: jose 6 is ESM-only and a Vercel function's
++// CommonJS loader cannot require() it, which made merely importing this file
++// abort server startup. Unlike utils.js, jose is used synchronously here inside
++// a passport callback, so it cannot be awaited at the call site.
++//
++// The require is therefore attempted first — correct and synchronous wherever
++// it works, which is every normal Node process — and only falls back to filling
++// the binding from a dynamic import where it does not. Nothing in this
++// repository calls passportJwtSecret; this file loads only because index.js
++// imports every integration eagerly.
++let jose;
++try {
++  jose = require('jose');
++} catch (err) {
++  if (err.code !== 'ERR_REQUIRE_ESM') throw err;
++  jose = {};
++  import('jose').then((mod) => Object.assign(jose, mod));
++}
+ const { ArgumentError } = require('../errors');
+ const { JwksClient } = require('../JwksClient');
+ const supportedAlg = require('./config');
+diff --git a/node_modules/jwks-rsa/src/utils.js b/node_modules/jwks-rsa/src/utils.js
+index ef3ffb5..00970ab 100644
+--- a/node_modules/jwks-rsa/src/utils.js
++++ b/node_modules/jwks-rsa/src/utils.js
+@@ -1,4 +1,15 @@
+-const jose = require('jose');
++// PATCHED (see patches/jwks-rsa+4.1.0.patch and docs/DEPLOYMENT-VERCEL.md).
++//
++// jose 6 is ESM-only and this line was `require('jose')`. Node has supported
++// require() of an ES module since 22.12, so it works locally — but a Vercel
++// function is loaded through the platform's own CommonJS loader, which does
++// not, and the whole server failed to start there with ERR_REQUIRE_ESM.
++//
++// Both uses below are already inside an async function, so a lazily awaited
++// dynamic import is a drop-in replacement. The promise is cached, so jose is
++// loaded once per process rather than per call.
++let josePromise;
++const loadJose = () => (josePromise ??= import('jose'));
+ const JwksError = require('./errors/JwksError');
+ 
+ function resolveAlg(jwk) {
+@@ -41,6 +52,7 @@ async function retrieveSigningKeys(jwks) {
+ 
+   for (const jwk of jwks) {
+     try {
++      const jose = await loadJose();
+       const key = await jose.importJWK({ ...jwk, ext: true }, resolveAlg(jwk));
+       if (key.type !== 'public') {
+         continue;
+@@ -48,7 +60,7 @@ async function retrieveSigningKeys(jwks) {
+       let getSpki;
+       switch (key[Symbol.toStringTag]) {
+         case 'CryptoKey': {
+-          const spki = await jose.exportSPKI(key);
++          const spki = await (await loadJose()).exportSPKI(key);
+           getSpki = () => spki;
+           break;
+         }
