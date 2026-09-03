@@ -4,7 +4,7 @@ import { ApiError } from "../lib/ApiError";
 import { authenticated } from "../middleware/auth";
 import type { PathParams } from "../middleware/auth";
 import type { createPostRepository } from "../repositories/postRepository";
-import { schemas } from "../schemas";
+import { schemas } from "@kikar/shared";
 
 const FOREIGN_KEY_VIOLATION = "P2003";
 

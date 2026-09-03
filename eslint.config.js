@@ -89,17 +89,20 @@ module.exports = [
     },
   },
 
-  // Server TypeScript. Wired up with the toolchain rather than with the first
-  // .ts file, because ESLint 9 does not lint TypeScript at all without a
-  // parser — `eslint .` would simply stop seeing the server as it converts, and
-  // this gate would go greener each stage by looking at less code.
+  // TypeScript, wired up with the toolchain rather than with the first .ts
+  // file, because ESLint 9 does not lint TypeScript at all without a parser —
+  // `eslint .` would simply stop seeing it as the code converts, and this
+  // gate would go greener each stage by looking at less code. Shared across
+  // apps/server and packages/shared because this part — the parser and plugin
+  // registration — is identical infrastructure, not a workspace setting; the
+  // two still get their own blocks below for what actually differs.
   //
   // Deliberately the plain preset and not the type-aware one: that variant
   // loads the whole program on every lint run, and `checks.sh types` already
   // runs tsc. One tool owns types.
   ...tseslint.configs.recommended.map((config) => ({
     ...config,
-    files: ["apps/server/**/*.ts"],
+    files: ["apps/server/**/*.ts", "packages/shared/**/*.ts"],
   })),
   {
     files: ["apps/server/**/*.ts"],
@@ -114,6 +117,25 @@ module.exports = [
       // restated: Express identifies an error handler by its arity, and
       // `(err, req, res, next)` keeps its fourth parameter whether the body
       // uses it or not.
+      "@typescript-eslint/no-unused-vars": [
+        "error",
+        { argsIgnorePattern: "^_", varsIgnorePattern: "^_", caughtErrors: "all" },
+      ],
+    },
+  },
+
+  // packages/shared — its own block rather than folded into apps/server's:
+  // this package is pure zod with no Node or DOM API (see the comment in its
+  // own tsconfig.json), and from stage 4 onward the browser client depends on
+  // it too, so it gets no environment globals at all rather than inheriting
+  // apps/server's Node ones.
+  {
+    files: ["packages/shared/**/*.ts"],
+    languageOptions: {
+      ecmaVersion: 2024,
+      sourceType: "module",
+    },
+    rules: {
       "@typescript-eslint/no-unused-vars": [
         "error",
         { argsIgnorePattern: "^_", varsIgnorePattern: "^_", caughtErrors: "all" },

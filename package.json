@@ -5,8 +5,8 @@
   "description": "Kikar - full stack social networking platform",
   "license": "MIT",
   "workspaces": [
-    "apps/*",
-    "packages/*"
+    "packages/*",
+    "apps/*"
   ],
   "engines": {
     "node": ">=22.12"

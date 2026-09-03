@@ -1,0 +1,20 @@
+{
+  // The build. Produces the dist/ that apps/server (and, from stage 4 onward,
+  // apps/client) resolve "@kikar/shared" to through ordinary node_modules
+  // resolution — there is no path-mapping shortcut, so this package has to be
+  // built before anything that imports it, the same way the Prisma client has
+  // to be generated first. See ensure_shared_build in .claude/checks.sh.
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "dist",
+    "declaration": true,
+
+    // Named explicitly rather than left to TypeScript's automatic scan of
+    // node_modules/@types, which is repository-wide and would pull the
+    // client's browser typings into this package's global scope. This package
+    // needs no ambient types at all: it is pure zod with no Node or DOM API.
+    "types": []
+  },
+  "include": ["src/**/*"]
+}

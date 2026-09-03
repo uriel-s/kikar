@@ -9,6 +9,11 @@ WORKDIR /app
 # were tested.
 COPY package.json package-lock.json ./
 COPY apps/server/package.json ./apps/server/
+# @kikar/shared is a workspace dependency of @kikar/server (see its
+# package.json): npm ci resolves it by symlinking to this directory rather
+# than fetching it, and it errors trying the registry instead if the
+# directory — or even just its package.json — is missing from the context.
+COPY packages/shared/package.json ./packages/shared/
 # patches/ has to be here before npm ci: the root postinstall runs patch-package,
 # which fixes jwks-rsa's require() of an ESM-only jose. Without the directory the
 # install still succeeds — patch-package reports "no patch files" and exits 0 —
@@ -25,6 +30,7 @@ WORKDIR /app
 
 COPY package.json package-lock.json ./
 COPY apps/server/package.json ./apps/server/
+COPY packages/shared/package.json ./packages/shared/
 COPY patches ./patches
 COPY scripts ./scripts
 RUN npm ci --workspace=@kikar/server
@@ -33,11 +39,16 @@ RUN npm ci --workspace=@kikar/server
 # named separately because the COPY below only reaches into the workspace.
 COPY tsconfig.base.json ./
 COPY apps/server ./apps/server
+COPY packages/shared ./packages/shared
 # The Prisma client is generated code; generating it here keeps it out of the
 # repository and guarantees it matches the schema in this image. The build below
 # needs it twice over: tsc reads its index.d.ts, and the build's second step
 # copies the directory into dist/ beside the compiled code.
 RUN npm run db:generate --workspace=@kikar/server
+# @kikar/shared first: apps/server imports it, resolved through ordinary
+# node_modules resolution rather than a tsconfig path alias, so tsc cannot
+# even find its types until this workspace has been compiled to dist/.
+RUN npm run build --workspace=@kikar/shared
 # tsc src/ -> dist/. This is the only thing the runtime stage ships, and the
 # .dockerignore keeps any dist/ from a developer's machine out of the context,
 # so what runs here is always compiled from the sources in this image.
@@ -60,13 +71,20 @@ RUN apk add --no-cache tini
 # src/ and tests/ deliberately stop shipping here: the process starts from
 # dist/, and an image carrying both invites the two to drift. prisma/ and
 # prisma.config.js stay because the container's command runs `db:deploy` before
-# serving (docker-compose.yml), and both package.json files are what make
-# `--workspace=@kikar/server` resolve at all.
+# serving (docker-compose.yml), and all three package.json files (root,
+# apps/server, packages/shared) are what make `--workspace=@kikar/server`
+# resolve at all.
 COPY --from=deps --chown=node:node /app/node_modules ./node_modules
 COPY --from=build --chown=node:node /app/apps/server/dist ./apps/server/dist
 COPY --chown=node:node apps/server/package.json apps/server/prisma.config.js ./apps/server/
 COPY --chown=node:node apps/server/prisma ./apps/server/prisma
 COPY --chown=node:node package.json ./
+# deps' node_modules/@kikar/shared is a workspace symlink to ./packages/shared,
+# not a copy — npm links local workspaces rather than installing them. That
+# path does not otherwise exist in this stage, so without these two lines the
+# symlink dangles and `require("@kikar/shared")` fails at the first request.
+COPY --from=build --chown=node:node /app/packages/shared/dist ./packages/shared/dist
+COPY --chown=node:node packages/shared/package.json ./packages/shared/
 
 USER node
 EXPOSE 5000

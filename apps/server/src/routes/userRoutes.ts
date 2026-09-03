@@ -3,7 +3,7 @@ import type { Router } from "express";
 import type { Multer } from "multer";
 import { validate } from "../middleware/validate";
 import { requireSelf } from "../middleware/auth";
-import { schemas } from "../schemas";
+import { schemas } from "@kikar/shared";
 import type { createUserController } from "../controllers/userController";
 
 export interface UserRoutesDeps {

@@ -31,10 +31,13 @@ export CI=true
 
 SERVER="@kikar/server"
 CLIENT="@kikar/client"
+SHARED="@kikar/shared"
 GENERATED="apps/server/src/generated/prisma"
 SCHEMA="apps/server/prisma/schema.prisma"
 SERVER_SRC="apps/server/src"
+SHARED_SRC="packages/shared/src"
 DIST="apps/server/dist"
+SHARED_DIST="packages/shared/dist"
 BASELINE_FILE=".claude/test-baseline"
 AUDIT_BASELINE=".claude/audit-baseline"
 
@@ -56,6 +59,29 @@ ensure_prisma_client() {
   fi
 }
 
+# @kikar/shared is a real workspace dependency, resolved through ordinary
+# node_modules resolution rather than a tsconfig path alias — so, exactly like
+# the generated Prisma client, nothing that imports it (server src, server
+# tests, the root type-check) runs or resolves until it has been built at least
+# once. Rebuilt when missing or stale so an edit to a shared schema is picked
+# up by every consumer's next check rather than needing a manual build first.
+ensure_shared_build() {
+  local stale=""
+  if [ -d "$SHARED_DIST" ]; then
+    stale="$(find "$SHARED_SRC" packages/shared/tsconfig.json tsconfig.base.json -newer "$SHARED_DIST" -print -quit 2>/dev/null)"
+  fi
+
+  if [ ! -d "$SHARED_DIST" ] || [ -n "$stale" ]; then
+    echo "checks.sh: building @kikar/shared"
+    local output
+    if ! output="$(npm run build --workspace="$SHARED" 2>&1)"; then
+      printf '%s\n' "$output" >&2
+      echo "checks.sh: @kikar/shared build FAILED" >&2
+      return 1
+    fi
+  fi
+}
+
 # apps/server/dist is what actually runs: api/index.mjs imports it, the
 # container's CMD points at it, and `npm start` starts it. So the same reasoning
 # as ensure_prisma_client applies one layer up — rebuilt when it is missing or
@@ -66,6 +92,7 @@ ensure_prisma_client() {
 # the failure is a type error, and it is unreadable if it is swallowed.
 ensure_server_build() {
   ensure_prisma_client || return 1
+  ensure_shared_build || return 1
 
   local stale="" output
   if [ -d "$DIST" ]; then
@@ -106,10 +133,12 @@ run_arch() { echo "SKIP: no import-linter equivalent wired up"; }
 
 run_types() {
   if [ -f "tsconfig.json" ] && have tsc; then
-    # src/lib/prisma.ts imports the generated client for its types, so tsc
-    # cannot resolve the program without it existing first — the same
-    # dependency run_test and ensure_server_build already account for.
+    # src/lib/prisma.ts imports the generated client for its types, and the
+    # routes/controllers import @kikar/shared — tsc cannot resolve the program
+    # without both existing first, the same dependency run_test and
+    # ensure_server_build already account for.
     ensure_prisma_client || return 1
+    ensure_shared_build || return 1
     npx tsc --noEmit
   else
     echo "SKIP: no TypeScript yet (added in the TS migration stage)"
@@ -172,6 +201,7 @@ run_sec() {
 # smaller than the whole.
 run_test() {
   ensure_prisma_client || return 1
+  ensure_shared_build || return 1
 
   if [ "$#" -gt 0 ]; then
     npm run test --workspace="$SERVER" -- "$@"

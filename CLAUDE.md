@@ -5,9 +5,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Project
 
 Kikar — a social platform (posts, likes, comments, friendships). npm-workspaces
-monorepo: `apps/client` (React 18 / Vite 6) and `apps/server` (Express 5 / Prisma 7 /
-PostgreSQL 17). Version 2 is a rebuild of two older repositories; `README.md`
-documents what changed and what is deliberately still missing.
+monorepo: `apps/client` (React 18 / Vite 6), `apps/server` (Express 5 / Prisma 7 /
+PostgreSQL 17), and `packages/shared` (zod schemas the two are meant to share —
+only the server consumes it today; the client is still JavaScript, converted in
+stage 4 of `docs/REFACTOR-PLAN.md`). Version 2 is a rebuild of two older
+repositories; `README.md` documents what changed and what is deliberately still
+missing.
 
 ## Commands
 
@@ -16,6 +19,7 @@ Run from the repository root unless noted.
 ```bash
 npm install
 npm run db:generate --workspace=@kikar/server   # REQUIRED after clone — see below
+npm run build --workspace=@kikar/shared         # REQUIRED after clone — see below
 npm run dev                                     # client :3000 + server :5000 (server via tsx)
 
 docker compose up --build                       # whole stack, migrations applied on boot
@@ -72,11 +76,17 @@ specific to this repository and worth knowing:
 - **`build` is part of `all`.** The client has no tests, so compiling it is the
   only regression signal it has.
 
-### Two setup facts that are not obvious
+### Four setup facts that are not obvious
 
 - **The Prisma client is generated, not committed** (`apps/server/src/generated/`
   is gitignored). Nothing that imports it — server or tests — runs until
   `db:generate` has been run once.
+- **`@kikar/shared` is a real workspace dependency, not a path alias** — the
+  server resolves it through ordinary `node_modules` resolution, so nothing
+  that imports it (server src, server tests, `tsc --noEmit`) runs until
+  `npm run build --workspace=@kikar/shared` has produced its `dist/` at least
+  once. `checks.sh` handles this itself (`ensure_shared_build`, the same
+  pattern as the Prisma client above); a bare `npm test`/`tsc` does not.
 - **The client needs its own `.env`.** `src/config/env.ts` and `prisma.config.js`
   load the _root_ `.env` explicitly, but Vite only reads env files from the
   app root (`apps/client/`), not the monorepo root. A root-only `.env` leaves

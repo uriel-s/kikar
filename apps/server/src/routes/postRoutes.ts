@@ -1,7 +1,7 @@
 import express from "express";
 import type { Router } from "express";
 import { validate } from "../middleware/validate";
-import { schemas } from "../schemas";
+import { schemas } from "@kikar/shared";
 import type { createPostController } from "../controllers/postController";
 
 export interface PostRoutesDeps {

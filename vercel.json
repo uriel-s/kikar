@@ -1,7 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "installCommand": "npm ci --include=dev && npm run db:generate --workspace=@kikar/server",
-  "buildCommand": "npm run build --workspace=@kikar/server && npm run build --workspace=@kikar/client",
+  "buildCommand": "npm run build --workspace=@kikar/shared && npm run build --workspace=@kikar/server && npm run build --workspace=@kikar/client",
   "outputDirectory": "apps/client/dist",
   "framework": null,
   "rewrites": [
