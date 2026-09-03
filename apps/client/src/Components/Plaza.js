@@ -1,7 +1,8 @@
-import React, { useCallback, useEffect, useState, useSyncExternalStore } from "react";
+import React, { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import * as usersApi from "../api/users";
+import { useNarrowerThan } from "../lib/useNarrowerThan";
 import Avatar from "./Avatar";
 import SearchBar from "./SearchBar";
 
@@ -32,35 +33,6 @@ import SearchBar from "./SearchBar";
 const COMPACT = 900;
 // The mobile artboard carries no date, and below this there is no room for one.
 const NARROW = 560;
-
-/**
- * True while the viewport is narrower than `px`.
- *
- * `useSyncExternalStore` rather than useState plus an effect: it is React 18's
- * own subscription primitive, so there is no effect setting state on mount and
- * no window between the first paint and the listener attaching. The third
- * argument is the server snapshot — `false`, the desktop layout — because
- * nothing here is server-rendered and the question cannot be answered without
- * a window.
- */
-const useNarrowerThan = (px) => {
-  const query = `(max-width: ${px - 1}px)`;
-
-  const subscribe = useCallback(
-    (onChange) => {
-      const media = window.matchMedia(query);
-      media.addEventListener("change", onChange);
-      return () => media.removeEventListener("change", onChange);
-    },
-    [query]
-  );
-
-  return useSyncExternalStore(
-    subscribe,
-    () => window.matchMedia(query).matches,
-    () => false
-  );
-};
 
 /*
  * Built once; formatting is the cheap half of using an Intl formatter.

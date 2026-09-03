@@ -1,12 +1,7 @@
-import React, {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-  useSyncExternalStore,
-} from "react";
+import React, { useEffect, useRef, useState } from "react";
 import * as postsApi from "../api/posts";
 import { useAuth } from "../contexts/AuthContext";
+import { useNarrowerThan } from "../lib/useNarrowerThan";
 import Avatar from "./Avatar";
 import Button from "./ui/Button";
 import Field from "./ui/Field";
@@ -22,37 +17,6 @@ const NARROW = 560;
 // The pill's width on a roomy screen. Below COMPACT it gives way and the
 // composer spans the column, which is what the mobile artboard draws.
 const PILL_WIDTH = 620;
-
-/**
- * True while the viewport is narrower than `px`.
- *
- * A second copy of Plaza's hook, deliberately and for now: that one is private
- * to Plaza, and Plaza is not this sub-task's file to change. The moment a third
- * screen needs it, it moves to lib/ and every call site imports it — two copies
- * is where extracting is still cheap and still premature.
- *
- * `useSyncExternalStore` rather than useState plus an effect, for the reason
- * Plaza gives: no effect setting state on mount, and no window between the
- * first paint and the listener attaching.
- */
-const useNarrowerThan = (px) => {
-  const query = `(max-width: ${px - 1}px)`;
-
-  const subscribe = useCallback(
-    (onChange) => {
-      const media = window.matchMedia(query);
-      media.addEventListener("change", onChange);
-      return () => media.removeEventListener("change", onChange);
-    },
-    [query]
-  );
-
-  return useSyncExternalStore(
-    subscribe,
-    () => window.matchMedia(query).matches,
-    () => false
-  );
-};
 
 const KEYLINE = {
   display: "block",
