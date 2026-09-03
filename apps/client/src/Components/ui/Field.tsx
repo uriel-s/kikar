@@ -1,8 +1,8 @@
 import React, { forwardRef, useId, useState } from "react";
 
-const ROOT = { display: "block", fontFamily: "var(--font-body)" };
+const ROOT: React.CSSProperties = { display: "block", fontFamily: "var(--font-body)" };
 
-const LABEL = {
+const LABEL: React.CSSProperties = {
   display: "block",
   marginBottom: 6,
   fontSize: 13,
@@ -20,8 +20,8 @@ const LABEL = {
  * not flip at night — a field that inverted with the theme while the notice
  * around it did not would be the only white-on-white surface in the app.
  */
-const CONTROL = {
-  boxSizing: "border-box",
+const CONTROL: React.CSSProperties = {
+  boxSizing: "border-box" as const,
   width: "100%",
   padding: "9px 12px",
   borderStyle: "solid",
@@ -37,12 +37,31 @@ const CONTROL = {
   outlineOffset: 2,
 };
 
-const ERROR = {
+const ERROR: React.CSSProperties = {
   margin: "6px 0 0",
   fontSize: 13,
   fontWeight: 600,
   color: "var(--color-like)",
 };
+
+type FieldControlProps = React.InputHTMLAttributes<HTMLInputElement> &
+  React.TextareaHTMLAttributes<HTMLTextAreaElement> &
+  React.SelectHTMLAttributes<HTMLSelectElement>;
+
+export interface FieldProps extends Omit<
+  FieldControlProps,
+  "id" | "style" | "className" | "children"
+> {
+  label: React.ReactNode;
+  id?: string;
+  error?: string;
+  as?: "input" | "textarea" | "select";
+  className?: string;
+  style?: React.CSSProperties;
+  children?: React.ReactNode;
+}
+
+type FieldElement = HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement;
 
 /**
  * A labelled form control: label, input, and an error message when there is one.
@@ -71,7 +90,7 @@ const ERROR = {
  *   ...rest   — everything else lands on the control: type, value, onChange,
  *               placeholder, maxLength, required, disabled, children
  */
-const Field = forwardRef(function Field(
+const Field = forwardRef<FieldElement, FieldProps>(function Field(
   {
     label,
     id,
@@ -90,21 +109,21 @@ const Field = forwardRef(function Field(
 
   const controlId = id ?? `${generated}-control`;
   const errorId = `${generated}-error`;
-  const Control = as;
+  const Control = as as React.ElementType;
   const isTextarea = as === "textarea";
 
   // No :focus-visible test here, unlike Button. A focused text input has a
   // caret in it and must look focused however the focus arrived — the reason to
   // suppress a ring on mouse click is that a clicked button looks pressed
   // already, and an input does not.
-  const handleFocus = (event) => {
+  const handleFocus = (event: React.FocusEvent<FieldElement>) => {
     setFocused(true);
-    onFocus?.(event);
+    onFocus?.(event as React.FocusEvent<HTMLInputElement>);
   };
 
-  const handleBlur = (event) => {
+  const handleBlur = (event: React.FocusEvent<FieldElement>) => {
     setFocused(false);
-    onBlur?.(event);
+    onBlur?.(event as React.FocusEvent<HTMLInputElement>);
   };
 
   const borderColor = error

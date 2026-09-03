@@ -30,11 +30,11 @@ const BlankNoticeIcon = () => (
 
 const ROOT = {
   display: "flex",
-  flexDirection: "column",
+  flexDirection: "column" as const,
   alignItems: "center",
   gap: 10,
   padding: "40px 24px",
-  textAlign: "center",
+  textAlign: "center" as const,
   fontFamily: "var(--font-body)",
 };
 
@@ -91,6 +91,16 @@ const COPY = {
  *   className / style — passed through
  *   ...rest     — anything else lands on the wrapper
  */
+export interface EmptyStateProps extends Omit<
+  React.HTMLAttributes<HTMLDivElement>,
+  "title"
+> {
+  icon?: React.ReactNode | false;
+  title: React.ReactNode;
+  description?: React.ReactNode;
+  action?: React.ReactNode;
+}
+
 const EmptyState = ({
   icon,
   title,
@@ -99,7 +109,7 @@ const EmptyState = ({
   className = "",
   style,
   ...rest
-}) => (
+}: EmptyStateProps) => (
   <div {...rest} className={className} style={{ ...ROOT, ...style }}>
     {icon !== false ? (
       // aria-hidden on the slot, not on the glyph: whatever a caller passes in

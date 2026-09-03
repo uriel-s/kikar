@@ -1,5 +1,12 @@
 import { createContext, useContext } from "react";
 
+/** A signed-in person's profile row, as Plaza loaded it — a permissive shape
+ * since the actual row is fetched, untyped, by `Components/Plaza.js`. */
+export interface PlazaProfileValue {
+  id?: string;
+  [key: string]: unknown;
+}
+
 /**
  * The signed-in person's profile row, as Plaza loaded it.
  *
@@ -15,6 +22,6 @@ import { createContext, useContext } from "react";
  * the disc in the right hue, so the fallback is a correct avatar rather than a
  * missing one.
  */
-export const PlazaProfileContext = createContext(null);
+export const PlazaProfileContext = createContext<PlazaProfileValue | null>(null);
 
 export const usePlazaProfile = () => useContext(PlazaProfileContext);
