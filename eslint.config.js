@@ -102,7 +102,12 @@ module.exports = [
   // runs tsc. One tool owns types.
   ...tseslint.configs.recommended.map((config) => ({
     ...config,
-    files: ["apps/server/**/*.ts", "packages/shared/**/*.ts", "apps/client/src/**/*.ts"],
+    files: [
+      "apps/server/**/*.ts",
+      "packages/shared/**/*.ts",
+      "apps/client/src/**/*.ts",
+      "apps/client/src/**/*.tsx",
+    ],
   })),
   {
     files: ["apps/server/**/*.ts"],
@@ -143,11 +148,8 @@ module.exports = [
     },
   },
 
-  // Client TypeScript — covers only src/lib and src/api today, the two
-  // directories this stage converts. No JSX here: Components/pages stay
-  // .js/JSX until a later stage converts them to .tsx, which will need its
-  // own block combining this with the react/jsx-a11y plugins already set up
-  // for the client's .js block below.
+  // Client TypeScript — covers src/lib and src/api, which have no JSX. The
+  // block below covers src/contexts and src/Components/ui, which do.
   {
     files: ["apps/client/src/**/*.ts"],
     languageOptions: {
@@ -160,6 +162,39 @@ module.exports = [
         "error",
         { argsIgnorePattern: "^_", varsIgnorePattern: "^_", caughtErrors: "all" },
       ],
+    },
+  },
+
+  // Client TypeScript with JSX — contexts/ and Components/ui today (the
+  // directories this /work run converts); Components/ and pages/ stay .js
+  // until later stages. Combines the typescript-eslint parser registered
+  // above with the same react/jsx-a11y plugins the client's .js block below
+  // uses — JSX and accessibility rules don't care whether the file is .js or
+  // .tsx. No `parserOptions.ecmaFeatures.jsx` needed: the typescript-eslint
+  // parser infers JSX from the .tsx extension automatically.
+  {
+    files: ["apps/client/src/**/*.tsx"],
+    languageOptions: {
+      ecmaVersion: 2024,
+      sourceType: "module",
+      globals: globals.browser,
+    },
+    plugins: { react, "react-hooks": reactHooks, "jsx-a11y": jsxA11y },
+    settings: { react: { version: "detect" } },
+    rules: {
+      ...react.configs.flat.recommended.rules,
+      ...reactHooks.configs.recommended.rules,
+      ...jsxA11y.flatConfigs.recommended.rules,
+
+      "@typescript-eslint/no-unused-vars": [
+        "error",
+        { argsIgnorePattern: "^_", varsIgnorePattern: "^_", caughtErrors: "all" },
+      ],
+
+      // The codebase uses no prop-types and is on TypeScript now, which is
+      // what actually types these props — same reasoning as the client .js
+      // block below.
+      "react/prop-types": "off",
     },
   },
 
