@@ -1,5 +1,5 @@
 const { Prisma } = require("../generated/prisma");
-const ApiError = require("../lib/ApiError");
+const { ApiError } = require("../lib/ApiError");
 const { detectImageType } = require("../lib/imageType");
 
 const UNIQUE_VIOLATION = "P2002";

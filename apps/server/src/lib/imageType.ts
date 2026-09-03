@@ -9,11 +9,15 @@
  * Returns the detected MIME type, or null if the buffer is not one of the
  * formats we accept.
  */
-const startsWith = (buffer, bytes, offset = 0) =>
+
+/** The only content types an avatar is ever stored as. */
+export type ImageMimeType = "image/jpeg" | "image/png" | "image/webp";
+
+const startsWith = (buffer: Buffer, bytes: number[], offset = 0): boolean =>
   buffer.length >= offset + bytes.length &&
   bytes.every((byte, index) => buffer[offset + index] === byte);
 
-const SIGNATURES = [
+const SIGNATURES: { mime: ImageMimeType; test: (b: Buffer) => boolean }[] = [
   // SOI marker followed by the first segment marker.
   { mime: "image/jpeg", test: (b) => startsWith(b, [0xff, 0xd8, 0xff]) },
   {
@@ -29,11 +33,13 @@ const SIGNATURES = [
   },
 ];
 
-const detectImageType = (buffer) => {
+// `unknown` rather than `Buffer`, because the isBuffer guard below is the whole
+// point of the function: multer hands over whatever the request contained, and
+// the tests call it with undefined to prove a missing file is a null and not a
+// crash.
+export const detectImageType = (buffer: unknown): ImageMimeType | null => {
   if (!Buffer.isBuffer(buffer) || buffer.length === 0) {
     return null;
   }
   return SIGNATURES.find((signature) => signature.test(buffer))?.mime ?? null;
 };
-
-module.exports = { detectImageType };

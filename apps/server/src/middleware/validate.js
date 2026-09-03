@@ -1,4 +1,4 @@
-const ApiError = require("../lib/ApiError");
+const { ApiError } = require("../lib/ApiError");
 
 /**
  * Validates req.body / req.params / req.query against zod schemas and replaces

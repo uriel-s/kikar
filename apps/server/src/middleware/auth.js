@@ -1,4 +1,4 @@
-const ApiError = require("../lib/ApiError");
+const { ApiError } = require("../lib/ApiError");
 
 const BEARER = /^Bearer (.+)$/i;
 

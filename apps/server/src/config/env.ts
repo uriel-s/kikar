@@ -1,13 +1,14 @@
-const path = require("node:path");
-const { z } = require("zod");
+import path from "node:path";
+import dotenv from "dotenv";
+import { z } from "zod";
 
 // Load .env from the monorepo root so client and server share one file.
-require("dotenv").config({
+dotenv.config({
   path: path.resolve(__dirname, "../../../../.env"),
   quiet: true,
 });
 
-const schema = z.object({
+export const schema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   PORT: z.coerce.number().int().positive().default(5000),
 
@@ -60,13 +61,26 @@ const schema = z.object({
 });
 
 /**
+ * The environment as the application sees it: the *parsed* shape, so
+ * CORS_ORIGINS is already a string[] and the DATABASE_SSL pair are booleans.
+ *
+ * Consumers should take a `Pick` of this rather than the whole thing. Every
+ * dependency here is injected — `createApp({ env, ... })` — and
+ * `tests/helpers/testApp.js` injects a four-field object as the real env. A
+ * module that demands the full type makes that impossible to typecheck, and the
+ * reflex fix is to widen or cast the fake, which throws away the checking this
+ * type exists to provide.
+ */
+export type Env = z.infer<typeof schema>;
+
+/**
  * Parses and validates process.env, failing fast with a readable message.
  *
  * The old server started, logged "Failed to initialize Firebase", and then
  * silently refused to listen — leaving no server and no clear reason. Validating
  * up front turns that into one actionable error at boot.
  */
-const parse = (source = process.env) => {
+export const parse = (source: unknown = process.env): Env => {
   const result = schema.safeParse(source);
 
   if (!result.success) {
@@ -91,5 +105,3 @@ const parse = (source = process.env) => {
 
   return env;
 };
-
-module.exports = { parse, schema };

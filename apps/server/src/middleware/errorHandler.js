@@ -1,5 +1,5 @@
 const multer = require("multer");
-const ApiError = require("../lib/ApiError");
+const { ApiError } = require("../lib/ApiError");
 
 const notFound = (req, _res, next) => {
   next(ApiError.notFound(`No route matches ${req.method} ${req.originalUrl}`));

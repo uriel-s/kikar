@@ -2,7 +2,7 @@
  * Puts the generated Prisma client where the compiled server expects it.
  *
  * `prisma/schema.prisma` generates into `src/generated/prisma`, and
- * `src/lib/prisma.js` imports it relatively as `../generated/prisma`. That
+ * `src/lib/prisma.ts` imports it relatively as `../generated/prisma`. That
  * relative path survives compilation unchanged, so `dist/lib/prisma.js`
  * resolves it to `dist/generated/prisma` — a directory tsc does not create.
  * Without this step the build succeeds and the server dies on its first import.

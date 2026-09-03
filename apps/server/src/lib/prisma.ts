@@ -1,5 +1,17 @@
-const { PrismaPg } = require("@prisma/adapter-pg");
-const { PrismaClient } = require("../generated/prisma");
+import { PrismaPg } from "@prisma/adapter-pg";
+import type { PoolConfig } from "pg";
+import { PrismaClient } from "../generated/prisma";
+import type { Env } from "../config/env";
+
+// The three DATABASE_* fields, not the whole Env — same reason as logger.ts.
+// The environment is injected, and the test helper's stand-in for it carries
+// four fields; a signature that demanded all ten could only be satisfied by
+// casting the fake, which is how a type-checked refactor stops checking
+// anything.
+type DatabaseEnv = Pick<
+  Env,
+  "DATABASE_URL" | "DATABASE_SSL" | "DATABASE_SSL_REJECT_UNAUTHORIZED"
+>;
 
 /**
  * Builds the Prisma client over the node-postgres driver adapter.
@@ -8,7 +20,10 @@ const { PrismaClient } = require("../generated/prisma");
  * by pg, which is what lets the same client talk to a local container and to
  * RDS with TLS without a different build.
  */
-const createPrismaClient = (env, poolOptions = {}) => {
+export const createPrismaClient = (
+  env: DatabaseEnv,
+  poolOptions: PoolConfig = {}
+): PrismaClient => {
   const adapter = new PrismaPg({
     connectionString: env.DATABASE_URL,
     // Certificate verification is on by default. RDS certificates chain to
@@ -33,5 +48,3 @@ const createPrismaClient = (env, poolOptions = {}) => {
 
   return new PrismaClient({ adapter });
 };
-
-module.exports = { createPrismaClient };

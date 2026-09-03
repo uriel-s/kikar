@@ -1,5 +1,5 @@
 const { Prisma } = require("../generated/prisma");
-const ApiError = require("../lib/ApiError");
+const { ApiError } = require("../lib/ApiError");
 
 const FOREIGN_KEY_VIOLATION = "P2003";
 

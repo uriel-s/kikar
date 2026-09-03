@@ -1,22 +1,22 @@
-const { z } = require("zod");
+import { z } from "zod";
 
-const uuid = z.string().uuid("Must be a valid UUID");
+export const uuid = z.string().uuid("Must be a valid UUID");
 
 // Firebase UIDs are 28-character alphanumeric strings, but the length is not
 // contractual, so this stays a loose sanity check rather than an exact match.
-const firebaseUid = z
+export const firebaseUid = z
   .string()
   .trim()
   .min(1, "User id is required")
   .max(128, "User id is too long")
   .regex(/^[A-Za-z0-9_-]+$/, "User id contains invalid characters");
 
-const pagination = z.object({
+export const pagination = z.object({
   limit: z.coerce.number().int().min(1).max(50).default(20),
   cursor: z.string().trim().min(1).optional(),
 });
 
-const searchQuery = z.object({
+export const searchQuery = z.object({
   q: z
     .string()
     .trim()
@@ -38,7 +38,7 @@ const userProfile = {
   address: z.string().trim().max(200, "Address is too long").nullish(),
 };
 
-const schemas = {
+export const schemas = {
   registerUser: {
     // The uid and email come from the verified token, never from the body — a
     // client could otherwise register a profile under someone else's id.
@@ -102,5 +102,3 @@ const schemas = {
     query: pagination,
   },
 };
-
-module.exports = { schemas, firebaseUid, uuid, pagination, searchQuery };

@@ -1,6 +1,11 @@
-const pino = require("pino");
+import pino from "pino";
+import type { Env } from "../config/env";
 
-const createLogger = (env) =>
+// NODE_ENV only, not the whole Env. Nothing here is stylistic: the logger is an
+// injected dependency, and tests/helpers/testApp.js builds a four-field stand-in
+// for the environment. Asking for more than is read would make that stand-in
+// untypeable and invite a cast that switches the checking off everywhere.
+export const createLogger = (env: Pick<Env, "NODE_ENV">) =>
   pino({
     level:
       env.NODE_ENV === "test"
@@ -26,5 +31,3 @@ const createLogger = (env) =>
       remove: true,
     },
   });
-
-module.exports = { createLogger };
