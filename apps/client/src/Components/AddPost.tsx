@@ -310,7 +310,9 @@ const AddPostForm = ({ onPostCreated, user }: AddPostFormProps) => {
         label="Say something to the square"
         value={text}
         onChange={(
-          event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+          event: React.ChangeEvent<
+            HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+          >
         ) => setText(event.target.value)}
         onKeyDown={handleKeyDown}
         maxLength={MAX_LENGTH}

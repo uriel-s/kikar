@@ -99,7 +99,11 @@ const AVATAR_SLOT: React.CSSProperties = {
   boxShadow: "0 0 0 3px var(--color-keyline)",
 };
 
-const AUTHOR_ROW: React.CSSProperties = { display: "flex", alignItems: "center", gap: 12 };
+const AUTHOR_ROW: React.CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  gap: 12,
+};
 
 const AUTHOR_NAME: React.CSSProperties = {
   fontFamily: "var(--font-display)",
@@ -110,7 +114,10 @@ const AUTHOR_NAME: React.CSSProperties = {
   textTransform: "uppercase",
 };
 
-const TIMESTAMP: React.CSSProperties = { fontSize: 11.5, color: "var(--color-paper-muted)" };
+const TIMESTAMP: React.CSSProperties = {
+  fontSize: 11.5,
+  color: "var(--color-paper-muted)",
+};
 
 const CONTENT: React.CSSProperties = {
   margin: "13px 0 0",
@@ -303,7 +310,13 @@ interface PostCardProps {
  *   onDelete        — (postId) => void. Optional: its absence is what hides the
  *                     delete affordance on search results
  */
-const PostCard = ({ post, currentUser, onLike, onCommentAdded, onDelete }: PostCardProps) => {
+const PostCard = ({
+  post,
+  currentUser,
+  onLike,
+  onCommentAdded,
+  onDelete,
+}: PostCardProps) => {
   const [newComment, setNewComment] = useState<string>("");
   const [comments, setComments] = useState<PostComment[]>([]);
   const [commentsLoaded, setCommentsLoaded] = useState<boolean>(false);

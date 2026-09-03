@@ -142,8 +142,9 @@ const SearchBar = () => {
   // hence the union rather than a single element's type.
   const focus = {
     onFocus: () => setFocused(true),
-    onBlur: (e: React.FocusEvent<HTMLInputElement | HTMLSelectElement | HTMLButtonElement>) =>
-      setFocused(Boolean(fieldRef.current?.contains(e.relatedTarget))),
+    onBlur: (
+      e: React.FocusEvent<HTMLInputElement | HTMLSelectElement | HTMLButtonElement>
+    ) => setFocused(Boolean(fieldRef.current?.contains(e.relatedTarget))),
   };
 
   return (
@@ -168,7 +169,9 @@ const SearchBar = () => {
         <select
           {...focus}
           value={searchType}
-          onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSearchType(e.target.value)}
+          onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
+            setSearchType(e.target.value)
+          }
           className="search-type"
           style={SELECT}
         >
