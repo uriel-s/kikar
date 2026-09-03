@@ -134,7 +134,15 @@ const SearchResults = () => {
             <section className="search-results-section">
               <h2>Posts ({results.posts.length})</h2>
               {results.posts.length > 0 ? (
-                <div className="search-results-grid">
+                /* A ul, not a div: PostCard renders a <li> now, and an <li>
+                   with no list around it is an orphan — the browser keeps it
+                   but assistive technology loses the "N items" the list
+                   semantics carry. The legacy grid class still owns the
+                   layout; only the element changed. */
+                <ul
+                  className="search-results-grid"
+                  style={{ listStyle: "none", margin: 0, padding: 0 }}
+                >
                   {results.posts.map((post) => (
                     <PostCard
                       key={post.id}
@@ -144,7 +152,7 @@ const SearchResults = () => {
                       onCommentAdded={handleCommentAdded}
                     />
                   ))}
-                </div>
+                </ul>
               ) : (
                 <p className="no-results">No posts found matching &quot;{query}&quot;</p>
               )}
