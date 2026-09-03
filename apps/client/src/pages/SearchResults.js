@@ -119,11 +119,16 @@ const SearchResults = () => {
             <section className="search-results-section">
               <h2>Users ({results.users.length})</h2>
               {results.users.length > 0 ? (
-                <div className="search-results-grid">
+                /* A ul, not a div: UserCard renders a <li> now (see PostCard's
+                   own comment below for why the same fix applies here). */
+                <ul
+                  className="search-results-grid"
+                  style={{ listStyle: "none", margin: 0, padding: 0 }}
+                >
                   {results.users.map((user) => (
                     <UserCard key={user.id} user={user} />
                   ))}
-                </div>
+                </ul>
               ) : (
                 <p className="no-results">No users found matching &quot;{query}&quot;</p>
               )}
