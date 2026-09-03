@@ -16,6 +16,10 @@ const METRICS = {
   48: { paddingInline: 24, fontSize: 16, gap: 10 },
 };
 
+// The wash the two unfilled variants take on hover. Stated once because both
+// use it and they must not drift apart.
+const SURFACE_HOVER = "color-mix(in oklab, currentColor 10%, transparent)";
+
 /*
  * Four variants, and the difference between them is only ever fill, border and
  * label colour — never size, weight or radius. A "secondary" button that is also
@@ -29,7 +33,29 @@ const METRICS = {
  * matter of nudging the keyline. `muted` measures 4.62 on the day ground, 6.72
  * on paper and 5.69 on the night ground.
  *
- * Inside a notice, `ghost` remains the button for the surface.
+ * Inside a notice, `ghost` remains the button for the surface — and that is
+ * why neither it nor `secondary` may name an ink of its own. A notice is light
+ * paper in BOTH themes while --color-ink flips to near-white at night, so the
+ * label these two used to set measured 1.11:1 on paper in Slate Night: a Cancel
+ * button that is simply not there. `inherit` takes whatever the surface set —
+ * paper-ink inside a notice, ink on the paved ground — and measures 15.7 on
+ * paper and 10.5-13.4 on the ground, in both themes. Field's label does the
+ * same thing for the same reason.
+ *
+ * Hover is a knock-back of the surface's OWN text colour rather than
+ * --color-chip, which had the matching pair of faults: chip is the same
+ * lightness as paper in Slate Day, so hovering a ghost button on a notice
+ * changed nothing visible, and it is dark slate in Slate Night, so hovering one
+ * there dropped the label to 1.57:1. currentColor at 10% is correct on every
+ * surface without being told which one it is on — the argument Skeleton makes
+ * at greater length — and holds 8.8:1 or better everywhere.
+ *
+ * KNOWN, NOT FIXED HERE: `secondary`'s border is --color-muted, and muted is
+ * measured against the two grounds (4.62 day, 5.69 night) and against paper by
+ * day (6.72). On paper at NIGHT it is 2.62:1, under the 3:1 that WCAG 1.4.11
+ * wants of a control boundary. No screen puts a secondary button on a notice
+ * today. Retuning a token that was chosen by measurement is a design call, not
+ * a drive-by, so it is recorded here rather than guessed at.
  *
  * Hover on the filled variants is `brightness`, not a second colour: the accent
  * moves between Slate Day and Slate Night, so any hand-picked hover value would
@@ -47,18 +73,18 @@ const VARIANTS = {
   secondary: {
     rest: {
       background: "transparent",
-      color: "var(--color-ink)",
+      color: "inherit",
       borderColor: "var(--color-muted)",
     },
-    hover: { background: "var(--color-chip)" },
+    hover: { background: SURFACE_HOVER },
   },
   ghost: {
     rest: {
       background: "transparent",
-      color: "var(--color-ink)",
+      color: "inherit",
       borderColor: "transparent",
     },
-    hover: { background: "var(--color-chip)" },
+    hover: { background: SURFACE_HOVER },
   },
   danger: {
     rest: {
