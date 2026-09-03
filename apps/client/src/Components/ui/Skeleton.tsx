@@ -15,7 +15,7 @@ import React from "react";
  * component layer is inline styles until index.css is deleted (see theme.css).
  * The shimmer belongs to the stylesheet that replaces it.
  */
-const BASE = {
+const BASE: React.CSSProperties = {
   display: "block",
   backgroundColor: "currentColor",
   opacity: 0.12,
@@ -40,7 +40,20 @@ const DEFAULT_BAR_HEIGHT = 12;
  * Always aria-hidden. A screen reader announcing four grey rectangles is worse
  * than silence — the loading state belongs on the region, as aria-busy.
  */
-const Skeleton = ({ variant = "bar", width, height, className = "", style, ...rest }) => {
+export interface SkeletonProps extends React.HTMLAttributes<HTMLSpanElement> {
+  variant?: "bar" | "circle";
+  width?: number | string;
+  height?: number | string;
+}
+
+const Skeleton = ({
+  variant = "bar",
+  width,
+  height,
+  className = "",
+  style,
+  ...rest
+}: SkeletonProps) => {
   const shape =
     variant === "circle"
       ? {

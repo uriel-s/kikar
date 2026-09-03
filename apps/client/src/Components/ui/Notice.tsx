@@ -9,17 +9,17 @@ import { authorWash, avatarHue } from "../../lib/avatarColor";
  */
 const KEYLINE = 6;
 
-const WRAPPER = {
+const WRAPPER: React.CSSProperties = {
   display: "block",
-  boxSizing: "border-box",
+  boxSizing: "border-box" as const,
   padding: KEYLINE,
   background: "var(--color-keyline)",
   borderRadius: "var(--radius-keyline-wrapper)",
   boxShadow: "var(--shadow-notice)",
 };
 
-const SURFACE = {
-  boxSizing: "border-box",
+const SURFACE: React.CSSProperties = {
+  boxSizing: "border-box" as const,
   borderRadius: "var(--radius-notice)",
   fontFamily: "var(--font-body)",
   // Not --color-ink. A notice is light paper in BOTH themes, so its text is dark
@@ -27,6 +27,19 @@ const SURFACE = {
   // white. Set here so everything inside inherits it and no child has to know.
   color: "var(--color-paper-ink)",
 };
+
+// A style object that also carries the CSS custom property this component
+// publishes. React.CSSProperties has no index signature for arbitrary keys
+// (removed deliberately to keep the type closed), so the object literal that
+// sets "--notice-hue" needs this widened sibling type rather than a cast on
+// every style prop in the file.
+type NoticeStyle = React.CSSProperties & Record<`--${string}`, string | number>;
+
+export interface NoticeProps extends React.HTMLAttributes<HTMLElement> {
+  author?: { id?: unknown } | null;
+  as?: React.ElementType;
+  padding?: number | string;
+}
 
 /**
  * A notice: a sheet of paper pinned to the plaza wall. The whole design is a
@@ -56,7 +69,7 @@ const Notice = ({
   style,
   children,
   ...rest
-}) => {
+}: NoticeProps) => {
   const hue = avatarHue(author?.id);
 
   // A flat two-stop gradient is just "this colour, everywhere". It buys the one
@@ -72,7 +85,7 @@ const Notice = ({
       // Published for the children: a control inside a notice that wants to pick
       // up the author's colour can read var(--notice-hue) instead of being
       // handed the author all over again.
-      style={{ ...WRAPPER, "--notice-hue": String(hue), ...style }}
+      style={{ ...WRAPPER, "--notice-hue": String(hue), ...style } as NoticeStyle}
     >
       <div
         style={{
