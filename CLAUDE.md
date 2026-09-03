@@ -7,10 +7,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 Kikar — a social platform (posts, likes, comments, friendships). npm-workspaces
 monorepo: `apps/client` (React 18 / Vite 6), `apps/server` (Express 5 / Prisma 7 /
 PostgreSQL 17), and `packages/shared` (zod schemas the two are meant to share —
-only the server consumes it today; the client is still JavaScript, converted in
-stage 4 of `docs/REFACTOR-PLAN.md`). Version 2 is a rebuild of two older
-repositories; `README.md` documents what changed and what is deliberately still
-missing.
+only the server consumes it today; the client finished converting from
+JavaScript to TypeScript in stage 4 of `docs/REFACTOR-PLAN.md`). Version 2 is a
+rebuild of two older repositories; `README.md` documents what changed and what
+is deliberately still missing.
 
 ## Commands
 
@@ -34,6 +34,7 @@ npm run test --workspace=@kikar/server          # 52 tests, jest + supertest thr
 npm run test --workspace=@kikar/server -- tests/authorization.test.ts   # one file
 npm run test --workspace=@kikar/server -- -t "cannot"                   # by name
 npm run build --workspace=@kikar/client
+npm run typecheck --workspace=@kikar/client     # tsc --noEmit, the client's own tsconfig.json
 npm run format                                  # prettier
 ```
 
@@ -233,11 +234,11 @@ them.
 
 ### Client
 
-- `src/lib/apiClient.js` is the single axios instance. Its request interceptor
+- `src/lib/apiClient.ts` is the single axios instance. Its request interceptor
   attaches the Firebase ID token to _every_ call — never build a bare axios
   request or hand-set an `Authorization` header. It deliberately sets no default
   `Content-Type` so `FormData` uploads keep their multipart boundary.
-- `src/api/*.js` are the only modules where URLs appear. Components import from
+- `src/api/*.ts` are the only modules where URLs appear. Components import from
   there, not from `apiClient` directly.
 - Its response interceptor normalizes the API's error envelope into
   `ApiRequestError` (`message`, `status`, `details`) — catch that, not raw axios
