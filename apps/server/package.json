@@ -11,7 +11,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.json && node scripts/copyGenerated.js",
     "start": "node dist/server.js",
-    "dev": "tsx watch src/server.js",
+    "dev": "tsx watch src/server.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "jest",
     "test:watch": "jest --watch",
@@ -40,6 +40,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/jest": "^30.0.0",
     "@types/multer": "^2.2.0",

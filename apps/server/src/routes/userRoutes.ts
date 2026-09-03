@@ -1,9 +1,23 @@
-const express = require("express");
-const { validate } = require("../middleware/validate");
-const { requireSelf } = require("../middleware/auth");
-const { schemas } = require("../schemas");
+import express from "express";
+import type { Router } from "express";
+import type { Multer } from "multer";
+import { validate } from "../middleware/validate";
+import { requireSelf } from "../middleware/auth";
+import { schemas } from "../schemas";
+import type { createUserController } from "../controllers/userController";
 
-const createUserRoutes = ({ controller, uploadAvatar }) => {
+export interface UserRoutesDeps {
+  controller: ReturnType<typeof createUserController>;
+  // The configured multer instance, built in app.ts. It carries the 5 MB cap
+  // and the mimetype pre-filter, so a router that constructed its own would
+  // silently drop both.
+  uploadAvatar: Multer;
+}
+
+export const createUserRoutes = ({
+  controller,
+  uploadAvatar,
+}: UserRoutesDeps): Router => {
   const router = express.Router();
 
   router.post("/", validate(schemas.registerUser), controller.register);
@@ -47,5 +61,3 @@ const createUserRoutes = ({ controller, uploadAvatar }) => {
 
   return router;
 };
-
-module.exports = { createUserRoutes };

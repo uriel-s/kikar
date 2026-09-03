@@ -9,7 +9,18 @@
     // Node only. The jest globals are deliberately absent: this config covers
     // src/, and `describe` resolving there would let a test helper be written
     // into shipping code without anything noticing.
-    "types": ["node"]
+    "types": ["node"],
+
+    // Off again, overriding tsconfig.base.json. This config includes src/ only,
+    // and src/ is now TypeScript apart from the generated Prisma client, which
+    // is excluded below — so a stray .js here would be a mistake, and leaving
+    // the door open would let one compile into dist/ unchecked.
+    //
+    // The base and the root tsconfig.json still allow it, because the root
+    // config also covers apps/server/tests/, which is still JavaScript. Stage 3
+    // step 6 of docs/REFACTOR-PLAN.md converts the suite; that is when the
+    // option comes out of tsconfig.base.json for good.
+    "allowJs": false
   },
   // src only. tests/ would otherwise land in dist/, and dist/ is what ships.
   "include": ["src/**/*"],

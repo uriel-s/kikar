@@ -1,8 +1,14 @@
-const express = require("express");
-const { validate } = require("../middleware/validate");
-const { schemas } = require("../schemas");
+import express from "express";
+import type { Router } from "express";
+import { validate } from "../middleware/validate";
+import { schemas } from "../schemas";
+import type { createPostController } from "../controllers/postController";
 
-const createPostRoutes = ({ controller }) => {
+export interface PostRoutesDeps {
+  controller: ReturnType<typeof createPostController>;
+}
+
+export const createPostRoutes = ({ controller }: PostRoutesDeps): Router => {
   const router = express.Router();
 
   router.post("/", validate(schemas.createPost), controller.create);
@@ -31,5 +37,3 @@ const createPostRoutes = ({ controller }) => {
 
   return router;
 };
-
-module.exports = { createPostRoutes };

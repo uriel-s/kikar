@@ -77,10 +77,10 @@ export type AuthenticatedHandler<
  * `query` untouched — so an AuthenticatedHandler is deliberately *not*
  * assignable to RequestHandler, and this is the single place that gap is
  * bridged. It rests on two facts about how the routes are assembled, both of
- * which app.js and routes/ have to keep true:
+ * which app.ts and routes/ have to keep true:
  *
  *   - every route wrapped here is registered under /api/users or /api/posts,
- *     which app.js mounts *after* `app.use(requireAuth(auth))`, so `req.user`
+ *     which app.ts mounts *after* `app.use(requireAuth(auth))`, so `req.user`
  *     is set. Anything reachable without a verified token — /health today —
  *     must not use this;
  *   - every such route runs `validate(schemas.x)` first, which replaces body,

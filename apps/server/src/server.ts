@@ -1,8 +1,8 @@
-const { parse } = require("./config/env");
-const { initializeFirebase } = require("./config/firebase");
-const { createPrismaClient } = require("./lib/prisma");
-const { createLogger } = require("./lib/logger");
-const { createApp } = require("./app");
+import { parse } from "./config/env";
+import { initializeFirebase } from "./config/firebase";
+import { createPrismaClient } from "./lib/prisma";
+import { createLogger } from "./lib/logger";
+import { createApp } from "./app";
 
 const SHUTDOWN_GRACE_MS = 10_000;
 
@@ -28,7 +28,7 @@ const main = async () => {
    * ECS and Kubernetes send SIGTERM and then kill the container; without this,
    * every request in flight at deploy time fails.
    */
-  const shutdown = async (signal) => {
+  const shutdown = async (signal: NodeJS.Signals) => {
     logger.info({ signal }, "Shutting down");
     const timer = setTimeout(() => {
       logger.error("Shutdown timed out, forcing exit");
@@ -47,8 +47,15 @@ const main = async () => {
   process.on("SIGINT", () => shutdown("SIGINT"));
 };
 
-main().catch((err) => {
-  // The logger may not exist yet if config parsing is what failed.
-  console.error(err.message);
+main().catch((err: unknown) => {
+  // The logger may not exist yet if config parsing is what failed, so this
+  // prints rather than logs.
+  //
+  // Narrowed the way config/firebase.ts's reason() does. Everything that can
+  // reject here — parse(), initializeFirebase(), prisma.$connect() — raises a
+  // real Error, so this reads identically to the plain `err.message` it
+  // replaces; the fallback only covers the case that would otherwise have put
+  // the word "undefined" in an operator's single clue.
+  console.error(err instanceof Error ? err.message : String(err));
   process.exit(1);
 });
