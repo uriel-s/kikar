@@ -8,7 +8,7 @@ import Notice from "./ui/Notice";
  * PostCard.js and Navbar.js use — never emoji, never the react-icons/fa
  * glyphs this file used to import.
  */
-const Glyph = ({ children }) => (
+const Glyph = ({ children }: { children?: React.ReactNode }) => (
   <svg
     width="18"
     height="18"
@@ -43,7 +43,7 @@ const UserXIcon = () => (
   </Glyph>
 );
 
-const CARD = {
+const CARD: React.CSSProperties = {
   display: "flex",
   flexDirection: "column",
   alignItems: "center",
@@ -54,13 +54,13 @@ const CARD = {
 // The same ring PostCard draws around its (much smaller) inline avatar, in the
 // notice's own die-cut colour, so this face reads as punched out of the paper
 // the same way that one does.
-const AVATAR_RING = {
+const AVATAR_RING: React.CSSProperties = {
   display: "inline-flex",
   borderRadius: "50%",
   boxShadow: "0 0 0 3px var(--color-keyline)",
 };
 
-const NAME = {
+const NAME: React.CSSProperties = {
   margin: 0,
   fontFamily: "var(--font-display)",
   fontSize: 18,
@@ -71,12 +71,38 @@ const NAME = {
   color: "inherit",
 };
 
-const ERROR = {
+const ERROR: React.CSSProperties = {
   margin: 0,
   fontSize: 13,
   fontWeight: 600,
   color: "var(--color-like)",
 };
+
+/**
+ * The user shape this card draws — the same fields Avatar's own `AvatarUser`
+ * accepts, except `id` is required here: unlike Avatar (which has to render a
+ * partial or missing user), every call site in this codebase
+ * (AllUsers.js, SearchResults.js) always passes a real row with a real id,
+ * and `changeFriendship` below sends `user.id` on to `onFriendChange`, which
+ * expects a real one. Not imported from Avatar.tsx because it is not exported
+ * there.
+ */
+interface UserCardUser {
+  id: string;
+  name?: string;
+  avatarUrl?: string | null;
+}
+
+interface UserCardProps {
+  /** { id, name, avatarUrl }, required */
+  user: UserCardUser;
+  /** whether the viewer already knows this person */
+  isFriend?: boolean;
+  /** (userId, "add" | "remove") => Promise<void>. Optional: its absence is
+   * what hides the friend-action button, which is how SearchResults renders
+   * this same card read-only */
+  onFriendChange?: (userId: string, action: "add" | "remove") => Promise<void>;
+}
 
 /**
  * A notice about a person: their face, their name, and — when the caller
@@ -93,17 +119,24 @@ const ERROR = {
  *                    its absence is what hides the friend-action button, which
  *                    is how SearchResults renders this same card read-only
  */
-const UserCard = ({ user, isFriend, onFriendChange }) => {
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState("");
+const UserCard = ({ user, isFriend, onFriendChange }: UserCardProps) => {
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string>("");
 
-  const changeFriendship = async (action) => {
+  const changeFriendship = async (action: "add" | "remove") => {
     setIsLoading(true);
     setError("");
     try {
-      await onFriendChange(user.id, action);
+      // `onFriendChange` is optional in the props type, and this function is
+      // only ever wired up when `onFriendChange &&` is truthy in the JSX
+      // below — but that conditional-rendering fact is invisible to
+      // TypeScript's control-flow analysis inside this closure, so the
+      // optional call is required rather than a direct invocation.
+      await onFriendChange?.(user.id, action);
     } catch (err) {
-      setError(err.message);
+      // `strict` types the catch binding `unknown`, not `any` — narrow it
+      // before reading `.message` rather than reaching for a cast.
+      setError(err instanceof Error ? err.message : String(err));
     } finally {
       setIsLoading(false);
     }
