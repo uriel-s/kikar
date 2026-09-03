@@ -111,7 +111,7 @@ const BASE = {
   display: "inline-flex",
   alignItems: "center",
   justifyContent: "center",
-  boxSizing: "border-box",
+  boxSizing: "border-box" as const,
   borderStyle: "solid",
   borderWidth: 2,
   borderRadius: "var(--radius-pill)",
@@ -130,6 +130,11 @@ const DISABLED = { opacity: 0.45, cursor: "not-allowed", filter: "none" };
 // the outline reads on every one of the four fills as it is.
 const FOCUS_RING = { outline: "2px solid var(--color-accent)", outlineOffset: 2 };
 
+export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  variant?: "primary" | "secondary" | "ghost" | "danger";
+  size?: number;
+}
+
 /**
  * A button.
  *
@@ -144,7 +149,7 @@ const FOCUS_RING = { outline: "2px solid var(--color-accent)", outlineOffset: 2 
  *   onClick / className / style — passed through
  *   ...rest   — anything else lands on the <button>: aria-label, title, form
  */
-const Button = forwardRef(function Button(
+const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
   {
     variant = "primary",
     size = DEFAULT_SIZE,
@@ -173,13 +178,14 @@ const Button = forwardRef(function Button(
   const [ringVisible, setRingVisible] = useState(false);
 
   const skin = VARIANTS[variant] ?? VARIANTS.primary;
-  const metrics = METRICS[size] ?? METRICS[DEFAULT_SIZE];
+  const metrics = METRICS[size as keyof typeof METRICS] ?? METRICS[DEFAULT_SIZE];
 
   // :focus-visible is what separates a keyboard focus from the focus a mouse
   // click leaves behind, and an inline style cannot hold a pseudo-class — so ask
   // the element whether it matches one. A ring on every mouse click is the
   // reason people reach for outline:none and break keyboard users instead.
-  const showRing = (event) => setRingVisible(event.target.matches(":focus-visible"));
+  const showRing = (event: React.FocusEvent<HTMLButtonElement>) =>
+    setRingVisible(event.target.matches(":focus-visible"));
 
   return (
     <button
@@ -189,19 +195,19 @@ const Button = forwardRef(function Button(
       disabled={disabled}
       onClick={onClick}
       className={className}
-      onMouseEnter={(event) => {
+      onMouseEnter={(event: React.MouseEvent<HTMLButtonElement>) => {
         setHovered(true);
         onMouseEnter?.(event);
       }}
-      onMouseLeave={(event) => {
+      onMouseLeave={(event: React.MouseEvent<HTMLButtonElement>) => {
         setHovered(false);
         onMouseLeave?.(event);
       }}
-      onFocus={(event) => {
+      onFocus={(event: React.FocusEvent<HTMLButtonElement>) => {
         showRing(event);
         onFocus?.(event);
       }}
-      onBlur={(event) => {
+      onBlur={(event: React.FocusEvent<HTMLButtonElement>) => {
         setRingVisible(false);
         onBlur?.(event);
       }}
