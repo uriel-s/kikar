@@ -49,11 +49,13 @@ const OffPlaza = ({ children }) => (
 /**
  * The route-aware wrapper the pages render into.
  *
- * App.css gives `.content` 60px of padding-top so the page clears the fixed
- * navbar, and 20px of padding-bottom to separate it from the footer. Neither
- * survives contact with the plaza: there is no fixed navbar on that route, and
- * the ground carries its own 46px of bottom padding — so both are strips of
- * bare body background, dark, immediately above and below a light paved floor.
+ * App.css gives `.content` 20px of padding-bottom to separate it from the
+ * footer. No padding-top: the redesigned Navbar sits in normal document flow
+ * rather than as a fixed bar, so the page already starts right below it.
+ * Neither survives contact with the plaza: there is no Navbar on that route at
+ * all, and the ground carries its own 46px of bottom padding — so `padding: 0`
+ * avoids a stray strip of bare body background immediately below a light paved
+ * floor.
  */
 const Content = ({ children }) => {
   const onPlaza = useLocation().pathname === PLAZA_PATH;

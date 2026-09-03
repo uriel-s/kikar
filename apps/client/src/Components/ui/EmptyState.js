@@ -2,8 +2,9 @@ import React from "react";
 
 /*
  * Icons are drawn here as inline SVG on a 24px grid, stroke-based, never emoji
- * and never FontAwesome — the font is still installed only because three legacy
- * screens have <i className="fas ..."> in them, and it leaves with them.
+ * and never FontAwesome — that package stayed installed only for as long as
+ * some screen still had an <i className="fas ..."> in it, and it is gone now
+ * that the last one (Dashboard/UpdateProfile) has been rebuilt.
  *
  * `stroke="currentColor"` is what makes one drawing work on paper and on the
  * paved ground: the icon takes the colour of the slot it is dropped into.

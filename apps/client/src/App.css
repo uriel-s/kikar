@@ -7,106 +7,12 @@
   position: relative;
 }
 
-/* Canvas particle background styles */
-canvas#particles-canvas {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  z-index: -1;
-  pointer-events: none;
-}
-
 .content {
   flex: 1; /* This makes the content take up all available space */
   padding-bottom: 20px; /* Add some space between content and footer */
-  padding-top: 60px; /* Add padding to push content below the fixed navbar */
-}
-
-/* Footer Styles */
-.footer {
-  background-color: #2c3e50;
-  color: #ecf0f1;
-  padding: 2rem 0 1rem 0;
-  width: 100%;
-  /* Remove any positioning that might cause issues */
-}
-
-.footer-container {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-around;
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 1rem;
-}
-
-.footer-section {
-  flex: 1;
-  min-width: 200px;
-  margin-bottom: 1.5rem;
-  padding: 0 1rem;
-}
-
-.footer-section h3 {
-  color: #3498db;
-  font-size: 1.2rem;
-  margin-bottom: 1rem;
-  position: relative;
-}
-
-.footer-section h3:after {
-  content: '';
-  position: absolute;
-  left: 0;
-  bottom: -5px;
-  width: 40px;
-  height: 2px;
-  background-color: #3498db;
-}
-
-.footer-section ul {
-  list-style: none;
-  padding: 0;
-}
-
-.footer-section ul li {
-  margin-bottom: 0.5rem;
-}
-
-.footer-section ul li a {
-  color: #ecf0f1;
-  text-decoration: none;
-  transition: color 0.3s ease;
-}
-
-.footer-section ul li a:hover {
-  color: #3498db;
-  text-decoration: none;
-}
-
-.footer-bottom {
-  text-align: center;
-  padding-top: 1.5rem;
-  margin-top: 1.5rem;
-  border-top: 1px solid #34495e;
-}
-
-/* Mobile responsive styles */
-@media screen and (max-width: 768px) {
-  .footer-container {
-    flex-direction: column;
-  }
-  
-  .footer-section {
-    text-align: center;
-  }
-  
-  .footer-section h3:after {
-    left: 50%;
-    transform: translateX(-50%);
-  }
+  /* No padding-top: the redesigned Navbar sits in normal document flow
+     rather than as a fixed bar (see Components/Navbar.js), so the page
+     already starts right below it with nothing to clear. */
 }
 
 /* SearchBar Styles */
@@ -222,13 +128,6 @@ canvas#particles-canvas {
   height: 100px;
   opacity: 0.4;
   transition: 0s;
-}
-
-/* NavBar Search Integration */
-.navbar-search {
-  flex: 1;
-  max-width: 500px;
-  margin: 0 20px;
 }
 
 /* Search Results Styles */

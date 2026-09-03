@@ -1,12 +1,11 @@
 /*
  * Slate — the Kikar design vocabulary.
  *
- * This file defines tokens and nothing else. It is imported from index.js
- * BEFORE ./index.css on purpose: the 877-line hand-written stylesheet still
- * owns every screen and is deleted screen by screen, so wherever the two
- * collide the old one has to keep winning until the screen it serves has been
- * rebuilt. The single deliberate exception is the body typeface at the bottom
- * of this file.
+ * This file defines tokens and nothing else. It used to be imported from
+ * index.js BEFORE ./index.css deliberately, so that the 877-line hand-written
+ * stylesheet — deleted screen by screen as each one was rebuilt — kept
+ * winning any collision until the screen it served had its turn. index.css is
+ * gone now that every screen has one; this file is what is left.
  *
  * Tailwind v4 has no JS config: `@theme` IS the config. Each variable's
  * namespace prefix decides which utilities get generated, so `--color-ground`
@@ -152,69 +151,25 @@
 }
 
 /*
- * LEGACY BRIDGE — delete this block together with index.css, not before.
- *
- * Preflight ships inside `@import "tailwindcss"` and it is wanted; the rebuilt
- * screens are written against it. It lands in @layer base, so bootstrap,
- * tachyons and index.css — all unlayered — still outrank it and almost
- * nothing moves. What does move is the handful of resets none of them compete
- * for, and three of those are load-bearing on screens that have not been
- * rebuilt yet:
- *
- *   - `img,svg,canvas { display: block }` un-centres the Dashboard avatar,
- *     which is an inline <img> centred by .dashboard-card's text-align.
- *   - `ul,ol { list-style: none }` strips the bullets off the only two bare
- *     lists in the app, on Privacy and Terms.
- *   - the form-control reset flattens every button that index.css does not
- *     style — AddPost's .toggle-form-btn is a plain browser button today.
- *
- * `revert` rather than restated values, so this is provably "what the browser
- * did before Tailwind" rather than a second opinion about it. It sits in
- * @layer base rather than unlayered on purpose: same layer as preflight and
- * later, so it wins there, while every Tailwind utility (@layer utilities)
- * still wins over it — a `bg-paper`/`rounded-notice` button built in a later
- * sub-task must not be dragged back to browser chrome by this block.
- */
-@layer base {
-  img,
-  svg,
-  canvas {
-    display: revert;
-  }
-
-  ul,
-  ol {
-    list-style: revert;
-  }
-
-  button,
-  input,
-  select,
-  textarea {
-    color: revert;
-    background-color: revert;
-    padding: revert;
-    border: revert;
-    border-radius: revert;
-  }
-}
-
-/*
- * `html body` rather than `body`: index.css is imported after this file and
- * pins the body to "Courier New", so an equal-specificity rule here would lose
- * and the new typeface would never reach the screen. One extra element
- * deliberately outranks it — for the typeface only.
+ * `html body` rather than `body`: harmless now that index.css is gone, but
+ * left at this specificity rather than lowered, since dropping to a plain
+ * `body` buys nothing and this rule has never needed to change.
  */
 html body {
   font-family: var(--font-body);
 }
 
 /*
- * Slate's ink, stated for the point at which index.css is gone. It does not
- * apply yet, and must not: index.css hard-codes a near-black background with
- * light text, and Slate Day's ink is dark, so winning here would print dark
- * text on a dark ground on every screen at once.
+ * Slate's ink AND ground, on the bare body. Not every route paints its own
+ * floor: WavesBackground doesn't render on the plaza route at all (Plaza.js
+ * paints its own, sized to its own content, not the viewport), and Footer is
+ * a page-level sibling that renders after that content ends, on every route
+ * including the plaza. Without a ground colour here, Footer — and anything
+ * else that ends up on bare body — sits on the browser's default background
+ * instead of the paved floor its ink/muted tokens were measured against,
+ * which is unreadable in Slate Night: ink is near-white there.
  */
 body {
   color: var(--color-ink);
+  background-color: var(--color-ground);
 }

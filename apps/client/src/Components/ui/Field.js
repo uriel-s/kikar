@@ -58,12 +58,18 @@ const ERROR = {
  *   label     — the label text (required for it to be a Field at all)
  *   id        — the control's id; generated when omitted
  *   error     — message string. Truthy also turns the border and aria-invalid on
- *   as        — "input" (default) | "textarea"
+ *   as        — "input" (default) | "textarea" | "select". Nothing below reads
+ *               `as` beyond choosing the element, so any tag that wants the
+ *               control's exact box (border, radius, padding, focus ring) works
+ *               here — "select" is deliberately supported, not incidental: its
+ *               `<option>` children ride through in `...rest` since `children`
+ *               is never destructured out of it, and land on `Control` exactly
+ *               where JSX would put them on a literal `<select>`.
  *   className / style — passed through to the wrapper
  *   ref       — forwarded to the control, for the uncontrolled forms that exist
  *               today and for focus management
  *   ...rest   — everything else lands on the control: type, value, onChange,
- *               placeholder, maxLength, required, disabled
+ *               placeholder, maxLength, required, disabled, children
  */
 const Field = forwardRef(function Field(
   {
