@@ -165,6 +165,15 @@ const Plaza = ({ children }) => {
         padding: compact ? "20px 16px 28px" : "40px 40px 46px",
         color: "var(--color-ink)",
         fontFamily: "var(--font-body)",
+        /*
+         * index.css gives `.App` `text-align: center`, and text-align inherits,
+         * so without this every notice on the wall reads centred. Stated here
+         * rather than deleted there on purpose: that one declaration is still
+         * what lays out the nine screens which have not been rebuilt, so
+         * removing it would silently re-align all of them to fix this one. The
+         * ground is the exact boundary of what this screen owns.
+         */
+        textAlign: "left",
       }}
     >
       <div style={{ maxWidth: 1100, margin: "0 auto" }}>
@@ -197,8 +206,9 @@ const Plaza = ({ children }) => {
            * search entirely and the mobile one draws an icon that opens
            * something that does not exist. /search is a working feature with a
            * page behind it, and a redesign is not the moment to delete one.
-           * SearchBar itself keeps its old index.css styling — restyling it
-           * belongs to the sub-task that rebuilds the search screen.
+           * SearchBar carries Slate tokens now — index.css styles every bare
+           * <input> dark, and it is the only input on this screen that is not
+           * a Field. The search SCREEN is still unrebuilt; only the control is.
            */}
           <div style={{ flex: compact ? "1 1 200px" : "0 1 260px", minWidth: 0 }}>
             <SearchBar />

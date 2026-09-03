@@ -106,6 +106,15 @@ const CONTENT = {
   margin: "13px 0 0",
   fontSize: 15.5,
   lineHeight: 1.55,
+  /*
+   * `inherit`, not a token — and it has to be stated at all because index.css
+   * carries a bare `p { color: #e4e6eb }`. An author rule on the element beats
+   * an inherited value from an ancestor, so Notice's paper-ink loses to it and
+   * a post renders light grey on light paper. `inherit` hands the surface back
+   * the decision, which is what makes this correct on the ground too, and is
+   * the same fix Field's label makes against the bare `label { color }`.
+   */
+  color: "inherit",
   textWrap: "pretty",
   // A post is plain text and never an image, so a pasted URL or a single
   // unbroken word is the only thing here that can be wider than the paper.
@@ -187,6 +196,8 @@ const COMMENT_TEXT = {
   margin: "2px 0 0",
   fontSize: 14,
   lineHeight: 1.5,
+  // The bare `p { color }` in index.css reaches this one too — see CONTENT.
+  color: "inherit",
   overflowWrap: "anywhere",
 };
 
