@@ -3,7 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { PlazaProfileContext } from "../contexts/PlazaProfile";
 import * as usersApi from "../api/users";
-import { useNarrowerThan } from "../lib/useMediaQuery";
+import { useNarrowerThan, usePrefersDark } from "../lib/useMediaQuery";
 import Avatar from "./Avatar";
 import SearchBar from "./SearchBar";
 
@@ -92,19 +92,31 @@ const PILL = {
 };
 
 /*
- * The active pill is the ground and the ink swapped over. Its label is
- * `--color-ground` rather than a literal near-white, which is what the Slate
- * Day artboard draws: --color-ink IS near-white in Slate Night, so a near-white
- * label on it would print white on white. Ground and ink invert in lockstep
- * between the two themes, which is the only reason one pair of values can be
- * right in both — 8.3:1 by day, 10:1 at night.
+ * The two themes use genuinely different token pairs for the pills, and the
+ * artboards say so rather than leaving it to be derived. Slate Day: the active
+ * pill is ink with a near-white label, the idle ones are paper. Slate Night:
+ * the active pill is the accent, and the idle ones are chip.
  *
- * The idle pill is paper, and paper does not darken at night (the same reason a
- * Notice stays light paper), so it takes paper's own ink rather than
- * --color-ink, which would flip to near-white on it.
+ * That is not decoration, it is the only thing that works. Ink is near-WHITE in
+ * Slate Night, so carrying the day pair over made the active pill 0.945 sitting
+ * among idle pills at 0.980 — the current page marked by a difference nobody
+ * can see. The accent is the one token that is loud in both themes, and at
+ * night it is the one that has somewhere to go.
+ *
+ * Measured: day 10.54 active / 15.73 idle, night 9.65 active / 9.06 idle. The
+ * night idle pill is only 1.48:1 against the paving, which is deliberate — it
+ * is a shape behind a label, not a control boundary, and the label itself is
+ * the thing that has to be found.
  */
-const PILL_ACTIVE = { background: "var(--color-ink)", color: "var(--color-ground)" };
-const PILL_IDLE = { background: "var(--color-paper)", color: "var(--color-paper-ink)" };
+const PILL_ACTIVE = {
+  day: { background: "var(--color-ink)", color: "var(--color-ground)" },
+  night: { background: "var(--color-accent)", color: "var(--color-on-accent)" },
+};
+
+const PILL_IDLE = {
+  day: { background: "var(--color-paper)", color: "var(--color-paper-ink)" },
+  night: { background: "var(--color-chip)", color: "var(--color-ink)" },
+};
 
 /**
  * The plaza shell.
@@ -117,6 +129,8 @@ const Plaza = ({ children }) => {
   const { currentUser } = useAuth();
   const { pathname } = useLocation();
   const compact = useNarrowerThan(COMPACT);
+  // The pills are the one place the two palettes do not share a rule; see above.
+  const night = usePrefersDark();
   const narrow = useNarrowerThan(NARROW);
   const [profile, setProfile] = useState(null);
 
@@ -227,7 +241,10 @@ const Plaza = ({ children }) => {
                   key={to}
                   to={to}
                   aria-current={current ? "page" : undefined}
-                  style={{ ...PILL, ...(current ? PILL_ACTIVE : PILL_IDLE) }}
+                  style={{
+                    ...PILL,
+                    ...(current ? PILL_ACTIVE : PILL_IDLE)[night ? "night" : "day"],
+                  }}
                 >
                   {label}
                 </Link>
