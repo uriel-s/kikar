@@ -10,6 +10,27 @@ import { NARROW } from "./Plaza";
 const FACES = 6;
 const NARROW_FACES = 4;
 
+/**
+ * The partial user shape this strip draws — the same fields Avatar's own
+ * `AvatarUser` accepts (and AvatarGroup's `users` prop wants). Not imported
+ * from Avatar.tsx because it is not exported there; kept local and permissive
+ * for the same reason as Avatar's own comment: this is not the place a
+ * shared, stricter `User` type gets invented.
+ */
+interface PresencePerson {
+  id?: string;
+  name?: string;
+  avatarUrl?: string | null;
+}
+
+interface PresenceStripProps {
+  /** The people to draw, most relevant first. An empty list renders nothing
+   * at all. */
+  people?: PresencePerson[];
+  className?: string;
+  style?: React.CSSProperties;
+}
+
 /*
  * The artboard draws 38px discs and AVATAR_SIZES is [20, 28, 40, 56, 84].
  * 40, then, and the two pixels are the deviation: that array is exported
@@ -18,7 +39,7 @@ const NARROW_FACES = 4;
  */
 const FACE_SIZE = 40;
 
-const ROOT = {
+const ROOT: React.CSSProperties = {
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
@@ -29,7 +50,7 @@ const ROOT = {
   gap: 16,
 };
 
-const LABEL = {
+const LABEL: React.CSSProperties = {
   fontSize: 11.5,
   fontWeight: 700,
   letterSpacing: "0.16em",
@@ -37,7 +58,7 @@ const LABEL = {
   color: "var(--color-muted)",
 };
 
-const REMAINDER = { fontSize: 12.5, color: "var(--color-muted)" };
+const REMAINDER: React.CSSProperties = { fontSize: 12.5, color: "var(--color-muted)" };
 
 /**
  * "In the square right now" — a row of the people who are here.
@@ -52,7 +73,7 @@ const REMAINDER = { fontSize: 12.5, color: "var(--color-muted)" };
  *               avatarUrl }. An empty list renders nothing at all
  *   className / style — passed through to the row
  */
-const PresenceStrip = ({ people = [], className = "", style }) => {
+const PresenceStrip = ({ people = [], className = "", style }: PresenceStripProps) => {
   const narrow = useNarrowerThan(NARROW);
   /*
    * avatarColor’s `ground` names the SURFACE the disc sits on, not the theme,
