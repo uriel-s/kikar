@@ -11,9 +11,11 @@ import SearchBar from "./SearchBar";
  * comment on OffPlaza in App.js. It stands directly on WavesBackground's
  * paved floor (fixed, zIndex -1, behind everything), the same way Plaza.js's
  * own header stands on the ground it paints. Slate tokens throughout, inline
- * styles rather than a stylesheet — see the header of Components/ui/Button.js
- * for why: index.css is 877 unlayered lines and would win over any Tailwind
- * utility class here.
+ * styles rather than a stylesheet — the same convention every other rebuilt
+ * screen and primitive follows (see the header of Components/ui/Button.js),
+ * originally because a legacy index.css would have won over any Tailwind
+ * utility class; that file is gone now, but the convention is what keeps
+ * every screen in one vocabulary.
  *
  * Icons are inline SVG on a 24 grid, stroke-based, the same Glyph pattern
  * PostCard.js and ui/EmptyState.js use — never emoji, never the FontAwesome
@@ -290,8 +292,16 @@ const Navbar = () => {
           </div>
         )}
 
-        {compact && isMenuActive && (
-          <nav id="navbar-menu" aria-label="Account" style={MOBILE_NAV}>
+        {/* Rendered (hidden, not unmounted) whenever compact — not only while
+            open — so the toggle button's aria-controls always names an id
+            that actually exists in the document. */}
+        {compact && (
+          <nav
+            id="navbar-menu"
+            aria-label="Account"
+            style={MOBILE_NAV}
+            hidden={!isMenuActive}
+          >
             {items}
           </nav>
         )}

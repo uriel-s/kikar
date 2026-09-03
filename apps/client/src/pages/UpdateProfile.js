@@ -149,7 +149,7 @@ function UpdateProfile() {
 
   if (isLoading) {
     return (
-      <div>
+      <div aria-busy="true">
         <Notice as="div" style={FRAME}>
           <Skeleton width="55%" height={22} style={{ marginBottom: 20 }} />
 

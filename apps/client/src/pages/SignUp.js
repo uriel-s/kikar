@@ -64,6 +64,17 @@ const FOOTER = {
   color: "var(--color-muted)",
 };
 
+// Explicit, not inherited: Tailwind's preflight resets `a { color: inherit;
+// text-decoration: inherit }`, and now that Bootstrap (which used to give
+// every bare <a> a colour and an underline) is gone, a Link with no style of
+// its own is indistinguishable from the surrounding sentence — exactly the
+// one line on this page whose whole job is being noticed.
+const FOOTER_LINK = {
+  color: "var(--color-accent)",
+  fontWeight: 600,
+  textDecoration: "underline",
+};
+
 function SignUp() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [error, setError] = useState("");
@@ -212,7 +223,10 @@ function SignUp() {
       </Notice>
 
       <p style={FOOTER}>
-        Already have an account? <Link to="/signin">Log In</Link>
+        Already have an account?{" "}
+        <Link to="/signin" style={FOOTER_LINK}>
+          Log In
+        </Link>
       </p>
     </div>
   );

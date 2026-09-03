@@ -141,7 +141,7 @@ export default function Dashboard() {
 
   if (isLoading) {
     return (
-      <div>
+      <div aria-busy="true">
         <Notice as="div" style={FRAME}>
           <div style={SKELETON_AVATAR_WRAP}>
             <Skeleton variant="circle" width={84} />

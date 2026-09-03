@@ -77,12 +77,13 @@ const SECTION_TITLE = {
   lineHeight: 1.3,
 };
 
-// color: "inherit" is load-bearing, not decorative. index.css still carries
-// a bare, unlayered `p { color: #e4e6eb; ... }` for the screens not yet
-// rebuilt — an element rule beats the paper-ink Notice's SURFACE sets on its
-// wrapper div, so without this every line here would render pale grey on
-// light paper. PostCard's CONTENT/COMMENT_TEXT make the identical fix
-// against the identical rule.
+// color: "inherit" is stated explicitly rather than left to be inherited.
+// index.css used to carry a bare, unlayered `p { color: #e4e6eb; ... }` —
+// an element rule that would have beaten the paper-ink Notice's SURFACE sets
+// on its wrapper div, so this line here would have rendered pale grey on
+// light paper. Gone together with index.css, but stated here anyway so this
+// line does not depend on a rule that no longer exists — the same fix
+// PostCard's CONTENT/COMMENT_TEXT make against the same rule.
 const INFO_LINE = {
   margin: "0 0 10px",
   fontSize: 15,
@@ -120,7 +121,11 @@ const Contact = () => {
 
       {submitted ? (
         <Notice as="div">
-          <p style={CONFIRMATION}>
+          {/* role="status": this replaces the form after a successful submit
+              rather than being present all along, so a screen-reader user
+              needs the same kind of interrupt the role="alert" errors below
+              get — just the non-urgent variant, since nothing failed. */}
+          <p role="status" style={CONFIRMATION}>
             <CheckIcon />
             Thank you for your message! We will get back to you soon.
           </p>

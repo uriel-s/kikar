@@ -33,12 +33,13 @@ const SECTION_TITLE = {
 
 const FIRST_SECTION_TITLE = { ...SECTION_TITLE, marginTop: 0 };
 
-// color: "inherit" is load-bearing, not decorative. index.css still carries
-// a bare, unlayered `p { color: #e4e6eb; ... }` for the screens not yet
-// rebuilt — an element rule beats the paper-ink Notice's SURFACE sets on its
-// wrapper div, so without this every paragraph here would render pale grey
-// on light paper. PostCard's CONTENT/COMMENT_TEXT make the identical fix
-// against the identical rule.
+// color: "inherit" is stated explicitly rather than left to be inherited.
+// index.css used to carry a bare, unlayered `p { color: #e4e6eb; ... }` —
+// an element rule that would have beaten the paper-ink Notice's SURFACE sets
+// on its wrapper div, so every paragraph here would have rendered pale grey
+// on light paper. Gone together with index.css, but stated here anyway so
+// this list does not depend on a rule that no longer exists — the same fix
+// PostCard's CONTENT/COMMENT_TEXT make against the same rule.
 const BODY_TEXT = {
   margin: "0 0 16px",
   fontSize: 15,

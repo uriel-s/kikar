@@ -159,9 +159,17 @@ html body {
   font-family: var(--font-body);
 }
 
-/* Slate's ink. Used to be stated as a no-op ahead of index.css's deletion —
-   see git history if the reasoning for the split from `html body` above is
-   ever needed again — and applies for real now that that file is gone. */
+/*
+ * Slate's ink AND ground, on the bare body. Not every route paints its own
+ * floor: WavesBackground doesn't render on the plaza route at all (Plaza.js
+ * paints its own, sized to its own content, not the viewport), and Footer is
+ * a page-level sibling that renders after that content ends, on every route
+ * including the plaza. Without a ground colour here, Footer — and anything
+ * else that ends up on bare body — sits on the browser's default background
+ * instead of the paved floor its ink/muted tokens were measured against,
+ * which is unreadable in Slate Night: ink is near-white there.
+ */
 body {
   color: var(--color-ink);
+  background-color: var(--color-ground);
 }
