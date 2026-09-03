@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link } from "../lib/router";
+import { useLocation } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
-import { PlazaProfileContext } from "../contexts/PlazaProfile";
+import { PlazaProfileContext, PlazaProfileValue } from "../contexts/PlazaProfile";
 import * as usersApi from "../api/users";
 import { useNarrowerThan, usePrefersDark } from "../lib/useMediaQuery";
 import Avatar from "./Avatar";
@@ -62,10 +63,10 @@ const NAV = [
 
 // "/" matches only itself — every path starts with it. The others own their
 // subtrees, so /me/settings still lights "You" rather than nothing.
-const isCurrent = (pathname, to) =>
+const isCurrent = (pathname: string, to: string): boolean =>
   to === "/" ? pathname === "/" : pathname === to || pathname.startsWith(`${to}/`);
 
-const WORDMARK = {
+const WORDMARK: React.CSSProperties = {
   fontFamily: "var(--font-display)",
   fontSize: 42,
   letterSpacing: "-0.025em",
@@ -74,7 +75,7 @@ const WORDMARK = {
   textDecoration: "none",
 };
 
-const DATE = {
+const DATE: React.CSSProperties = {
   fontSize: 12,
   fontWeight: 700,
   letterSpacing: "0.18em",
@@ -83,7 +84,7 @@ const DATE = {
   whiteSpace: "nowrap",
 };
 
-const PILL = {
+const PILL: React.CSSProperties = {
   padding: "9px 17px",
   borderRadius: "var(--radius-pill)",
   fontSize: 12,
@@ -111,12 +112,12 @@ const PILL = {
  * is a shape behind a label, not a control boundary, and the label itself is
  * the thing that has to be found.
  */
-const PILL_ACTIVE = {
+const PILL_ACTIVE: { day: React.CSSProperties; night: React.CSSProperties } = {
   day: { background: "var(--color-ink)", color: "var(--color-ground)" },
   night: { background: "var(--color-accent)", color: "var(--color-on-accent)" },
 };
 
-const PILL_IDLE = {
+const PILL_IDLE: { day: React.CSSProperties; night: React.CSSProperties } = {
   day: { background: "var(--color-paper)", color: "var(--color-paper-ink)" },
   night: { background: "var(--color-chip)", color: "var(--color-ink)" },
 };
@@ -128,14 +129,14 @@ const PILL_IDLE = {
  *   children — the screen that stands on the ground, rendered inside the same
  *              1100px column as the header
  */
-const Plaza = ({ children }) => {
+const Plaza = ({ children }: { children: React.ReactNode }) => {
   const { currentUser } = useAuth();
   const { pathname } = useLocation();
   const compact = useNarrowerThan(COMPACT);
   // The pills are the one place the two palettes do not share a rule; see above.
   const night = usePrefersDark();
   const narrow = useNarrowerThan(NARROW);
-  const [profile, setProfile] = useState(null);
+  const [profile, setProfile] = useState<PlazaProfileValue | null>(null);
 
   const uid = currentUser?.uid;
 
