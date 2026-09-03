@@ -15,9 +15,9 @@ import { useCallback, useSyncExternalStore } from "react";
  * argument is the server snapshot — `false` — because nothing here is
  * server-rendered and neither question can be answered without a window.
  */
-const useMediaQuery = (query) => {
+const useMediaQuery = (query: string): boolean => {
   const subscribe = useCallback(
-    (onChange) => {
+    (onChange: () => void) => {
       const media = window.matchMedia(query);
       media.addEventListener("change", onChange);
       return () => media.removeEventListener("change", onChange);
@@ -35,7 +35,8 @@ const useMediaQuery = (query) => {
 /**
  * True while the viewport is narrower than `px`.
  */
-export const useNarrowerThan = (px) => useMediaQuery(`(max-width: ${px - 1}px)`);
+export const useNarrowerThan = (px: number): boolean =>
+  useMediaQuery(`(max-width: ${px - 1}px)`);
 
 /**
  * True while the reader is in Slate Night.
@@ -48,4 +49,5 @@ export const useNarrowerThan = (px) => useMediaQuery(`(max-width: ${px - 1}px)`)
  * There is no CSS-only answer: the choice is a value passed to a function, not
  * a declaration a media query could override.
  */
-export const usePrefersDark = () => useMediaQuery("(prefers-color-scheme: dark)");
+export const usePrefersDark = (): boolean =>
+  useMediaQuery("(prefers-color-scheme: dark)");

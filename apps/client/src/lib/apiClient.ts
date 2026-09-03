@@ -1,4 +1,4 @@
-import axios from "axios";
+import axios, { type AxiosInstance } from "axios";
 import { auth } from "../firebase";
 
 // Same origin by default in a production build: the API is served from /api on
@@ -17,7 +17,7 @@ const baseURL = configured || (import.meta.env.DEV ? "http://localhost:5000" : "
 // application/json for plain objects, and multipart/form-data *with a boundary*
 // for FormData. A hardcoded default here would override the latter and produce
 // an avatar upload the server cannot parse.
-export const api = axios.create({
+export const api: AxiosInstance = axios.create({
   baseURL: `${baseURL}/api`,
 });
 
@@ -45,7 +45,13 @@ api.interceptors.request.use(async (config) => {
 
 /** Turns the API's `{ error: { message, details } }` body into an Error. */
 export class ApiRequestError extends Error {
-  constructor(message, { status, details } = {}) {
+  status?: number;
+  details?: unknown;
+
+  constructor(
+    message: string,
+    { status, details }: { status?: number; details?: unknown } = {}
+  ) {
     super(message);
     this.name = "ApiRequestError";
     this.status = status;
@@ -57,7 +63,10 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response) {
-      const body = error.response.data?.error;
+      const body = (
+        error.response.data as
+          { error?: { message?: string; details?: unknown } } | undefined
+      )?.error;
       return Promise.reject(
         new ApiRequestError(body?.message || "Request failed", {
           status: error.response.status,

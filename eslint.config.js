@@ -102,7 +102,7 @@ module.exports = [
   // runs tsc. One tool owns types.
   ...tseslint.configs.recommended.map((config) => ({
     ...config,
-    files: ["apps/server/**/*.ts", "packages/shared/**/*.ts"],
+    files: ["apps/server/**/*.ts", "packages/shared/**/*.ts", "apps/client/src/**/*.ts"],
   })),
   {
     files: ["apps/server/**/*.ts"],
@@ -134,6 +134,26 @@ module.exports = [
     languageOptions: {
       ecmaVersion: 2024,
       sourceType: "module",
+    },
+    rules: {
+      "@typescript-eslint/no-unused-vars": [
+        "error",
+        { argsIgnorePattern: "^_", varsIgnorePattern: "^_", caughtErrors: "all" },
+      ],
+    },
+  },
+
+  // Client TypeScript — covers only src/lib and src/api today, the two
+  // directories this stage converts. No JSX here: Components/pages stay
+  // .js/JSX until a later stage converts them to .tsx, which will need its
+  // own block combining this with the react/jsx-a11y plugins already set up
+  // for the client's .js block below.
+  {
+    files: ["apps/client/src/**/*.ts"],
+    languageOptions: {
+      ecmaVersion: 2024,
+      sourceType: "module",
+      globals: globals.browser,
     },
     rules: {
       "@typescript-eslint/no-unused-vars": [
