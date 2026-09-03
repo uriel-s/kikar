@@ -8,6 +8,7 @@ import Notice from "../Components/ui/Notice";
 import Skeleton from "../Components/ui/Skeleton";
 import { useAuth } from "../contexts/AuthContext";
 import { useNarrowerThan } from "../lib/useMediaQuery";
+import { ApiRequestError } from "../lib/apiClient";
 import * as postsApi from "../api/posts";
 
 /*
@@ -27,7 +28,7 @@ const GAP = 30;
 // rather than like a wall with one notice on it.
 const SKELETONS_PER_COLUMN = 2;
 
-const COLUMN = {
+const COLUMN: React.CSSProperties = {
   display: "flex",
   flexDirection: "column",
   // The column owns the vertical gap. PostCard sets no margin of its own, for
@@ -47,7 +48,7 @@ const COLUMN = {
  * the composer above it, which is struck from the same vanishing point as the
  * paving.
  */
-const wallStyle = (count) => ({
+const wallStyle = (count: number): React.CSSProperties => ({
   display: "grid",
   gridTemplateColumns: `repeat(${count}, minmax(0, ${COLUMN_WIDTH}px))`,
   gap: GAP,
@@ -57,9 +58,9 @@ const wallStyle = (count) => ({
   alignItems: "start",
 });
 
-const REGION = { marginTop: 38 };
+const REGION: React.CSSProperties = { marginTop: 38 };
 
-const STRIP = { marginTop: 24 };
+const STRIP: React.CSSProperties = { marginTop: 24 };
 
 /*
  * Ink, not --color-like, which is what an error message wants to be and what
@@ -70,7 +71,7 @@ const STRIP = { marginTop: 24 };
  * role="alert" is what actually announces this as a failure; a colour was
  * never doing that job for anyone who could not see it.
  */
-const ERROR = {
+const ERROR: React.CSSProperties = {
   margin: "24px 0 0",
   textAlign: "center",
   fontSize: 14,
@@ -78,10 +79,18 @@ const ERROR = {
   color: "var(--color-ink)",
 };
 
-const LOAD_MORE = { display: "flex", justifyContent: "center", marginTop: 34 };
+const LOAD_MORE: React.CSSProperties = {
+  display: "flex",
+  justifyContent: "center",
+  marginTop: 34,
+};
 
-const SKELETON_HEAD = { display: "flex", alignItems: "center", gap: 12 };
-const SKELETON_LINES = {
+const SKELETON_HEAD: React.CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  gap: 12,
+};
+const SKELETON_LINES: React.CSSProperties = {
   display: "flex",
   flexDirection: "column",
   gap: 7,
@@ -90,7 +99,12 @@ const SKELETON_LINES = {
   minWidth: 0,
   flexGrow: 1,
 };
-const SKELETON_BODY = { display: "flex", flexDirection: "column", gap: 9, marginTop: 15 };
+const SKELETON_BODY: React.CSSProperties = {
+  display: "flex",
+  flexDirection: "column",
+  gap: 9,
+  marginTop: 15,
+};
 
 /**
  * A notice with nothing in it yet.
@@ -117,13 +131,41 @@ const SkeletonNotice = () => (
 );
 
 /**
+ * The partial author shape a post carries — the same fields Avatar's own
+ * `AvatarUser` accepts, and structurally the same shape PostCard.tsx's own
+ * (non-exported) `PostAuthor` declares locally, for the same reason:
+ * `api/posts.ts` still returns an untyped row, so this is not the place a
+ * shared, stricter `User` type gets invented.
+ */
+interface PostAuthor {
+  id?: string;
+  name?: string;
+  avatarUrl?: string | null;
+}
+
+/**
+ * The feed shape this page reads and passes straight into `<PostCard
+ * post={...} />` — structurally compatible with PostCard's own (non-exported)
+ * local `Post` interface, which is not exported from PostCard.tsx.
+ */
+interface Post {
+  id: string;
+  author: PostAuthor;
+  content: string;
+  createdAt?: Date | string | number | null;
+  likeCount: number;
+  commentCount: number;
+  likedByMe: boolean;
+}
+
+/**
  * Deals `items` across `count` columns round robin — 0 to the first, 1 to the
  * second, 2 to the third, 3 back to the first. Used for the loading
  * placeholders, which exist for exactly one render and have no identity of
  * their own to preserve.
  */
-const intoColumns = (items, count) => {
-  const columns = Array.from({ length: count }, () => []);
+const intoColumns = (items: number[], count: number): number[][] => {
+  const columns: number[][] = Array.from({ length: count }, () => []);
   items.forEach((item, index) => columns[index % count].push(item));
   return columns;
 };
@@ -144,7 +186,7 @@ const intoColumns = (items, count) => {
  * property round robin gave the feed's first paint — a post's column is now
  * fixed by its id, not by when it arrived.
  */
-const columnFor = (id, count) => {
+const columnFor = (id: string | undefined, count: number): number => {
   const hash = [...String(id ?? "")].reduce(
     (h, ch) => (h * 31 + ch.charCodeAt(0)) % 997,
     7
@@ -152,8 +194,8 @@ const columnFor = (id, count) => {
   return hash % count;
 };
 
-const intoPostColumns = (posts, count) => {
-  const columns = Array.from({ length: count }, () => []);
+const intoPostColumns = (posts: Post[], count: number): Post[][] => {
+  const columns: Post[][] = Array.from({ length: count }, () => []);
   posts.forEach((post) => columns[columnFor(post.id, count)].push(post));
   return columns;
 };
@@ -175,14 +217,14 @@ const intoPostColumns = (posts, count) => {
  * single notice without reference to where it sits. Below 720 there is one
  * list, in true feed order, and the problem disappears entirely.
  */
-const columnLabel = (index, count) =>
+const columnLabel = (index: number, count: number): string =>
   count === 1 ? "Notices" : `Notices, column ${index + 1} of ${count}`;
 
 /**
  * How many columns fit. Two subscriptions rather than one, because a media
  * query answers yes or no and there are three answers.
  */
-const useColumnCount = () => {
+const useColumnCount = (): number => {
   const belowThree = useNarrowerThan(THREE_COLUMNS);
   const belowTwo = useNarrowerThan(TWO_COLUMNS);
 
@@ -191,8 +233,8 @@ const useColumnCount = () => {
 };
 
 const PostsPage = () => {
-  const [posts, setPosts] = useState([]);
-  const [nextCursor, setNextCursor] = useState(null);
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [error, setError] = useState("");
@@ -207,7 +249,9 @@ const PostsPage = () => {
       setPosts(page);
       setNextCursor(cursor);
     } catch (err) {
-      setError(err.message);
+      // `strict` types the catch binding `unknown`, not `any` — narrow it
+      // before reading `.message` rather than reaching for a cast.
+      setError(err instanceof Error ? err.message : String(err));
     } finally {
       setIsLoading(false);
     }
@@ -228,7 +272,7 @@ const PostsPage = () => {
       setPosts((current) => [...current, ...page]);
       setNextCursor(cursor);
     } catch (err) {
-      setError(err.message);
+      setError(err instanceof Error ? err.message : String(err));
     } finally {
       setIsLoadingMore(false);
     }
@@ -253,8 +297,8 @@ const PostsPage = () => {
    * so that swap is this memo and nothing else.
    */
   const peopleInTheSquare = useMemo(() => {
-    const seen = new Set();
-    const people = [];
+    const seen = new Set<string | undefined>();
+    const people: PostAuthor[] = [];
 
     posts.forEach(({ author }) => {
       if (author && !seen.has(author.id)) {
@@ -266,13 +310,18 @@ const PostsPage = () => {
     return people;
   }, [posts]);
 
-  const patchPost = (postId, changes) =>
+  const patchPost = (postId: string, changes: Partial<Post>) =>
     setPosts((current) =>
       current.map((post) => (post.id === postId ? { ...post, ...changes } : post))
     );
 
-  const handlePostCreated = (post) => {
-    setPosts((current) => [post, ...current]);
+  // AddPostForm's `onPostCreated` is typed `(post: unknown) => void` — see its
+  // own comment for why (`postsApi.createPost` has no declared return type,
+  // so there is nothing more specific to type it against there) — so the
+  // created post is cast back to this page's own `Post` shape here, where the
+  // feed's own type is what everything downstream (PostCard, patchPost) needs.
+  const handlePostCreated = (post: unknown) => {
+    setPosts((current) => [post as Post, ...current]);
   };
 
   /**
@@ -281,7 +330,7 @@ const PostsPage = () => {
    * The server owns the count, so its response is what finally lands — two
    * people liking at once no longer produces two different totals on screen.
    */
-  const handleLike = async (postId, isLiked) => {
+  const handleLike = async (postId: string, isLiked: boolean) => {
     const post = posts.find((candidate) => candidate.id === postId);
     if (!post) return;
 
@@ -297,18 +346,18 @@ const PostsPage = () => {
       patchPost(postId, { likeCount });
     } catch (err) {
       patchPost(postId, { likedByMe: post.likedByMe, likeCount: post.likeCount });
-      setError(err.message);
+      setError(err instanceof Error ? err.message : String(err));
     }
   };
 
-  const handleCommentAdded = (postId) => {
+  const handleCommentAdded = (postId: string) => {
     const post = posts.find((candidate) => candidate.id === postId);
     if (post) {
       patchPost(postId, { commentCount: post.commentCount + 1 });
     }
   };
 
-  const handleDelete = async (postId) => {
+  const handleDelete = async (postId: string) => {
     const snapshot = posts;
     setPosts((current) => current.filter((post) => post.id !== postId));
 
@@ -316,10 +365,10 @@ const PostsPage = () => {
       await postsApi.deletePost(postId);
     } catch (err) {
       // A post someone else already deleted should stay gone on screen.
-      if (err.status !== 404) {
+      if (!(err instanceof ApiRequestError) || err.status !== 404) {
         setPosts(snapshot);
       }
-      setError(err.message);
+      setError(err instanceof Error ? err.message : String(err));
     }
   };
 
