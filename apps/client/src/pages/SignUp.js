@@ -1,10 +1,12 @@
 import React, { useState } from "react";
-import { useAuth } from "../contexts/AuthContext";
-import Alert from "react-bootstrap/Alert";
 import { Link, useHistory } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
 import { validEmail } from "../Regex";
 import * as usersApi from "../api/users";
 import { auth } from "../firebase";
+import Button from "../Components/ui/Button";
+import Field from "../Components/ui/Field";
+import Notice from "../Components/ui/Notice";
 
 const MIN_PASSWORD_LENGTH = 6;
 
@@ -15,6 +17,51 @@ const EMPTY_FORM = {
   name: "",
   address: "",
   birthDate: "",
+};
+
+// Field's own error type, restated here: this message answers for the whole
+// form rather than one control, the same reasoning PostCard's comment-form
+// ERROR gives for doing the same thing.
+const ERROR = {
+  margin: "0 0 16px",
+  fontSize: 13,
+  fontWeight: 600,
+  color: "var(--color-like)",
+};
+
+// No background/max-width fight with the ground here — WavesBackground paves
+// the floor behind this whole route, so the frame only has to centre the
+// notice on it and keep it off the screen edge on a phone.
+const FRAME = {
+  maxWidth: 440,
+  margin: "48px auto 0",
+  padding: "0 20px",
+  boxSizing: "border-box",
+};
+
+const TITLE = {
+  margin: "0 0 20px",
+  fontFamily: "var(--font-display)",
+  fontSize: 26,
+  lineHeight: 1.2,
+};
+
+const FIELD_GAP = { marginTop: 14 };
+
+const ACTIONS = { marginTop: 20 };
+
+// ink/muted, not paper-ink/paper-muted: this line sits on the paved ground
+// below the notice, not on paper, the same reasoning Footer.js gives for its
+// own text.
+const FOOTER = {
+  maxWidth: 440,
+  margin: "18px auto 0",
+  padding: "0 20px",
+  boxSizing: "border-box",
+  textAlign: "center",
+  fontFamily: "var(--font-body)",
+  fontSize: 14,
+  color: "var(--color-muted)",
 };
 
 function SignUp() {
@@ -82,119 +129,91 @@ function SignUp() {
   };
 
   return (
-    <div className="mt6">
-      <article className="grow br3 ba b--black-10 mv4 w-100 w-50-m w-25-l mw6 shadow-5 center">
-        <main className="pa4 black-80">
-          <form className="measure" onSubmit={handleSubmit}>
-            <fieldset id="sign_up" className="ba b--transparent ph0 mh0">
-              <legend className="f1 fw6 ph0 mh0">
-                Register <i className="fas fa-user-plus"></i>
-              </legend>
+    <div>
+      {/*
+       * `as="form"` puts the keyline rim on the form itself, the way AddPost's
+       * composer does — the whole notice IS the form.
+       */}
+      <Notice as="form" onSubmit={handleSubmit} style={FRAME}>
+        <h1 style={TITLE}>Register</h1>
 
-              {error && <Alert variant="danger">{error}</Alert>}
+        {error ? (
+          <p role="alert" style={ERROR}>
+            {error}
+          </p>
+        ) : null}
 
-              <div className="mt3">
-                <label className="db fw6 lh-copy f6" htmlFor="email">
-                  * Email
-                </label>
-                <input
-                  id="email"
-                  className="pa2 input-reset ba w-100"
-                  type="email"
-                  autoComplete="email"
-                  value={form.email}
-                  onChange={setField("email")}
-                  required
-                />
-              </div>
+        <Field
+          label="* Email"
+          type="email"
+          autoComplete="email"
+          value={form.email}
+          onChange={setField("email")}
+          required
+        />
 
-              <div className="mv3">
-                <label className="db fw6 lh-copy f6" htmlFor="password">
-                  * Password
-                </label>
-                <input
-                  id="password"
-                  className="pa2 input-reset ba w-100"
-                  type="password"
-                  autoComplete="new-password"
-                  value={form.password}
-                  onChange={setField("password")}
-                  required
-                />
-              </div>
+        <div style={FIELD_GAP}>
+          <Field
+            label="* Password"
+            type="password"
+            autoComplete="new-password"
+            value={form.password}
+            onChange={setField("password")}
+            required
+          />
+        </div>
 
-              <div className="mv3">
-                <label className="db fw6 lh-copy f6" htmlFor="password-confirm">
-                  * Verify Password
-                </label>
-                <input
-                  id="password-confirm"
-                  className="pa2 input-reset ba w-100"
-                  type="password"
-                  autoComplete="new-password"
-                  value={form.passwordConfirm}
-                  onChange={setField("passwordConfirm")}
-                  required
-                />
-              </div>
+        <div style={FIELD_GAP}>
+          <Field
+            label="* Verify Password"
+            type="password"
+            autoComplete="new-password"
+            value={form.passwordConfirm}
+            onChange={setField("passwordConfirm")}
+            required
+          />
+        </div>
 
-              <div className="mt3">
-                <label className="db fw6 lh-copy f6" htmlFor="name">
-                  * Name
-                </label>
-                <input
-                  id="name"
-                  className="pa2 input-reset ba w-100"
-                  type="text"
-                  autoComplete="name"
-                  value={form.name}
-                  onChange={setField("name")}
-                  required
-                />
-              </div>
+        <div style={FIELD_GAP}>
+          <Field
+            label="* Name"
+            type="text"
+            autoComplete="name"
+            value={form.name}
+            onChange={setField("name")}
+            required
+          />
+        </div>
 
-              <div className="mt3">
-                <label className="db fw6 lh-copy f6" htmlFor="address">
-                  Address
-                </label>
-                <input
-                  id="address"
-                  className="pa2 input-reset ba w-100"
-                  type="text"
-                  autoComplete="street-address"
-                  value={form.address}
-                  onChange={setField("address")}
-                />
-              </div>
+        <div style={FIELD_GAP}>
+          <Field
+            label="Address"
+            type="text"
+            autoComplete="street-address"
+            value={form.address}
+            onChange={setField("address")}
+          />
+        </div>
 
-              <div className="mv3">
-                <label className="db fw6 lh-copy f6" htmlFor="birth-date">
-                  Birth Date
-                </label>
-                <input
-                  id="birth-date"
-                  className="pa2 input-reset ba w-100"
-                  type="date"
-                  value={form.birthDate}
-                  onChange={setField("birthDate")}
-                />
-              </div>
-            </fieldset>
+        <div style={FIELD_GAP}>
+          <Field
+            label="Birth Date"
+            type="date"
+            value={form.birthDate}
+            onChange={setField("birthDate")}
+          />
+        </div>
 
-            <button
-              disabled={loading}
-              className="b ph3 pv2 input-reset ba b--black bg-transparent grow pointer f6 dib"
-              type="submit"
-            >
-              {loading ? "Creating account..." : "Register"}
-            </button>
-          </form>
-        </main>
-      </article>
+        <div style={ACTIONS}>
+          <Button type="submit" variant="primary" disabled={loading}>
+            {loading ? "Creating account…" : "Register"}
+          </Button>
+        </div>
+      </Notice>
 
-      <div className="w-100 text-center mt-2 grow">
+      <p style={FOOTER}>
         Already have an account? <Link to="/signin">Log In</Link>
-      </div>
+      </p>
     </div>
   );
 }

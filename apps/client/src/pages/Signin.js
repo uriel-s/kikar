@@ -1,7 +1,54 @@
 import React, { useRef, useState } from "react";
-import { useAuth } from "../contexts/AuthContext";
 import { Link, useHistory } from "react-router-dom";
-import Alert from "react-bootstrap/Alert";
+import { useAuth } from "../contexts/AuthContext";
+import Button from "../Components/ui/Button";
+import Field from "../Components/ui/Field";
+import Notice from "../Components/ui/Notice";
+
+// Field's own error type, restated here: this message answers for the whole
+// form rather than one control, the same reasoning PostCard's comment-form
+// ERROR gives for doing the same thing.
+const ERROR = {
+  margin: "0 0 16px",
+  fontSize: 13,
+  fontWeight: 600,
+  color: "var(--color-like)",
+};
+
+// No background/max-width fight with the ground here — WavesBackground paves
+// the floor behind this whole route, so the frame only has to centre the
+// notice on it and keep it off the screen edge on a phone.
+const FRAME = {
+  maxWidth: 440,
+  margin: "48px auto 0",
+  padding: "0 20px",
+  boxSizing: "border-box",
+};
+
+const TITLE = {
+  margin: "0 0 20px",
+  fontFamily: "var(--font-display)",
+  fontSize: 26,
+  lineHeight: 1.2,
+};
+
+const FIELD_GAP = { marginTop: 14 };
+
+const ACTIONS = { marginTop: 20 };
+
+// ink/muted, not paper-ink/paper-muted: this line sits on the paved ground
+// below the notice, not on paper, the same reasoning Footer.js gives for its
+// own text.
+const FOOTER = {
+  maxWidth: 440,
+  margin: "18px auto 0",
+  padding: "0 20px",
+  boxSizing: "border-box",
+  textAlign: "center",
+  fontFamily: "var(--font-body)",
+  fontSize: 14,
+  color: "var(--color-muted)",
+};
 
 function Signin() {
   const emailRef = useRef();
@@ -27,57 +74,40 @@ function Signin() {
   }
 
   return (
-    <div className="mt6">
-      <article className="grow br3 ba b--black-10 mv4 w-100 w-50-m w-25-l mw6 shadow-5 center">
-        <main className="pa4 black-80">
-          <div className="measure">
-            <fieldset id="sign_up" className="ba b--transparent ph0 mh0">
-              <legend className="f1 fw6 ph0 mh0">
-                <i className="fas fa-door-open"></i>
-                Login
-              </legend>
-              {error && <Alert variant="danger">{error}</Alert>}
-              <div className="mt3">
-                <label className="db fw6 lh-copy f6" htmlFor="email-address">
-                  Email
-                </label>
-                <input
-                  ref={emailRef}
-                  className="pa2 input-reset ba bg-transparent hover-bg-black hover-white w-100"
-                  type="email"
-                  name="email-address"
-                  id="email-address"
-                />
-              </div>
+    <div>
+      {/*
+       * `as="form"` puts the keyline rim on the form itself, the way AddPost's
+       * composer does, and — unlike the old markup — actually wires the
+       * submit up: there was no <form> element here before, just a bare
+       * <input type="submit"> whose onClick called handleSubmit by hand, so
+       * pressing Enter in a field did nothing. A real <form onSubmit> fixes
+       * that for free.
+       */}
+      <Notice as="form" onSubmit={handleSubmit} style={FRAME}>
+        <h1 style={TITLE}>Sign in</h1>
 
-              <div className="mv3">
-                <label className="db fw6 lh-copy f6" htmlFor="password">
-                  Password
-                </label>
-                <input
-                  ref={passwordRef}
-                  className="b pa2 input-reset ba bg-transparent hover-bg-black hover-white w-100"
-                  type="password"
-                  name="password"
-                  id="password"
-                />
-              </div>
-            </fieldset>
-            <div className="">
-              <input
-                disabled={loading}
-                onClick={handleSubmit}
-                className="b ph3 pv2 input-reset ba b--black bg-transparent grow pointer f6 dib"
-                type="submit"
-                value={loading ? "Logging in..." : "Login"}
-              />
-            </div>
-          </div>
-        </main>
-      </article>
-      <div className="w-100 grow text-center mt-2">
+        {error ? (
+          <p role="alert" style={ERROR}>
+            {error}
+          </p>
+        ) : null}
+
+        <Field ref={emailRef} label="Email" type="email" name="email-address" />
+
+        <div style={FIELD_GAP}>
+          <Field ref={passwordRef} label="Password" type="password" name="password" />
+        </div>
+
+        <div style={ACTIONS}>
+          <Button type="submit" variant="primary" disabled={loading}>
+            {loading ? "Signing in…" : "Sign in"}
+          </Button>
+        </div>
+      </Notice>
+
+      <p style={FOOTER}>
         Need an account? <Link to="/signup">Sign Up</Link>
-      </div>
+      </p>
     </div>
   );
 }
