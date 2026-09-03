@@ -40,7 +40,9 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@types/express": "^5.0.6",
     "@types/jest": "^30.0.0",
+    "@types/multer": "^2.2.0",
     "@types/node": "^22.20.1",
     "jest": "^30.4.2",
     "pino-pretty": "^13.1.3",

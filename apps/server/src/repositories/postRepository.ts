@@ -1,4 +1,42 @@
-const { PUBLIC_FIELDS, page } = require("./userRepository");
+import type { Prisma, PrismaClient } from "../generated/prisma";
+import { PUBLIC_FIELDS, page } from "./userRepository";
+import type { ListOptions } from "./userRepository";
+
+// Same reason as PUBLIC_FIELDS in userRepository: `as const` keeps each member
+// at `true` instead of widening to `boolean`, which is what lets PostRow below
+// be derived from this selection rather than written out by hand and drifting
+// from it.
+const selectFor = (viewerId: string) =>
+  ({
+    id: true,
+    content: true,
+    createdAt: true,
+    authorId: true,
+    author: { select: PUBLIC_FIELDS },
+    _count: { select: { likes: true, comments: true } },
+    likes: { where: { userId: viewerId }, select: { userId: true } },
+  }) as const satisfies Prisma.PostSelect;
+
+/** A post row exactly as `selectFor` asks for it — the input toApiPost shapes. */
+type PostRow = Prisma.PostGetPayload<{ select: ReturnType<typeof selectFor> }>;
+
+export interface PostSearchOptions {
+  query: string;
+  viewerId: string;
+  limit: number;
+}
+
+export interface CreatePostInput {
+  authorId: string;
+  content: string;
+  viewerId: string;
+}
+
+export interface AddCommentInput {
+  postId: string;
+  authorId: string;
+  content: string;
+}
 
 /**
  * Shapes a Prisma post row into the API response.
@@ -7,7 +45,7 @@ const { PUBLIC_FIELDS, page } = require("./userRepository");
  * every liker's id to the browser just to render a number. `likedByMe` is
  * derived from a filtered include scoped to the caller.
  */
-const toApiPost = (row) => ({
+const toApiPost = (row: PostRow) => ({
   id: row.id,
   content: row.content,
   createdAt: row.createdAt,
@@ -17,20 +55,10 @@ const toApiPost = (row) => ({
   likedByMe: row.likes.length > 0,
 });
 
-const selectFor = (viewerId) => ({
-  id: true,
-  content: true,
-  createdAt: true,
-  authorId: true,
-  author: { select: PUBLIC_FIELDS },
-  _count: { select: { likes: true, comments: true } },
-  likes: { where: { userId: viewerId }, select: { userId: true } },
-});
+const createPostRepository = (prisma: PrismaClient) => ({
+  findById: (id: string) => prisma.post.findUnique({ where: { id } }),
 
-const createPostRepository = (prisma) => ({
-  findById: (id) => prisma.post.findUnique({ where: { id } }),
-
-  create: async ({ authorId, content, viewerId }) => {
+  create: async ({ authorId, content, viewerId }: CreatePostInput) => {
     const row = await prisma.post.create({
       data: { authorId, content },
       select: selectFor(viewerId),
@@ -38,10 +66,10 @@ const createPostRepository = (prisma) => ({
     return toApiPost(row);
   },
 
-  delete: (id) => prisma.post.delete({ where: { id } }),
+  delete: (id: string) => prisma.post.delete({ where: { id } }),
 
   /** Newest-first feed, keyset-paginated. The old endpoint returned every post. */
-  list: async ({ viewerId, limit, cursor }) => {
+  list: async ({ viewerId, limit, cursor }: ListOptions & { viewerId: string }) => {
     const rows = await prisma.post.findMany({
       take: limit + 1,
       ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
@@ -52,7 +80,7 @@ const createPostRepository = (prisma) => ({
     return { items: result.items.map(toApiPost), nextCursor: result.nextCursor };
   },
 
-  search: async ({ query, viewerId, limit }) => {
+  search: async ({ query, viewerId, limit }: PostSearchOptions) => {
     const rows = await prisma.post.findMany({
       where: { content: { contains: query, mode: "insensitive" } },
       take: limit,
@@ -70,7 +98,7 @@ const createPostRepository = (prisma) => ({
    * array, pushed to it, and wrote it back, so two simultaneous likes each saw
    * the pre-write state and one vanished.
    */
-  like: async (postId, userId) => {
+  like: async (postId: string, userId: string) => {
     const result = await prisma.like.createMany({
       data: [{ postId, userId }],
       skipDuplicates: true,
@@ -78,12 +106,12 @@ const createPostRepository = (prisma) => ({
     return { added: result.count > 0, likeCount: await countLikes(prisma, postId) };
   },
 
-  unlike: async (postId, userId) => {
+  unlike: async (postId: string, userId: string) => {
     const result = await prisma.like.deleteMany({ where: { postId, userId } });
     return { removed: result.count > 0, likeCount: await countLikes(prisma, postId) };
   },
 
-  addComment: ({ postId, authorId, content }) =>
+  addComment: ({ postId, authorId, content }: AddCommentInput) =>
     prisma.comment.create({
       data: { postId, authorId, content },
       select: {
@@ -94,7 +122,7 @@ const createPostRepository = (prisma) => ({
       },
     }),
 
-  listComments: async ({ postId, limit, cursor }) => {
+  listComments: async ({ postId, limit, cursor }: ListOptions & { postId: string }) => {
     const rows = await prisma.comment.findMany({
       where: { postId },
       take: limit + 1,
@@ -111,6 +139,7 @@ const createPostRepository = (prisma) => ({
   },
 });
 
-const countLikes = (prisma, postId) => prisma.like.count({ where: { postId } });
+const countLikes = (prisma: PrismaClient, postId: string) =>
+  prisma.like.count({ where: { postId } });
 
-module.exports = { createPostRepository, toApiPost };
+export { createPostRepository, toApiPost };

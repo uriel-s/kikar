@@ -1,12 +1,13 @@
-const multer = require("multer");
-const { ApiError } = require("../lib/ApiError");
+import type { ErrorRequestHandler, RequestHandler } from "express";
+import multer from "multer";
+import { ApiError } from "../lib/ApiError";
 
-const notFound = (req, _res, next) => {
+export const notFound: RequestHandler = (req, _res, next) => {
   next(ApiError.notFound(`No route matches ${req.method} ${req.originalUrl}`));
 };
 
 /** Translates multer's upload failures into the status the client deserves. */
-const normalize = (err) => {
+const normalize = (err: unknown): ApiError | null => {
   if (err instanceof ApiError) return err;
 
   if (err instanceof multer.MulterError) {
@@ -16,7 +17,15 @@ const normalize = (err) => {
   }
 
   // express.json() rejects malformed payloads with a SyntaxError carrying a status.
-  if (err instanceof SyntaxError && err.status === 400 && "body" in err) {
+  // `"status" in err` narrows a property the built-in SyntaxError does not
+  // declare; it cannot change the outcome, since reading an absent `status`
+  // would be undefined and fail the comparison anyway.
+  if (
+    err instanceof SyntaxError &&
+    "status" in err &&
+    err.status === 400 &&
+    "body" in err
+  ) {
     return ApiError.badRequest("Request body is not valid JSON");
   }
 
@@ -30,8 +39,12 @@ const normalize = (err) => {
  * controllers contain no try/catch. Unrecognized errors are logged in full and
  * answered with a generic 500 — the previous handler echoed err.message to the
  * caller, exposing internals like Firestore query failures.
+ *
+ * Typed as ErrorRequestHandler, and the unused `_next` stays: Express decides
+ * this is an error handler by counting the parameters, so a three-parameter
+ * version would silently become ordinary middleware and never run.
  */
-const errorHandler = (err, req, res, _next) => {
+export const errorHandler: ErrorRequestHandler = (err, req, res, _next) => {
   const apiError = normalize(err);
 
   if (!apiError) {
@@ -52,5 +65,3 @@ const errorHandler = (err, req, res, _next) => {
     },
   });
 };
-
-module.exports = { notFound, errorHandler };
