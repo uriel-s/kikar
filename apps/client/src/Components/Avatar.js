@@ -140,9 +140,26 @@ export const AvatarGroup = ({
   const ringColor =
     ring ?? (ground === "dark" ? "var(--color-ground)" : "var(--color-paper)");
   const ringWidth = size <= 28 ? 2 : 3;
-  // A third of a face: enough overlap to read as a stack, not so much that the
-  // initials underneath are covered.
-  const overlap = Math.round(size / 3);
+  /*
+   * How much of the face behind is covered. The rule this has always stated is
+   * "enough to read as a stack, not so much that the initials underneath are
+   * covered", and a third of a face did not keep it: a strip of six at 40px
+   * read "M\ IS DI RA" instead of "MV IS DL RA".
+   *
+   * The number is arithmetic, not taste. Initials are set at TEXT_RATIO of the
+   * disc, and two cap letters run about 1.3 em, so they occupy the middle ~44%
+   * — out to roughly 72% of the width. The next face covers from
+   * `size - overlap` and brings its own ring, so the first thing it hides sits
+   * at `size - overlap - ringWidth`. A fifth puts that at 72.5% (40px), 75.0%
+   * (56) and 76.2% (84), all clear.
+   *
+   * It is 70.0% at 20px and 71.4% at 28px, a hair inside the letters rather
+   * than clear of them. Left alone deliberately: those two steps carry a 7px
+   * and a 10px glyph, where the last fraction of a letterform is not legible
+   * either way, and buying it back would cost the overlap that makes six discs
+   * read as one group.
+   */
+  const overlap = Math.round(size / 5);
   const { background, color } = neutralAvatarColor(ground);
 
   const stacked = (index) => ({

@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
+import { PlazaProfileContext } from "../contexts/PlazaProfile";
 import * as usersApi from "../api/users";
-import { useNarrowerThan } from "../lib/useNarrowerThan";
+import { useNarrowerThan } from "../lib/useMediaQuery";
 import Avatar from "./Avatar";
 import SearchBar from "./SearchBar";
 
@@ -210,7 +211,7 @@ const Plaza = ({ children }) => {
            * <input> dark, and it is the only input on this screen that is not
            * a Field. The search SCREEN is still unrebuilt; only the control is.
            */}
-          <div style={{ flex: compact ? "1 1 200px" : "0 1 260px", minWidth: 0 }}>
+          <div style={{ flex: compact ? "1 1 200px" : "0 1 320px", minWidth: 0 }}>
             <SearchBar />
           </div>
 
@@ -241,6 +242,10 @@ const Plaza = ({ children }) => {
               display: "inline-flex",
               flexShrink: 0,
               borderRadius: "50%",
+              // Bootstrap underlines every <a>, and an inline-flex box is not
+              // atomic, so the rule reached straight through to the initials
+              // inside the disc. The wordmark and the pills state this too.
+              textDecoration: "none",
               // The ring is what lifts the disc off the paving; it is the
               // keyline rather than the ground because a notice's rim is the
               // same colour in both themes, so one value works in both.
@@ -251,7 +256,11 @@ const Plaza = ({ children }) => {
           </Link>
         </header>
 
-        {children}
+        {/* Published rather than passed: the composer wants this same person
+            and must not fetch the row a second time. See PlazaProfile.js. */}
+        <PlazaProfileContext.Provider value={profile}>
+          {children}
+        </PlazaProfileContext.Provider>
       </div>
     </div>
   );

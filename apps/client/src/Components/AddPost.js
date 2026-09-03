@@ -1,7 +1,8 @@
 import React, { useEffect, useRef, useState } from "react";
 import * as postsApi from "../api/posts";
 import { useAuth } from "../contexts/AuthContext";
-import { useNarrowerThan } from "../lib/useNarrowerThan";
+import { usePlazaProfile } from "../contexts/PlazaProfile";
+import { useNarrowerThan } from "../lib/useMediaQuery";
 import Avatar from "./Avatar";
 import Button from "./ui/Button";
 import Field from "./ui/Field";
@@ -118,6 +119,7 @@ const FOCUS_RING = { outline: "2px solid var(--color-accent)", outlineOffset: 2 
  */
 const AddPostForm = ({ onPostCreated, user }) => {
   const { currentUser } = useAuth();
+  const profile = usePlazaProfile();
   const compact = useNarrowerThan(COMPACT);
   const narrow = useNarrowerThan(NARROW);
 
@@ -137,11 +139,13 @@ const AddPostForm = ({ onPostCreated, user }) => {
    * No request from here, on purpose. Plaza already loads this exact user for
    * the header avatar, and fetching again would make one screen ask the server
    * twice for one row — the per-item-fetch habit the feed shape exists to
-   * prevent. `{ id: uid }` is all avatarColor needs, so the disc appears in the
-   * right person's hue immediately; a caller that already holds the profile can
-   * hand it over through `user` and the initials and the name fill in.
+   * prevent. Plaza publishes what it loaded, so the composer draws the same
+   * face as the header instead of a blank disc: `{ id: uid }` alone gets the
+   * hue right but yields no initials, because a Firebase uid is not a name.
+   * An explicit `user` prop still wins, for a caller that holds the row
+   * already.
    */
-  const me = user ?? { id: currentUser?.uid };
+  const me = user ?? profile ?? { id: currentUser?.uid };
 
   /*
    * Opening focuses the textarea; closing hands focus back to the pill that

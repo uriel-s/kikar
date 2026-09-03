@@ -1,5 +1,5 @@
 import React from "react";
-import { useNarrowerThan } from "../lib/useNarrowerThan";
+import { useNarrowerThan, usePrefersDark } from "../lib/useMediaQuery";
 import { AvatarGroup } from "./Avatar";
 
 // The header's own second breakpoint. A strip that thinned out at a width it
@@ -55,6 +55,16 @@ const REMAINDER = { fontSize: 12.5, color: "var(--color-muted)" };
  */
 const PresenceStrip = ({ people = [], className = "", style }) => {
   const narrow = useNarrowerThan(NARROW);
+  /*
+   * avatarColor’s `ground` names the SURFACE the disc sits on, not the theme,
+   * and this is the one place in the app where those two come apart: a notice
+   * is light paper in both themes, but the paved ground is pale bluestone by
+   * day and dark slate at night. Hard-coding "dark" — which the primitive’s own
+   * comment suggested, on the assumption the plaza was always dark — put six
+   * heavy dark discs on the pale day ground, next to the pale discs on the
+   * notices directly below them.
+   */
+  const onDarkGround = usePrefersDark();
   const limit = narrow ? NARROW_FACES : FACES;
 
   // Nothing, rather than a label over an empty row. "In the square right now"
@@ -70,8 +80,8 @@ const PresenceStrip = ({ people = [], className = "", style }) => {
       <span style={LABEL}>In the square right now</span>
 
       {/*
-       * `ground="dark"` because this row sits directly on the paved ground and
-       * not on a notice — it picks both the initials' fill and the ring that
+       * `ground` follows the paving rather than the theme's name — see
+       * onDarkGround above. It picks both the initials' fill and the ring that
        * separates one overlapping disc from the next.
        *
        * `max` is exactly the number of faces, so AvatarGroup renders no "+N"
@@ -79,7 +89,12 @@ const PresenceStrip = ({ people = [], className = "", style }) => {
        * is a sentence and not a seventh face; handing the group the full list
        * would draw the chip instead and say the same thing twice.
        */}
-      <AvatarGroup users={faces} max={faces.length} size={FACE_SIZE} ground="dark" />
+      <AvatarGroup
+        users={faces}
+        max={faces.length}
+        size={FACE_SIZE}
+        ground={onDarkGround ? "dark" : "light"}
+      />
 
       {extra > 0 && <span style={REMAINDER}>and {extra} more</span>}
     </div>

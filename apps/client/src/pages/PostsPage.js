@@ -7,7 +7,7 @@ import EmptyState from "../Components/ui/EmptyState";
 import Notice from "../Components/ui/Notice";
 import Skeleton from "../Components/ui/Skeleton";
 import { useAuth } from "../contexts/AuthContext";
-import { useNarrowerThan } from "../lib/useNarrowerThan";
+import { useNarrowerThan } from "../lib/useMediaQuery";
 import * as postsApi from "../api/posts";
 
 /*
