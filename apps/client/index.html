@@ -10,18 +10,11 @@
     />
     <link rel="manifest" href="/manifest.json" />
 
-    <!--
-      Bootstrap and Font Awesome are npm dependencies imported from src/index.js.
-      They used to be loaded from CDNs here as well, which meant Bootstrap 4.5
-      from stackpath and Bootstrap 5.1 from npm were applied to the same page at
-      once, with the two versions disagreeing on what classes like .ml-2 mean.
-    -->
-
     <title>Kikar</title>
   </head>
   <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>
     <div id="root"></div>
-    <script type="module" src="/src/index.js"></script>
+    <script type="module" src="/src/index.tsx"></script>
   </body>
 </html>
