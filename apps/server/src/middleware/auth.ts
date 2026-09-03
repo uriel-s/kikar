@@ -20,7 +20,7 @@ export interface AuthenticatedUser {
  * The one method of firebase-admin's Auth that this application calls.
  *
  * Structural and minimal on purpose, rather than the concrete `Auth` class:
- * tests/helpers/testApp.js injects a fake exposing only `verifyIdToken`, and a
+ * tests/helpers/testApp.ts injects a fake exposing only `verifyIdToken`, and a
  * signature demanding the real class could only be satisfied by casting that
  * fake — which is how a type-checked refactor stops checking the dependency
  * injection it exists to protect.

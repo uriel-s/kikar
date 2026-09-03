@@ -66,7 +66,7 @@ export const schema = z.object({
  *
  * Consumers should take a `Pick` of this rather than the whole thing. Every
  * dependency here is injected — `createApp({ env, ... })` — and
- * `tests/helpers/testApp.js` injects a four-field object as the real env. A
+ * `tests/helpers/testApp.ts` injects a four-field object as the real env. A
  * module that demands the full type makes that impossible to typecheck, and the
  * reflex fix is to widen or cast the fake, which throws away the checking this
  * type exists to provide.

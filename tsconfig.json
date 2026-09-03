@@ -31,8 +31,17 @@
     "**/node_modules",
     // Written by `prisma generate`, gitignored, and not ours to check.
     // TypeScript still reads its index.d.ts through the import in
-    // src/lib/prisma.js — that is where the model types come from.
+    // src/lib/prisma.ts — that is where the model types come from.
     "apps/server/src/generated",
-    "apps/server/dist"
+    "apps/server/dist",
+    // The one file under apps/server that is still JavaScript, on purpose. It
+    // is not a jest test: it runs under plain `node` needing nothing, and it
+    // loads `../dist` because it exists to prove that the artifact which ships
+    // actually boots. Putting a TypeScript loader in the path of the one check
+    // that validates the build would muddy exactly what it certifies, so it
+    // stays .js and stays linted as JavaScript, like scripts/seed.js. Named
+    // here rather than left to `allowJs` being off, so the exclusion reads as
+    // a decision instead of a side effect of a compiler flag.
+    "apps/server/tests/startup.smoke.js"
   ]
 }

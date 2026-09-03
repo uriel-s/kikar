@@ -63,7 +63,13 @@ module.exports = [
     },
   },
 
-  // Server — CommonJS on Node.
+  // Server — CommonJS on Node. src/ and the jest suite are TypeScript now, so
+  // what this block still covers is the JavaScript that stays JavaScript on
+  // purpose: scripts/seed.js and scripts/importFromFirestore.js (run through
+  // tsx), scripts/copyGenerated.js, jest.config.js, prisma.config.js, and
+  // tests/startup.smoke.js — which is not a jest test and runs under plain
+  // node. Deleting this block as migration leftovers would stop linting all of
+  // them.
   {
     files: ["apps/server/**/*.js"],
     languageOptions: {
@@ -115,10 +121,12 @@ module.exports = [
     },
   },
 
-  // Server tests — same as the server, plus the Jest globals. Both extensions,
-  // because the suite converts to TypeScript one file at a time.
+  // Server tests — the TypeScript settings above, plus the Jest globals.
+  // `.ts` only now that the suite is converted: tests/startup.smoke.js is a
+  // plain node script rather than a jest test, so it keeps the CommonJS + Node
+  // configuration from the block above and gains no globals it cannot use.
   {
-    files: ["apps/server/tests/**/*.{js,ts}"],
+    files: ["apps/server/tests/**/*.ts"],
     languageOptions: {
       globals: { ...globals.node, ...globals.jest },
     },

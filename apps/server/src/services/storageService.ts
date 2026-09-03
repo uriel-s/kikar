@@ -4,7 +4,7 @@ import type { ImageMimeType } from "../lib/imageType";
  * The three file operations this service performs, and nothing else.
  *
  * Structural and minimal on purpose, rather than @google-cloud/storage's
- * `Bucket`: tests/helpers/testApp.js injects a fake whose `file()` returns only
+ * `Bucket`: tests/helpers/testApp.ts injects a fake whose `file()` returns only
  * `save`, `makePublic` and `publicUrl`, and a signature demanding the real
  * class could only be satisfied by casting that fake — which is how a
  * type-checked refactor stops checking the dependency injection it exists to

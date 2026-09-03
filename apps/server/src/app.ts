@@ -52,7 +52,7 @@ const uploadAvatar = multer({
  *
  * Each field is typed on what this module actually needs rather than on the
  * concrete class that supplies it in production. That is what keeps
- * `tests/helpers/testApp.js` type-checkable: it injects a four-field stand-in
+ * `tests/helpers/testApp.ts` type-checkable: it injects a four-field stand-in
  * for the environment, a fake token verifier and a fake bucket, and a signature
  * naming `Env`, firebase-admin's `Auth` or `@google-cloud/storage`'s `Bucket`
  * could only be satisfied by casting those away — which is how a type-checked

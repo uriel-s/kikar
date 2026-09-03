@@ -1,5 +1,5 @@
-const request = require("supertest");
-const { buildTestApp, authHeader } = require("./helpers/testApp");
+import request from "supertest";
+import { buildTestApp, authHeader } from "./helpers/testApp";
 
 /**
  * These cover the hole that made the original API unsafe: every data route was
@@ -8,7 +8,10 @@ const { buildTestApp, authHeader } = require("./helpers/testApp");
 describe("authentication", () => {
   const app = buildTestApp({ prisma: {} });
 
-  const protectedRoutes = [
+  // Narrowed to the four verbs actually listed, so `request(app)[method]` below
+  // is a real lookup on supertest's agent rather than an index into a bare
+  // string. A typo in the table is a compile error now.
+  const protectedRoutes: ["get" | "post" | "patch" | "delete", string][] = [
     ["get", "/api/users"],
     ["get", "/api/users/search?q=ab"],
     ["get", "/api/users/someuid"],

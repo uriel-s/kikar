@@ -1,5 +1,5 @@
-const request = require("supertest");
-const { buildTestApp, authHeader } = require("./helpers/testApp");
+import request from "supertest";
+import { buildTestApp, authHeader } from "./helpers/testApp";
 
 describe("request validation", () => {
   it("rejects an empty post", async () => {

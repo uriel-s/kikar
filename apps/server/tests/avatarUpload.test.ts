@@ -1,6 +1,6 @@
-const request = require("supertest");
-const { buildTestApp, authHeader } = require("./helpers/testApp");
-const { detectImageType } = require("../src/lib/imageType");
+import request from "supertest";
+import { buildTestApp, authHeader } from "./helpers/testApp";
+import { detectImageType } from "../src/lib/imageType";
 
 const PNG = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x01]);
 const JPEG = Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10]);
@@ -38,7 +38,7 @@ describe("detectImageType", () => {
 });
 
 describe("PUT /api/users/:id/avatar", () => {
-  const appWith = (setAvatarUrl = jest.fn(async () => ({ id: "alice" }))) =>
+  const appWith = (setAvatarUrl: jest.Mock = jest.fn(async () => ({ id: "alice" }))) =>
     buildTestApp({ prisma: { user: { update: setAvatarUrl } } });
 
   it("stores a real PNG", async () => {

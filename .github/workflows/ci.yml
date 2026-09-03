@@ -78,7 +78,7 @@ jobs:
         run: npm run test --workspace=@kikar/server
 
       # Separate from the suite on purpose. The tests inject a fake token
-      # verifier, so src/config/firebase.js is the one module they never load —
+      # verifier, so src/config/firebase.ts is the one module they never load —
       # which is how a server that could not boot at all reached main with 52
       # tests green. This boots the real thing.
       - name: Startup smoke check

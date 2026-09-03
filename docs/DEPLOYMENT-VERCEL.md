@@ -14,7 +14,7 @@ which cannot be scripted — it is roughly fifteen minutes of clicking.
 | `vercel.json`                   | Builds the server then the client, routes `/api/*` and `/health` to it |
 | `apps/server/tsconfig.json`     | Compiles the server to the CommonJS `dist/` the function imports       |
 | `apps/server/prisma.config.js`  | Runs migrations through `DIRECT_URL`, not the pooler                   |
-| `apps/server/src/config/env.js` | Accepts the optional `DIRECT_URL`                                      |
+| `apps/server/src/config/env.ts` | Accepts the optional `DIRECT_URL`                                      |
 
 Verified locally without a network or a database, and re-verified by
 `checks.sh smoke` on every push: the handler boots, `/health` answers
@@ -32,7 +32,7 @@ before going anywhere near the dependency tree.
 
 Two limits change meaning on this target and are worth knowing before you rely
 on them. The rate limiter is per-instance here rather than global — see the note
-at `apps/server/src/app.js`. And Vercel caps a request body at 4.5 MB while the
+at `apps/server/src/app.ts`. And Vercel caps a request body at 4.5 MB while the
 avatar limit is 5 MB; see the last section.
 
 ## The one thing that decides whether this works
@@ -84,7 +84,7 @@ framework preset as "Other" and change nothing it offers to detect.
 | `VITE_API_URL`                  | leave unset — a production build already resolves to a same-origin `/api` |
 | `VITE_FIREBASE_*`               | the six web-config values, same as `apps/client/.env`                     |
 
-Do not set `FIREBASE_SERVICE_ACCOUNT_PATH`. `env.js` requires exactly one of the
+Do not set `FIREBASE_SERVICE_ACCOUNT_PATH`. `env.ts` requires exactly one of the
 two and fails at boot if both are present — which is the error you will see if
 you paste both out of habit.
 

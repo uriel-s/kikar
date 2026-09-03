@@ -16,7 +16,7 @@ Run from the repository root unless noted.
 ```bash
 npm install
 npm run db:generate --workspace=@kikar/server   # REQUIRED after clone — see below
-npm run dev                                     # client :3000 + server :5000
+npm run dev                                     # client :3000 + server :5000 (server via tsx)
 
 docker compose up --build                       # whole stack, migrations applied on boot
 docker compose up db -d                         # just PostgreSQL
@@ -24,12 +24,20 @@ npm run db:migrate --workspace=@kikar/server    # create/advance schema (dev)
 npm run db:deploy  --workspace=@kikar/server    # apply existing migrations (prod/CI)
 npm run db:studio  --workspace=@kikar/server
 
-npm run test --workspace=@kikar/server          # 52 tests, jest + supertest
-npm run test --workspace=@kikar/server -- tests/authorization.test.js   # one file
-npm run test --workspace=@kikar/server -- -t "cannot"                  # by name
+npm run typecheck                               # tsc --noEmit over the server's src + tests
+npm run build --workspace=@kikar/server         # src/ -> dist/, the artifact that ships
+npm run test --workspace=@kikar/server          # 52 tests, jest + supertest through ts-jest
+npm run test --workspace=@kikar/server -- tests/authorization.test.ts   # one file
+npm run test --workspace=@kikar/server -- -t "cannot"                   # by name
 npm run build --workspace=@kikar/client
 npm run format                                  # prettier
 ```
+
+**The server is compiled.** `dev` runs the TypeScript sources directly through
+`tsx watch src/server.ts`, but `start`, the Dockerfile, `api/index.mjs` and
+`checks.sh smoke` all load `apps/server/dist/` — so anything that exercises the
+shipped artifact needs `npm run build --workspace=@kikar/server` first.
+`checks.sh` rebuilds it itself when it is missing or stale.
 
 `npm run db:import --workspace=@kikar/server -- --dry-run` imports the legacy
 Firestore data; it is idempotent.
@@ -50,7 +58,7 @@ is still caught only by CI.
 ```bash
 bash .claude/checks.sh all           # lint, format, arch, types, sec, test, build
 bash .claude/checks.sh test          # full suite + suite-size assertion
-bash .claude/checks.sh test tests/auth.test.js   # narrowed; skips the assertion
+bash .claude/checks.sh test tests/auth.test.ts   # narrowed; skips the assertion
 bash .claude/checks.sh lint
 ```
 
@@ -69,7 +77,7 @@ specific to this repository and worth knowing:
 - **The Prisma client is generated, not committed** (`apps/server/src/generated/`
   is gitignored). Nothing that imports it — server or tests — runs until
   `db:generate` has been run once.
-- **The client needs its own `.env`.** `src/config/env.js` and `prisma.config.js`
+- **The client needs its own `.env`.** `src/config/env.ts` and `prisma.config.js`
   load the _root_ `.env` explicitly, but Vite only reads env files from the
   app root (`apps/client/`), not the monorepo root. A root-only `.env` leaves
   the client throwing "Missing Firebase configuration" at startup. Copy the
@@ -145,14 +153,14 @@ authorization bypass — this is the exact class of bug v1 shipped.
 ### Dependency injection is what makes the tests work
 
 `createApp({ env, auth, bucket, prisma, logger })` receives everything it
-touches; nothing is constructed at import time. `tests/helpers/testApp.js` builds
+touches; nothing is constructed at import time. `tests/helpers/testApp.ts` builds
 the _real_ application over a fake token verifier (tokens of the form
 `valid:<uid>`), a fake storage bucket, and a hand-stubbed Prisma object — so the
 suite exercises real routing, middleware, and error handling with no database and
 no network.
 
 Every layer follows the same `createX(deps) => ({ ...methods })` factory shape:
-`repositories/` → `controllers/` → `routes/` → `app.js`. Match it when adding
+`repositories/` → `controllers/` → `routes/` → `app.ts`. Match it when adding
 code.
 
 ### Request path and layer rules
@@ -163,11 +171,11 @@ routes/ → validate(schemas.x) → requireSelf('id') → controller → reposit
 
 - **`routes/`** — wiring only. Ordering matters: `/search` is registered before
   `/:id` so it is not swallowed as a user id.
-- **`middleware/validate.js`** — parses `body`/`params`/`query` with zod and
+- **`middleware/validate.ts`** — parses `body`/`params`/`query` with zod and
   _replaces_ them with the parsed result. Controllers therefore receive coerced,
   trimmed, known-shaped values and must not re-validate. (`req.query` is
   getter-only in Express 5, hence the `Object.defineProperty` assignment.)
-- **`middleware/auth.js`** — `requireAuth` proves _who_; `requireSelf(param)`
+- **`middleware/auth.ts`** — `requireAuth` proves _who_; `requireSelf(param)`
   proves _ownership_. Any route that mutates a user's own resources needs both.
 - **`controllers/`** — HTTP shaping and Prisma error-code translation
   (`P2002` → 409, `P2025` → 404, `P2003` → 404). **No Prisma queries here.**
@@ -192,7 +200,7 @@ skipDuplicates: true })` and reports whether it was new. There is no
   read-modify-write.
 - **`friendships`** is one row per pair with `userAId < userBId` enforced by a
   `CHECK` constraint. Always route through `canonicalPair()` in
-  `userRepository.js`; the asymmetric "A knows B but B does not know A" state
+  `userRepository.ts`; the asymmetric "A knows B but B does not know A" state
   cannot be represented.
 - **Search** relies on `pg_trgm` GIN indexes created in the initial migration.
   `contains` + `mode: "insensitive"` compiles to `ILIKE '%…%'`, which those
@@ -230,14 +238,26 @@ them.
 
 ### Avatar uploads
 
-Uploads are identified by **magic bytes** (`lib/imageType.js`), and the detected
+Uploads are identified by **magic bytes** (`lib/imageType.ts`), and the detected
 type — never the declared `Content-Type` — is what gets stored. Each user has
 exactly one object at the deterministic path `profile_pictures/<uid>`, so
 replacing is a plain overwrite. 5 MB cap, enforced by multer and surfaced as 413.
 
 ## Conventions
 
-- CommonJS on the server (`require`/`module.exports`), ES modules on the client.
+- **ESM syntax in, CommonJS out, on the server.** `apps/server/src` and the jest
+  suite are TypeScript written with `import`/`export`; `tsc` emits
+  `require`/`module.exports` into `dist/`, because `apps/server/package.json`
+  carries no `"type": "module"`. That emit is load-bearing twice over — jest runs
+  it with no `--experimental-vm-modules`, and `api/index.mjs` stays an ESM file
+  importing plain CommonJS, the only shape proven to load on Vercel — and it is
+  scheduled to change: stage 9 of `docs/REFACTOR-PLAN.md` replaces jest with
+  Vitest, which loads ESM natively. Keep relative imports extensionless
+  (`./lib/ApiError`); CommonJS resolution is what applies. The handful of `.js`
+  files still under `apps/server` are deliberate and are real CommonJS: the two
+  `scripts/`, `jest.config.js`, `prisma.config.js`, and
+  `tests/startup.smoke.js`.
+- ES modules on the client.
 - Prettier: 90-column width, double quotes, semicolons, ES5 trailing commas.
 - Comments in this codebase explain _why_, usually citing the v1 bug the current
   shape exists to prevent. Follow that when the reasoning is non-obvious;

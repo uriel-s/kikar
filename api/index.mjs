@@ -43,10 +43,10 @@
  * The imports below are ESM importing CommonJS, which Node exposes as a default
  * export, hence the destructuring rather than named imports.
  *
- * ## How this differs from `apps/server/src/server.js`
+ * ## How this differs from `apps/server/src/server.ts`
  *
  * - **No `app.listen`.** The platform invokes this handler per request.
- * - **No `prisma.$connect()`.** server.js connects eagerly so a bad
+ * - **No `prisma.$connect()`.** server.ts connects eagerly so a bad
  *   DATABASE_URL fails at boot; here that would add a round trip to every cold
  *   start and turn a transient blip into a failed invocation. Prisma connects
  *   on first query.
@@ -93,7 +93,7 @@ const getApp = () => {
 };
 
 export default function handler(req, res) {
-  // server.js ends in `main().catch(err => console.error(err.message))` so that
+  // server.ts ends in `main().catch(err => console.error(err.message))` so that
   // a configuration failure prints one readable line. Without the equivalent
   // here, a bad env var throws out of the handler and the caller gets the
   // platform's generic failure page instead of this API's documented

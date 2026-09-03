@@ -1,8 +1,8 @@
 /**
  * Boot checks for the two modules the jest suite never loads.
  *
- * `tests/helpers/testApp.js` injects a fake token verifier. That is what makes
- * the 52 tests fast and hermetic, and it also means `src/config/firebase.js` is
+ * `tests/helpers/testApp.ts` injects a fake token verifier. That is what makes
+ * the 52 tests fast and hermetic, and it also means `src/config/firebase.ts` is
  * never reached by any of them. When firebase-admin 14 removed the legacy
  * `admin.apps` / `admin.credential` namespace, the server stopped booting
  * entirely — every request failed — and the suite stayed green throughout.
@@ -21,12 +21,16 @@
  * the real artifact too. `checks.sh smoke` builds before running for that
  * reason; on its own this script needs `dist/` to already exist.
  *
- * Why this is a plain script rather than a jest test: firebase-admin/auth pulls
+ * Why this is the one file under apps/server that is still JavaScript, and why
+ * it is a plain script rather than a jest test: firebase-admin/auth pulls
  * in jwks-rsa, which pulls in jose 6, which ships ESM only — no CJS build to
  * map to. Jest would need babel-jest and a transformIgnorePatterns exception to
- * parse it. Under plain node it needs nothing. When the suite moves to Vitest
- * (stage 9 of the refactor plan) this folds back in, because Vitest loads ESM
- * natively.
+ * parse it. Under plain node it needs nothing — and needing nothing is the
+ * point, so it is not compiled either: putting a TypeScript loader in the path
+ * of the one check that validates the build would muddy what that check
+ * certifies. It is excluded by name in the root tsconfig.json and linted as
+ * JavaScript, like scripts/seed.js. When the suite moves to Vitest (stage 9 of
+ * the refactor plan) this folds back in, because Vitest loads ESM natively.
  *
  * No network and no real Firebase project: initializeApp only parses the
  * credential, and nothing is sent anywhere until a token is actually verified.
@@ -76,10 +80,10 @@ const record = (name, run) => {
 
 // ---------------------------------------------------------------- firebase
 
-record("initializes firebase-admin and returns the handles server.js injects", () => {
+record("initializes firebase-admin and returns the handles server.ts injects", () => {
   const { auth, bucket } = initializeFirebase(env);
 
-  // Exactly what server.js destructures and hands to createApp. If the SDK
+  // Exactly what server.ts destructures and hands to createApp. If the SDK
   // surface moves again, this is the line that says so.
   assert.equal(typeof auth.verifyIdToken, "function");
   assert.equal(bucket.name, BUCKET);
@@ -89,7 +93,7 @@ record("reuses the existing app rather than initializing a second time", () => {
   const { getApps } = require("firebase-admin/app");
 
   // initializeApp throws on a duplicate app name; the getApps() guard in
-  // config/firebase.js is the only thing preventing that on a second call.
+  // config/firebase.ts is the only thing preventing that on a second call.
   // Asserting the count as well, because "did not throw" would also pass if the
   // first check had failed and left nothing registered at all.
   assert.doesNotThrow(() => initializeFirebase(env));
@@ -130,13 +134,13 @@ record("the jwks-rsa patch is actually applied", () => {
  * rejected before anything touches the database.
  */
 const checkVercelHandler = async () => {
-  // logger.js already treats "test" as its quiet level. Without this the two
+  // logger.ts already treats "test" as its quiet level. Without this the two
   // requests below print two full pino records into every CI run.
   process.env.NODE_ENV = "test";
 
-  // config/env.js loads the repository's real .env through dotenv, which does
+  // config/env.ts loads the repository's real .env through dotenv, which does
   // not overwrite variables that are already set. Blanking the PATH variable
-  // first keeps that file from supplying a second credential source — env.js
+  // first keeps that file from supplying a second credential source — env.ts
   // requires exactly one, and would otherwise fail with "both are set".
   process.env.FIREBASE_SERVICE_ACCOUNT_PATH = "";
   process.env.FIREBASE_SERVICE_ACCOUNT_JSON = SERVICE_ACCOUNT_JSON;

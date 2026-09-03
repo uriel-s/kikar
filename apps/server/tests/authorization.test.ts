@@ -1,5 +1,6 @@
-const request = require("supertest");
-const { buildTestApp, authHeader } = require("./helpers/testApp");
+import request from "supertest";
+import { buildTestApp, authHeader } from "./helpers/testApp";
+import type { PrismaCallArgs } from "./helpers/testApp";
 
 const POST_ID = "6f1a2b3c-4d5e-4f60-8123-456789abcdef";
 
@@ -31,7 +32,13 @@ describe("authorization", () => {
     });
 
     it("ignores an id in the registration body and uses the token's uid", async () => {
-      const create = jest.fn(async ({ data }) => ({ id: data.id, ...data }));
+      // The <return, args> generics are what give the destructured `{ data }`
+      // a type: jest infers a mock's parameters from its implementation, and a
+      // stub that ignores them would otherwise infer none at all.
+      const create = jest.fn<Promise<unknown>, [PrismaCallArgs]>(async ({ data }) => ({
+        id: data.id,
+        ...data,
+      }));
       const scoped = buildTestApp({ prisma: { user: { create } } });
 
       await request(scoped)
@@ -45,7 +52,9 @@ describe("authorization", () => {
     });
 
     it("registers using the identity carried by the verified token", async () => {
-      const create = jest.fn(async ({ data }) => data);
+      const create = jest.fn<Promise<unknown>, [PrismaCallArgs]>(
+        async ({ data }) => data
+      );
       const scoped = buildTestApp({ prisma: { user: { create } } });
 
       const res = await request(scoped)
@@ -63,7 +72,7 @@ describe("authorization", () => {
   });
 
   describe("posts", () => {
-    const appWithPostBy = (authorId, deleteSpy = jest.fn()) =>
+    const appWithPostBy = (authorId: string, deleteSpy: jest.Mock = jest.fn()) =>
       buildTestApp({
         prisma: {
           post: {
@@ -144,7 +153,10 @@ describe("authorization", () => {
 
   describe("field visibility", () => {
     it("hides email, address, and birth date from other users", async () => {
-      const findUnique = jest.fn(async () => ({ id: "bob", name: "Bob" }));
+      const findUnique = jest.fn<Promise<unknown>, [PrismaCallArgs]>(async () => ({
+        id: "bob",
+        name: "Bob",
+      }));
       const app = buildTestApp({ prisma: { user: { findUnique } } });
 
       await request(app).get("/api/users/bob").set(authHeader("alice"));
@@ -156,7 +168,10 @@ describe("authorization", () => {
     });
 
     it("includes them when a user reads their own profile", async () => {
-      const findUnique = jest.fn(async () => ({ id: "alice", name: "Alice" }));
+      const findUnique = jest.fn<Promise<unknown>, [PrismaCallArgs]>(async () => ({
+        id: "alice",
+        name: "Alice",
+      }));
       const app = buildTestApp({ prisma: { user: { findUnique } } });
 
       await request(app).get("/api/users/alice").set(authHeader("alice"));

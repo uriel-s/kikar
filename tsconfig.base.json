@@ -33,14 +33,6 @@
     "isolatedModules": true,
 
     "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
-
-    // For the duration of the migration only. The server converts a layer at a
-    // time, so `.js` and `.ts` have to coexist under src/ while every
-    // intermediate stage stays green — JavaScript compiles, but is not
-    // type-checked, because checking it would report a wall of errors that no
-    // sub-task is assigned to fix. Both come out when the last file converts.
-    "allowJs": true,
-    "checkJs": false
+    "forceConsistentCasingInFileNames": true
   }
 }

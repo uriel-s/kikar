@@ -1,7 +1,7 @@
 const path = require("node:path");
 
 // Migrations run from the CLI, outside the app, so they load the root .env
-// themselves rather than relying on src/config/env.js.
+// themselves rather than relying on src/config/env.ts.
 require("dotenv").config({
   path: path.resolve(__dirname, "../../.env"),
   quiet: true,

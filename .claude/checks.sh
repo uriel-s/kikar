@@ -238,8 +238,8 @@ run_build() {
 
 # The jest suite proves the application logic; this proves the process can
 # actually start. They are different questions, and 52 green tests answering the
-# first one is exactly how a total startup crash reached main: testApp.js injects
-# a fake token verifier, so src/config/firebase.js is the one module the suite
+# first one is exactly how a total startup crash reached main: testApp.ts injects
+# a fake token verifier, so src/config/firebase.ts is the one module the suite
 # never loads. Plain node rather than jest because firebase-admin/auth reaches
 # jose 6, which is ESM-only; see the header of the script itself.
 #

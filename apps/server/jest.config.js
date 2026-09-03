@@ -1,13 +1,14 @@
 module.exports = {
   testEnvironment: "node",
-  collectCoverageFrom: ["src/**/*.{js,ts}", "!src/server.js", "!src/server.ts"],
+  collectCoverageFrom: ["src/**/*.ts", "!src/server.ts"],
 
-  // Both extensions, because the server converts a layer at a time: src/ is
-  // TypeScript before tests/ is, and the last stage of the migration renames
-  // these files one by one. A pattern matching only `.test.js` would stop
-  // finding a suite the moment it was converted — and a suite that is not
-  // found is a suite that passes.
-  testMatch: ["**/tests/**/*.test.{js,ts}"],
+  // `.ts` only. src/ and the suite are both TypeScript now, and the one
+  // JavaScript file left under apps/server — tests/startup.smoke.js — is not a
+  // jest test at all; it runs under plain node. The `.js` half was migration
+  // scaffolding and would now match nothing. The danger this pattern guards
+  // against runs the other way: a suite that is not found is a suite that
+  // passes.
+  testMatch: ["**/tests/**/*.test.ts"],
 
   // dist/ is a compiled copy of src/, so every module in it has a twin. Without
   // this, jest's module map reports a "Haste module naming collision" between
@@ -28,9 +29,12 @@ module.exports = {
     // without --experimental-vm-modules. Stage 9 of REFACTOR-PLAN.md replaces
     // this runner with Vitest, and the emit format changes with it.
     "^.+\\.ts$": ["ts-jest", { tsconfig: "<rootDir>/../../tsconfig.json" }],
-    // Naming any transform replaces jest's default map wholesale, so the
-    // JavaScript half has to be restated or it would silently stop being
-    // transformed at all.
+    // Kept after the suite's conversion, and not leftover scaffolding: the
+    // controllers import the generated Prisma client for its error classes, and
+    // that client is JavaScript living under src/ rather than in node_modules,
+    // so transformIgnorePatterns does not cover it. Naming any transform
+    // replaces jest's default map wholesale, so this half has to be restated or
+    // it would silently stop being transformed at all.
     "^.+\\.js$": "babel-jest",
   },
 };
