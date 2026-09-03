@@ -1,5 +1,5 @@
 import React, { useRef, useState } from "react";
-import { Link, useHistory } from "react-router-dom";
+import { Link, useHistory } from "../lib/router";
 import { useAuth } from "../contexts/AuthContext";
 import Button from "../Components/ui/Button";
 import Field from "../Components/ui/Field";
@@ -8,7 +8,7 @@ import Notice from "../Components/ui/Notice";
 // Field's own error type, restated here: this message answers for the whole
 // form rather than one control, the same reasoning PostCard's comment-form
 // ERROR gives for doing the same thing.
-const ERROR = {
+const ERROR: React.CSSProperties = {
   margin: "0 0 16px",
   fontSize: 13,
   fontWeight: 600,
@@ -18,28 +18,28 @@ const ERROR = {
 // No background/max-width fight with the ground here — WavesBackground paves
 // the floor behind this whole route, so the frame only has to centre the
 // notice on it and keep it off the screen edge on a phone.
-const FRAME = {
+const FRAME: React.CSSProperties = {
   maxWidth: 440,
   margin: "48px auto 0",
   padding: "0 20px",
   boxSizing: "border-box",
 };
 
-const TITLE = {
+const TITLE: React.CSSProperties = {
   margin: "0 0 20px",
   fontFamily: "var(--font-display)",
   fontSize: 26,
   lineHeight: 1.2,
 };
 
-const FIELD_GAP = { marginTop: 14 };
+const FIELD_GAP: React.CSSProperties = { marginTop: 14 };
 
-const ACTIONS = { marginTop: 20 };
+const ACTIONS: React.CSSProperties = { marginTop: 20 };
 
 // ink/muted, not paper-ink/paper-muted: this line sits on the paved ground
 // below the notice, not on paper, the same reasoning Footer.js gives for its
 // own text.
-const FOOTER = {
+const FOOTER: React.CSSProperties = {
   maxWidth: 440,
   margin: "18px auto 0",
   padding: "0 20px",
@@ -55,27 +55,29 @@ const FOOTER = {
 // every bare <a> a colour and an underline) is gone, a Link with no style of
 // its own is indistinguishable from the surrounding sentence — exactly the
 // one line on this page whose whole job is being noticed.
-const FOOTER_LINK = {
+const FOOTER_LINK: React.CSSProperties = {
   color: "var(--color-accent)",
   fontWeight: 600,
   textDecoration: "underline",
 };
 
 function Signin() {
-  const emailRef = useRef();
-  const passwordRef = useRef();
+  const emailRef = useRef<HTMLInputElement>(null);
+  const passwordRef = useRef<HTMLInputElement>(null);
   const { login } = useAuth();
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const history = useHistory();
 
   // Firebase signin and link to dashboard
-  async function handleSubmit(e) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     try {
       setError("");
       setLoading(true);
-      await login(emailRef.current.value, passwordRef.current.value);
+      // Both refs are attached to Fields rendered unconditionally below, so
+      // they are never null by the time a submit can fire.
+      await login(emailRef.current!.value, passwordRef.current!.value);
       history.push("/"); // Redirect to homepage or dashboard
     } catch {
       setError("Failed to login");
