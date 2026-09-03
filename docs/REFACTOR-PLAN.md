@@ -254,7 +254,7 @@ const { data, isLoading, error } = useQuery({
 
 ---
 
-### שלב 7 — Tailwind v4 + shadcn/ui
+### שלב 7 — Tailwind v4 + shadcn/ui — ✅ בוצע (2026-09-03), ללא shadcn CLI
 
 **מה זה Tailwind:** במקום לכתוב CSS בקובץ נפרד, מרכיבים עיצוב ממחלקות קטנות
 ישירות ב-JSX — `class="flex items-center gap-4 rounded-lg p-4"`. הרווח: אין קובץ
@@ -274,6 +274,17 @@ CSS שגדל לנצח, ואין חשש למחוק מחלקה שמישהו אחר
 במקום `pl-`/`pr-`).
 
 **סיום:** אין Bootstrap ב-bundle; Lighthouse מעל 90; צילומי מסך חדשים ב-README.
+
+**מה בפועל בוצע:** התכנון המקורי דיבר על ה-CLI של shadcn/ui — פקודה שמעתיקה קוד
+קומפוננטה לפרויקט. זה לא מה שקרה: אין `components.json` בשום מקום ברפו. תחת
+`apps/client/src/Components/ui/` יש תיקיית primitives שנכתבה ביד מאפס
+(`Button`, `Field`, `Notice`, `Skeleton`, `EmptyState`) — לא קוד מועתק מ-shadcn.
+גם `lucide-react` מעולם לא נוסף כתלות; האייקונים הם inline SVG מצוירים ביד. מה
+שכן קרה בדיוק כמתוכנן: הסטאק הישן — `index.css`, `bootstrap`/`react-bootstrap`,
+`tachyons`, `@fortawesome/*` — הוסר לגמרי מהתלויות ומהקוד, והוחלף בטוקני
+Tailwind v4 תחת `@theme` ב-`src/styles/theme.css`. שני ה-branches
+(`redesign/design-system`, `redesign/home-screen`) מוזגו ל-`main` ללא אף קומיט
+ייחודי שנשאר על אף אחד מהם; `checks.sh all` ירוק.
 
 ---
 
