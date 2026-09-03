@@ -69,7 +69,14 @@ ensure_server_build() {
 
   local stale="" output
   if [ -d "$DIST" ]; then
-    stale="$(find "$SERVER_SRC" apps/server/tsconfig.json tsconfig.base.json -newer "$DIST" -not -path "*/generated/*" -print -quit 2>/dev/null)"
+    # $SCHEMA, not the generated client itself: files under src/generated/ are
+    # excluded below, because ensure_prisma_client already regenerated them by
+    # this point and their mtime is "just now" on every run regardless of
+    # whether the schema actually changed — that would mark dist stale on
+    # every single invocation. The schema file's own mtime is what actually
+    # tells us a regeneration happened, so a schema edit reaches dist even
+    # though the generated files that resulted from it are excluded.
+    stale="$(find "$SERVER_SRC" "$SCHEMA" apps/server/tsconfig.json tsconfig.base.json -newer "$DIST" -not -path "*/generated/*" -print -quit 2>/dev/null)"
   fi
 
   if [ ! -d "$DIST" ] || [ -n "$stale" ]; then
@@ -99,6 +106,10 @@ run_arch() { echo "SKIP: no import-linter equivalent wired up"; }
 
 run_types() {
   if [ -f "tsconfig.json" ] && have tsc; then
+    # src/lib/prisma.ts imports the generated client for its types, so tsc
+    # cannot resolve the program without it existing first — the same
+    # dependency run_test and ensure_server_build already account for.
+    ensure_prisma_client || return 1
     npx tsc --noEmit
   else
     echo "SKIP: no TypeScript yet (added in the TS migration stage)"

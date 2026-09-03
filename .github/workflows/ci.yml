@@ -49,6 +49,15 @@ jobs:
       - name: Format
         run: bash .claude/checks.sh format
 
+      # Added in the TS-migration review: nothing else in CI ran this. ts-jest
+      # transpiles rather than type-checks (see jest.config.js), and the
+      # server job's own build step only covers src/ — apps/server/tsconfig.json
+      # excludes tests/. Without this step a type error under
+      # apps/server/tests/** merged undetected until someone ran
+      # `checks.sh all` locally by hand.
+      - name: Types
+        run: bash .claude/checks.sh types
+
   server:
     name: Server - test
     runs-on: ubuntu-latest

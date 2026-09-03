@@ -18,17 +18,32 @@ module.exports = {
   modulePathIgnorePatterns: ["<rootDir>/dist/"],
 
   transform: {
-    // The ROOT tsconfig, not apps/server/tsconfig.json. That one builds src/
-    // and deliberately keeps the jest globals out of `types`; this is the
-    // config that covers tests/ as well, so ts-jest and `checks.sh types`
-    // check the suite against exactly the same options and cannot disagree
-    // about it. Its `noEmit` does not apply — ts-jest overrides that, which is
-    // also why that file has to name a `rootDir`.
+    // tsconfig.jest.json, not the root tsconfig.json directly — it extends
+    // that file (same include/exclude, so the suite is still the same
+    // program `checks.sh types` checks) but turns isolatedModules back off.
+    //
+    // Why that override exists at all: ts-jest reads `isolatedModules: true`
+    // from whatever tsconfig it is pointed at as a signal to switch into its
+    // own deprecated transpile-only mode, which skips type-checking outright
+    // rather than merely enforcing the compiler flag's usual meaning. The
+    // root tsconfig.json needs isolatedModules on for tsc's own program-wide
+    // check; ts-jest needs it off to actually type-check at all. Confirmed
+    // both ways: with it on, ts-jest ran a suite containing a real type error
+    // and reported all tests passing; with it off, the same error failed the
+    // run. `diagnostics.ignoreCodes` mutes the one warning ts-jest prints in
+    // that mode (TS151002, "you may want isolatedModules") that the flag was
+    // otherwise being used to silence — see tsconfig.jest.json's comment.
     //
     // The emit is `node16` CommonJS, which is what lets jest load the result
     // without --experimental-vm-modules. Stage 9 of REFACTOR-PLAN.md replaces
     // this runner with Vitest, and the emit format changes with it.
-    "^.+\\.ts$": ["ts-jest", { tsconfig: "<rootDir>/../../tsconfig.json" }],
+    "^.+\\.ts$": [
+      "ts-jest",
+      {
+        tsconfig: "<rootDir>/tsconfig.jest.json",
+        diagnostics: { ignoreCodes: [151002] },
+      },
+    ],
     // Kept after the suite's conversion, and not leftover scaffolding: the
     // controllers import the generated Prisma client for its error classes, and
     // that client is JavaScript living under src/ rather than in node_modules,

@@ -254,9 +254,9 @@ replacing is a plain overwrite. 5 MB cap, enforced by multer and surfaced as 413
   scheduled to change: stage 9 of `docs/REFACTOR-PLAN.md` replaces jest with
   Vitest, which loads ESM natively. Keep relative imports extensionless
   (`./lib/ApiError`); CommonJS resolution is what applies. The handful of `.js`
-  files still under `apps/server` are deliberate and are real CommonJS: the two
-  `scripts/`, `jest.config.js`, `prisma.config.js`, and
-  `tests/startup.smoke.js`.
+  files still under `apps/server` are deliberate and are real CommonJS: the
+  three `scripts/` (including `copyGenerated.js`, the build's post-`tsc` step),
+  `jest.config.js`, `prisma.config.js`, and `tests/startup.smoke.js`.
 - ES modules on the client.
 - Prettier: 90-column width, double quotes, semicolons, ES5 trailing commas.
 - Comments in this codebase explain _why_, usually citing the v1 bug the current

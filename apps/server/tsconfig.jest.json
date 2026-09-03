@@ -1,0 +1,23 @@
+{
+  // ts-jest's own tsconfig, kept separate from the root tsconfig.json that
+  // `checks.sh types` runs. Same program otherwise — same include/exclude,
+  // same strictness — but with isolatedModules turned back off.
+  //
+  // ts-jest treats `compilerOptions.isolatedModules === true` as its own
+  // (deprecated) transpile-only mode: it stops using the TypeScript language
+  // service and stops type-checking altogether, silently. See
+  // node_modules/ts-jest/dist/legacy/config/config-set.js:228 — there is no
+  // ts-jest-level option that overrides a `true` read from the tsconfig back
+  // to real type-checking, so a separate file is the only way to get both:
+  // tsc (real, whole-program isolatedModules enforcement) and ts-jest (real
+  // type-checking) each still get what they need from their own config.
+  //
+  // Losing isolatedModules here only means ts-jest stops separately enforcing
+  // single-file-compilable syntax (a re-exported type without `export type`,
+  // an ambient `const enum`) while running tests — the whole-program tsc run
+  // in `checks.sh types` still enforces that, against the exact same files.
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "isolatedModules": false
+  }
+}
