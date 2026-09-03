@@ -5,7 +5,7 @@ import { detectImageType } from "../lib/imageType";
 import { authenticated } from "../middleware/auth";
 import type { PathParams } from "../middleware/auth";
 import type { createUserRepository } from "../repositories/userRepository";
-import { schemas } from "../schemas";
+import { schemas } from "@kikar/shared";
 import type { createStorageService } from "../services/storageService";
 
 const UNIQUE_VIOLATION = "P2002";

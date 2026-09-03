@@ -75,6 +75,13 @@ jobs:
       # anything that imports it can run.
       - run: npm run db:generate --workspace=@kikar/server
 
+      # @kikar/shared is a real workspace dependency of @kikar/server, resolved
+      # through ordinary node_modules resolution rather than a tsconfig path
+      # alias — so, like the Prisma client above, it has to be built before the
+      # server build and the test run below, both of which import it.
+      - name: Build the shared package
+        run: npm run build --workspace=@kikar/shared
+
       # The smoke step below boots apps/server/dist, so it has to be compiled
       # first. Stated as its own step rather than left to checks.sh: that script
       # does build when dist is missing, but relying on it would make the job
