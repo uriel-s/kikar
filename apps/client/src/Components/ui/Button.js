@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { forwardRef, useState } from "react";
 
 /**
  * The approved heights, in px. Exported so a call site names a step rather than
@@ -21,10 +21,15 @@ const METRICS = {
  * label colour — never size, weight or radius. A "secondary" button that is also
  * smaller and lighter stops being the same control.
  *
- * `secondary` is drawn for the paved ground, where the near-white keyline reads
- * against the plaza in both themes. Inside a notice — light paper in both
- * themes — a keyline on paper is invisible by design, and `ghost` is the button
- * for that surface.
+ * `secondary` borders in `muted`, not `keyline`. The keyline is the notice's
+ * decorative die-cut rim, where nothing has to be legible; a control boundary
+ * has to clear 3:1 (WCAG 1.4.11), and keyline on the Slate Day ground measures
+ * 1.52:1 — the button reads as floating text with no button around it. No
+ * lightness near white can reach 3:1 on a 0.858 ground, so this was never a
+ * matter of nudging the keyline. `muted` measures 4.62 on the day ground, 6.72
+ * on paper and 5.69 on the night ground.
+ *
+ * Inside a notice, `ghost` remains the button for the surface.
  *
  * Hover on the filled variants is `brightness`, not a second colour: the accent
  * moves between Slate Day and Slate Night, so any hand-picked hover value would
@@ -43,7 +48,7 @@ const VARIANTS = {
     rest: {
       background: "transparent",
       color: "var(--color-ink)",
-      borderColor: "var(--color-keyline)",
+      borderColor: "var(--color-muted)",
     },
     hover: { background: "var(--color-chip)" },
   },
@@ -113,17 +118,31 @@ const FOCUS_RING = { outline: "2px solid var(--color-accent)", outlineOffset: 2 
  *   onClick / className / style — passed through
  *   ...rest   — anything else lands on the <button>: aria-label, title, form
  */
-const Button = ({
-  variant = "primary",
-  size = DEFAULT_SIZE,
-  type = "button",
-  disabled = false,
-  onClick,
-  className = "",
-  style,
-  children,
-  ...rest
-}) => {
+const Button = forwardRef(function Button(
+  {
+    variant = "primary",
+    size = DEFAULT_SIZE,
+    type = "button",
+    disabled = false,
+    onClick,
+    className = "",
+    style,
+    children,
+    // Taken out of `...rest` and composed below rather than spread onto the
+    // button: this component writes all four itself, and a spread `rest` would
+    // simply be overwritten, silently dropping a caller's handler. Field
+    // already composes; two primitives in one layer must not disagree on this.
+    onMouseEnter,
+    onMouseLeave,
+    onFocus,
+    onBlur,
+    ...rest
+  },
+  // forwardRef because the client runs React 18, where a plain function
+  // component cannot receive a ref at all — and returning focus to the button
+  // that opened something is exactly what this layer exists to make possible.
+  ref
+) {
   const [hovered, setHovered] = useState(false);
   const [ringVisible, setRingVisible] = useState(false);
 
@@ -139,14 +158,27 @@ const Button = ({
   return (
     <button
       {...rest}
+      ref={ref}
       type={type}
       disabled={disabled}
       onClick={onClick}
       className={className}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      onFocus={showRing}
-      onBlur={() => setRingVisible(false)}
+      onMouseEnter={(event) => {
+        setHovered(true);
+        onMouseEnter?.(event);
+      }}
+      onMouseLeave={(event) => {
+        setHovered(false);
+        onMouseLeave?.(event);
+      }}
+      onFocus={(event) => {
+        showRing(event);
+        onFocus?.(event);
+      }}
+      onBlur={(event) => {
+        setRingVisible(false);
+        onBlur?.(event);
+      }}
       style={{
         ...BASE,
         ...metrics,
@@ -161,6 +193,6 @@ const Button = ({
       {children}
     </button>
   );
-};
+});
 
 export default Button;

@@ -4,6 +4,13 @@
  *
  *   npm run db:seed -- --dry-run    report what would be written
  *   npm run db:seed                 write it
+ *   npm run db:seed -- --clean      remove every row this script created
+ *   npm run db:seed -- --yes        allow a non-local DATABASE_URL
+ *
+ * It writes to whatever DATABASE_URL holds, so it prints the target host first
+ * and refuses a non-local one without --yes. That is not paranoia: this
+ * repository's .env has pointed at a hosted database, and eight invented people
+ * in a live feed have to be undoable, which is what --clean is for.
  *
  * This is developer tooling, not product code. An empty database renders an
  * empty wall, and a design cannot be judged against nothing: the redesign needs
@@ -25,6 +32,9 @@ const { createPrismaClient } = require("../src/lib/prisma");
 const { canonicalPair } = require("../src/repositories/userRepository");
 
 const dryRun = process.argv.includes("--dry-run");
+const cleanOnly = process.argv.includes("--clean");
+const allowRemote =
+  process.argv.includes("--yes") || process.env.SEED_ALLOW_REMOTE === "1";
 
 const stats = {
   users: 0,
@@ -88,6 +98,14 @@ const uuidFor = (key) => {
  * `avatarUrl` is left null on all eight, deliberately. The new avatar component
  * derives initials and a colour from the id, and a set of real photographs would
  * hide exactly the thing being designed.
+ *
+ * The ids are also TUNED, which is not obvious and is easy to undo. The client
+ * hashes a hue out of the id, so these eight strings decide the eight colours
+ * the demo wall shows; the current set lands on 4, 52, 107, 161, 180, 230, 272
+ * and 314, a minimum separation of 19 degrees. Two earlier ids fell 2 degrees
+ * apart and rendered as the same colour, which is precisely the failure the hue
+ * rule exists to prevent. Rename anyone here and re-check the spread against
+ * `avatarHue` in apps/client/src/lib/avatarColor.js.
  */
 const USERS = {
   dana: { id: "seed-dana-levi", email: "dana.levi@kikar.test", name: "Dana Levi" },
@@ -591,11 +609,76 @@ const seedFriendships = async (prisma) => {
   }
 };
 
+/**
+ * Where DATABASE_URL actually points, for printing. Credentials never come back
+ * out — the point is to name the host, not to echo the secret.
+ */
+const describeTarget = (url) => {
+  try {
+    const { hostname, port, pathname } = new URL(url);
+    return { hostname, label: `${hostname}${port ? `:${port}` : ""}${pathname}` };
+  } catch {
+    return { hostname: "", label: "(unparseable DATABASE_URL)" };
+  }
+};
+
+const LOCAL_HOSTS = new Set([
+  "localhost",
+  "127.0.0.1",
+  "::1",
+  "0.0.0.0",
+  "db",
+  "postgres",
+]);
+
+/**
+ * Deletes only what this script created.
+ *
+ * Users are enough: Post, Like, Comment and Friendship all declare
+ * `onDelete: Cascade` on their user relations, so removing the eight seed rows
+ * takes their posts and everything hanging off them with it. Nothing outside
+ * the `seed-` prefix is matched, so a database holding real accounts loses
+ * nothing.
+ */
+const clean = async (prisma) => {
+  const { count } = await prisma.user.deleteMany({
+    where: { id: { startsWith: "seed-" } },
+  });
+  console.log(
+    `removed ${count} seed user(s); their posts, likes, comments and friendships cascaded.`
+  );
+};
+
 const main = async () => {
   const env = parse();
+  const target = describeTarget(env.DATABASE_URL);
+  const writing = !dryRun;
+
+  // Say where before doing anything. This script writes fake people into a
+  // product, and DATABASE_URL is whatever the environment happens to hold — in
+  // this repository that has pointed at a hosted database more than once. A
+  // seed run that never names its target is one `.env` away from putting eight
+  // invented users in front of real ones.
+  console.log(`target: ${target.label}`);
+
+  if (writing && !LOCAL_HOSTS.has(target.hostname) && !allowRemote) {
+    console.error(
+      `\nRefusing to write to a non-local database.\n` +
+        `Pass --yes (or set SEED_ALLOW_REMOTE=1) if that is genuinely what you want,\n` +
+        `and remember there is an undo: npm run db:seed -- --clean\n`
+    );
+    process.exit(1);
+  }
+
   const prisma = createPrismaClient(env);
 
-  console.log(dryRun ? "DRY RUN - nothing will be written\n" : "Seeding...\n");
+  if (cleanOnly) {
+    await clean(prisma);
+    await prisma.$disconnect();
+    return;
+  }
+
+  console.log(dryRun ? "\nDRY RUN - nothing will be written\n" : "\nSeeding...\n");
 
   // Users first: posts, likes, comments and friendships all reference them, and
   // the reference is checked against the table above rather than the database,

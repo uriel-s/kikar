@@ -34,12 +34,20 @@
   --color-keyline: oklch(0.995 0.003 250);
 
   --color-ink: oklch(0.245 0.014 252);
-  --color-muted: oklch(0.47 0.014 252);
+  /* 0.46, not 0.47: EmptyState sets body copy in muted on the ground, and 0.47
+     measures 4.43:1 there — a hair under AA. 0.46 is 4.62:1. */
+  --color-muted: oklch(0.46 0.014 252);
   --color-chip: oklch(0.98 0.005 250);
 
   /* Deeper than Slate Night's mint: at L 0.800 mint disappears on a light
-     ground. The two themes are not one hue at two lightnesses. */
-  --color-accent: oklch(0.56 0.13 168);
+     ground. The two themes are not one hue at two lightnesses.
+     0.52 rather than 0.56, because this token has three jobs and 0.56 failed
+     two of them: on-accent on it measured 4.11:1 (AA wants 4.5 — button
+     labels are 13-16px at 600, never "large text"), and as the focus ring it
+     measured 2.77:1 on the ground, under the 3:1 that makes a ring visible at
+     all. At 0.52: label 4.81, ring 3.24 on ground and 4.71 on paper. Night is
+     9.65 and needs no change. */
+  --color-accent: oklch(0.52 0.13 168);
   --color-on-accent: oklch(0.985 0.02 168);
 
   /* Warm in BOTH themes, and never re-tinted to the accent — mint on a like

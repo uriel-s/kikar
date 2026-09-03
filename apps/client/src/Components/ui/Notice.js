@@ -1,5 +1,5 @@
 import React from "react";
-import { avatarColor } from "../../lib/avatarColor";
+import { authorWash, avatarHue } from "../../lib/avatarColor";
 
 /*
  * The keyline is the gap between the two radii, so it is not a free number:
@@ -57,12 +57,13 @@ const Notice = ({
   children,
   ...rest
 }) => {
-  const { hue } = avatarColor(author?.id);
+  const hue = avatarHue(author?.id);
 
   // A flat two-stop gradient is just "this colour, everywhere". It buys the one
   // thing a background-color cannot: a translucent layer OVER the paper token
-  // rather than instead of it.
-  const wash = `oklch(0.62 0.16 ${hue} / 0.08)`;
+  // rather than instead of it. The colour itself comes from avatarColor, which
+  // owns every lightness and chroma in the system.
+  const wash = authorWash(author?.id);
 
   return (
     <Wrapper

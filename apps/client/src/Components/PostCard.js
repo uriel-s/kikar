@@ -78,7 +78,7 @@ const PostCard = ({ post, currentUser, onLike, onCommentAdded, onDelete }) => {
               the avatar has always rendered at ~139px and squeezed the name
               into a two-line column beside it. The grey Gravatar silhouette hid
               it; a coloured disc does not. */}
-          <Avatar user={post.author} size={44} className="user-img" />
+          <Avatar user={post.author} size={40} className="user-img" />
           <h3>{post.author.name}</h3>
 
           {canDelete && (

@@ -51,12 +51,21 @@ const NOW_WINDOW = 45;
  * printing "Invalid Date" or throwing and taking the whole feed down with it.
  */
 const toDate = (value) => {
-  if (value instanceof Date) return Number.isNaN(value.getTime()) ? null : value;
-  if (typeof value === "number") return Number.isFinite(value) ? new Date(value) : null;
-  if (typeof value !== "string" || !value.trim()) return null;
+  // Every branch ends at the same NaN check. The number branch used to stop at
+  // Number.isFinite, which is not the same test: Date's range is ±8.64e15, so a
+  // finite 1e20 produced an Invalid Date that walked past the guard and threw
+  // out of the unit lookup below — the exact failure this function exists to
+  // prevent.
+  const parsed =
+    value instanceof Date
+      ? value
+      : typeof value === "number"
+        ? new Date(value)
+        : typeof value === "string" && value.trim()
+          ? new Date(value)
+          : null;
 
-  const parsed = new Date(value);
-  return Number.isNaN(parsed.getTime()) ? null : parsed;
+  return parsed && !Number.isNaN(parsed.getTime()) ? parsed : null;
 };
 
 /**

@@ -94,17 +94,24 @@ safe to re-run.
 
 ### Demo data
 
-If you do not, and you just want something on the screen:
+If you have no Firestore data to import and just want something on the screen:
 
 ```bash
 npm run db:seed --workspace=@kikar/server -- --dry-run   # report only
 npm run db:seed --workspace=@kikar/server                # write
+npm run db:seed --workspace=@kikar/server -- --clean     # remove it again
 ```
 
 Eight users, twenty posts, and the likes, comments, and friendships between
 them. Post ages are relative, so re-running re-anchors the timeline to today;
 like the import, it is safe to re-run. Every seed row has a `seed-` id and a
 `@kikar.test` address, so it cannot be mistaken for a real account.
+
+**It writes to whatever `DATABASE_URL` holds.** The script prints the target
+host before doing anything and refuses a non-local one unless you pass `--yes`,
+because inventing eight people in a live feed is not what anyone means by
+"demo data". `--clean` removes them again — deleting the seed users cascades to
+everything they own.
 
 ---
 
@@ -114,7 +121,9 @@ like the import, it is safe to re-run. Every seed row has a `seed-` id and a
 apps/
   client/            React application
     src/api/         One module per resource, the only place URLs appear
-    src/lib/         Axios instance that attaches the Firebase ID token
+    src/lib/         Axios instance, and framework-free helpers
+    src/styles/      Design tokens (theme.css)
+    src/Components/ui/  Design-system primitives
   server/
     prisma/          Schema and SQL migrations
     scripts/         Firestore import, demo seed

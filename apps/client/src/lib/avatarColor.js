@@ -22,6 +22,12 @@ const FILLS = {
   dark: { background: [0.4, 0.085], text: [0.93, 0.035] },
 };
 
+// The tint a Notice carries in its author's hue: the same rule as the disc, at
+// the strength a whole surface can take rather than a 40px circle. It lives here
+// for the same reason the fills do — a palette change has to be one edit, not a
+// hunt for magic numbers at call sites.
+const WASH = { lightness: 0.62, chroma: 0.16, alpha: 0.08 };
+
 /**
  * The hue, 0-359, for a user id.
  *
@@ -68,6 +74,17 @@ export const neutralAvatarColor = (ground = "light") => {
     color: `oklch(${fill.text[0]} 0 0)`,
   };
 };
+
+/**
+ * The translucent tint a surface takes in a person's hue.
+ *
+ * Returned as a colour to layer OVER the paper token, never as a replacement
+ * for it: the surface stays the token, so it follows if paper moves, and a
+ * browser that cannot parse the oklch falls back to plain paper rather than to
+ * nothing.
+ */
+export const authorWash = (id) =>
+  `oklch(${WASH.lightness} ${WASH.chroma} ${avatarHue(id)} / ${WASH.alpha})`;
 
 /**
  * Up to two initials for a name: "Dana Levi" -> "DL", "Dana" -> "D".
