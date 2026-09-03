@@ -486,65 +486,6 @@ a:hover {
     display: flex;
   }
 }
-/* General card styling */
-.post-card {
-  background-color: #2d3039;
-  border-radius: 10px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
-  overflow: hidden;
-  width: 100%;
-  max-width: 800px;
-  margin: 20px auto;
-  padding: 15px;
-  transition: box-shadow 0.3s ease-in-out, transform 0.3s ease-in-out;
-  border: 1px solid #3a3f4b;
-  position: relative;
-}
-
-.post-card:hover {
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-  transform: translateY(-10px) scale(1.05);
-  cursor: pointer;
-}
-
-.post-card:active {
-  transform: translateY(-2px) scale(1.01);
-}
-
-.post-card::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  border-radius: 10px;
-  box-shadow: 0 0 15px rgba(0, 123, 255, 0.3);
-  opacity: 0;
-  transition: opacity 0.3s ease;
-  pointer-events: none;
-  z-index: -1;
-}
-
-.post-card:hover::after {
-  opacity: 1;
-  animation: pulse-border 2s infinite;
-}
-
-/* Header styling */
-.post-card-header {
-  display: flex;
-  align-items: center;
-  margin-bottom: 15px;
-  position: relative;
-}
-
-.avatar-container {
-  width: 50px;
-  height: 50px;
-  margin-right: 15px;
-}
-
 .user-img {
   width: 100%;
   height: 100%;
@@ -558,258 +499,18 @@ h3 {
   color: #fff;
 }
 
-/* Delete button styling */
-.delete-btn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 5px;
-  margin-left: auto;  /* This pushes it to the right */
-  color: #f06a6a !important;
-}
-
-.delete-btn:hover {
-  opacity: 0.7;
-  background-color: rgba(64, 66, 160, 0.1);
-}
-
-/* Post content */
+/*
+ * KEPT, and not because the post card still wants them. .user-img above sizes
+ * UserCard's avatar; this bare `p` and the `h3` above it are what set body copy
+ * and card headings on the nine screens that have not been rebuilt. The screen
+ * this section served — the feed — no longer uses any of the three, and its own
+ * rules are gone. These leave with the last screen that needs them.
+ */
 p {
   font-size: 18px;
   color: #e4e6eb;
   line-height: 1.5;
   margin-bottom: 15px;
-}
-
-/* Post actions (like and comment buttons) */
-.post-actions {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: 10px;
-}
-
-.like-count-container {
-  display: flex;
-  align-items: center;
-}
-
-.like-count {
-  font-size: 14px;
-  color: #777;
-  margin-left: 10px;
-}
-
-.like-btn,
-.comment-btn {
-  background-color: green;
-  border: none;
-  padding: 10px 20px;
-  border-radius: 20px;
-  cursor: pointer;
-  font-size: 14px;
-  color: white;
-  display: flex;
-  align-items: center;
-  transition: background-color 0.3s, color 0.3s;
-  position: relative;
-}
-
-.like-btn:hover,
-.comment-btn:hover {
-  background-color: #ddd;
-}
-
-.like-btn.liked {
-  background-color: #ccc;
-  color: #555;
-}
-
-.like-btn.liked:hover {
-  background-color: #5e5c5c;
-  color: #ccc8c8;
-}
-
-.like-btn .FaThumbsUp,
-.like-btn .FaThumbsDown {
-  margin-right: 5px;
-}
-
-.comment-btn {
-  background-color: #007bff;
-  color: white;
-}
-
-.comment-btn .FaComment {
-  margin-right: 5px;
-}
-
-.comment-btn::before {
-  content: "";
-  position: absolute;
-  top: -50%;
-  left: -50%;
-  width: 200%;
-  height: 200%;
-  background: linear-gradient(
-    to bottom right,
-    rgba(255, 255, 255, 0) 0%,
-    rgba(255, 255, 255, 0.1) 50%,
-    rgba(255, 255, 255, 0) 100%
-  );
-  transform: rotate(45deg);
-  z-index: -1;
-  transition: all 0.5s ease;
-  opacity: 0;
-}
-
-.comment-btn:hover::before {
-  animation: shine 1.5s ease-in-out infinite;
-  opacity: 1;
-}
-
-/* Comment section styling */
-.comment-section {
-  margin-top: 20px;
-  padding: 10px;
-  background-color: #242731; /* Darker background for comments */
-  border-radius: 5px;
-  border: 1px solid #3a3f4b;
-}
-
-/* Comment styling */
-.comment {
-  padding: 8px 0;
-  font-size: 14px;
-  color: #b0b3b8; /* Lighter gray for comment text */
-  word-wrap: break-word;
-  white-space: normal;
-  word-break: break-word;
-}
-
-/* Divider between comments */
-.comment-divider {
-  border: 1px solid #969393;
-  margin: 10px 0;
-}
-
-/* New comment input and button */
-.new-comment {
-  display: flex;
-  align-items: center;
-  margin-top: 15px;
-}
-
-.new-comment input {
-  flex-grow: 1;
-  padding: 10px;
-  border: 1px solid #ccc;
-  border-radius: 5px;
-  font-size: 14px;
-  margin-right: 10px;
-  outline: none;
-}
-
-.new-comment input:focus {
-  border-color: #007bff;
-}
-
-.new-comment button {
-  background-color: #007bff;
-  color: white;
-  border: none;
-  padding: 10px 20px;
-  border-radius: 5px;
-  cursor: pointer;
-  font-size: 14px;
-}
-
-.new-comment button:disabled {
-  background-color: #0056b3;
-}
-
-.new-comment button:hover {
-  background-color: #034c9b;
-}
-
-/* See all comments button */
-.see-all-comments-btn {
-  background-color: #007bff;
-  color: white;
-  border: none;
-  padding: 10px;
-  border-radius: 5px;
-  cursor: pointer;
-  font-size: 14px;
-  margin-top: 10px;
-}
-
-.see-all-comments-btn:hover {
-  background-color: #0056b3;
-}
-
-/* Fixed post form at the bottom */
-.add-post-form {
-  position: fixed;
-  bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 90%;
-  max-width: 700px;
-  background-color: #2d3039; /* Dark background for form */
-  padding: 20px;
-  border-top: 1px solid #3a3f4b;
-  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.3);
-  border-radius: 10px 10px 0 0;
-  z-index: 1000;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  box-sizing: border-box;
-  transition: height 0.3s ease-in-out;
-}
-
-/* Textarea for post content */
-.add-post-form textarea {
-  width: 100%;
-  height: 100px;
-  padding: 10px;
-  font-size: 16px;
-  border: 1px solid #3a3f4b;
-  border-radius: 10px;
-  resize: none;
-  outline: none;
-  margin-bottom: 15px;
-  background-color: #353945; /* Dark input background */
-  color: #e4e6eb; /* Light text */
-}
-
-.add-post-form textarea:focus {
-  border-color: #007bff;
-}
-
-/* Submit and cancel buttons */
-.add-post-form button[type="submit"],
-.add-post-form button[type="button"] {
-  background-color: #007bff;
-  color: white;
-  padding: 10px 20px;
-  font-size: 16px;
-  border-radius: 10px;
-  border: none;
-  cursor: pointer;
-  transition: background-color 0.3s;
-}
-
-.add-post-form button[type="submit"]:hover,
-.add-post-form button[type="button"]:hover {
-  background-color: #0056b3;
-}
-
-/* Cancel button style */
-.add-post-form button[type="button"] {
-  background-color: #f0f0f0;
-  color: #333;
 }
 
 /* Success and error messages */
@@ -831,24 +532,6 @@ p {
   margin-bottom: 20px;
 }
 
-/* Responsive design for mobile */
-@media (max-width: 768px) {
-  .add-post-form {
-    padding: 15px;
-    border-radius: 5px;
-  }
-
-  .add-post-form textarea {
-    height: 80px;
-  }
-
-  .add-post-form button[type="submit"],
-  .add-post-form button[type="button"] {
-    width: 100%;
-    margin-top: 10px;
-  }
-}
-
 /* Neon Effects */
 /* Adding neon glow effects for buttons and cards */
 
@@ -857,18 +540,6 @@ p {
   10% { opacity: 0.5; }
   50% { opacity: 0.2; }
   100% { left: 100%; opacity: 0; }
-}
-
-@keyframes pulse-border {
-  0% {
-    box-shadow: 0 0 0 0 rgba(0, 123, 255, 0.4);
-  }
-  70% {
-    box-shadow: 0 0 0 10px rgba(0, 123, 255, 0);
-  }
-  100% {
-    box-shadow: 0 0 0 0 rgba(0, 123, 255, 0);
-  }
 }
 
 @keyframes glow {
