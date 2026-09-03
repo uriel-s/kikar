@@ -13,11 +13,34 @@ import { COMPACT, NARROW } from "./Plaza";
 
 const MAX_LENGTH = 5000;
 
+/**
+ * The partial user shape this screen draws — the same fields Avatar's own
+ * `AvatarUser` accepts. Not imported from Avatar.tsx because it is not
+ * exported there; kept local and permissive for the same reason as Avatar's
+ * own comment: `api/users.ts` still returns an untyped row, so this is not
+ * the place a shared, stricter `User` type gets invented.
+ */
+interface AddPostUser {
+  id?: string;
+  name?: string;
+  avatarUrl?: string | null;
+}
+
+interface AddPostFormProps {
+  /** Called with the created post. `postsApi.createPost` has no declared
+   * return type, so there is nothing more specific to read off it here than
+   * "pass it through". */
+  onPostCreated: (post: unknown) => void;
+  /** The signed-in person, `{ id, name, avatarUrl }`. Optional; see the
+   * comment on `me` for why this is never fetched here. */
+  user?: AddPostUser;
+}
+
 // The pill's width on a roomy screen. Below COMPACT it gives way and the
 // composer spans the column, which is what the mobile artboard draws.
 const PILL_WIDTH = 620;
 
-const KEYLINE = {
+const KEYLINE: React.CSSProperties = {
   display: "block",
   width: "100%",
   boxSizing: "border-box",
@@ -33,7 +56,7 @@ const KEYLINE = {
   cursor: "pointer",
 };
 
-const PAPER_ROW = {
+const PAPER_ROW: React.CSSProperties = {
   boxSizing: "border-box",
   display: "flex",
   alignItems: "center",
@@ -45,7 +68,7 @@ const PAPER_ROW = {
   background: "var(--color-paper)",
 };
 
-const PROMPT = {
+const PROMPT: React.CSSProperties = {
   flexGrow: 1,
   minWidth: 0,
   fontSize: 16,
@@ -67,7 +90,7 @@ const PROMPT = {
  * leave the real POST button and the chip that stands in for it disagreeing by
  * a whole typeface. A chosen deviation from the artboard, recorded, not a slip.
  */
-const POST_CHIP = {
+const POST_CHIP: React.CSSProperties = {
   flexShrink: 0,
   padding: "11px 22px",
   borderRadius: "var(--radius-pill)",
@@ -80,20 +103,25 @@ const POST_CHIP = {
 
 // The disc carries an explicit width, but a flex item still shrinks by default
 // — without this the avatar goes oval on a narrow phone.
-const AVATAR_SLOT = { display: "inline-flex", flexShrink: 0 };
+const AVATAR_SLOT: React.CSSProperties = { display: "inline-flex", flexShrink: 0 };
 
-const AUTHOR_ROW = {
+const AUTHOR_ROW: React.CSSProperties = {
   display: "flex",
   alignItems: "center",
   gap: 12,
   marginBottom: 14,
 };
 
-const AUTHOR_NAME = { fontSize: 15, fontWeight: 600 };
+const AUTHOR_NAME: React.CSSProperties = { fontSize: 15, fontWeight: 600 };
 
-const ACTIONS = { display: "flex", alignItems: "center", gap: 10, marginTop: 12 };
+const ACTIONS: React.CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  gap: 10,
+  marginTop: 12,
+};
 
-const COUNT = {
+const COUNT: React.CSSProperties = {
   flexGrow: 1,
   fontSize: 13,
   color: "var(--color-paper-muted)",
@@ -104,7 +132,10 @@ const COUNT = {
 
 // Button's ring, to the pixel. The pill is where focus lands when the composer
 // closes, so it has to be able to show that it has it.
-const FOCUS_RING = { outline: "2px solid var(--color-accent)", outlineOffset: 2 };
+const FOCUS_RING: React.CSSProperties = {
+  outline: "2px solid var(--color-accent)",
+  outlineOffset: 2,
+};
 
 /**
  * The composer: the pill standing at the centre of the plaza, and the notice it
@@ -115,20 +146,20 @@ const FOCUS_RING = { outline: "2px solid var(--color-accent)", outlineOffset: 2 
  *   user          — the signed-in person, `{ id, name, avatarUrl }`. Optional;
  *                   see the comment on `me` for why this is never fetched here
  */
-const AddPostForm = ({ onPostCreated, user }) => {
+const AddPostForm = ({ onPostCreated, user }: AddPostFormProps) => {
   const { currentUser } = useAuth();
   const profile = usePlazaProfile();
   const compact = useNarrowerThan(COMPACT);
   const narrow = useNarrowerThan(NARROW);
 
-  const [text, setText] = useState("");
-  const [error, setError] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isOpen, setIsOpen] = useState(false);
-  const [ringVisible, setRingVisible] = useState(false);
+  const [text, setText] = useState<string>("");
+  const [error, setError] = useState<string>("");
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [isOpen, setIsOpen] = useState<boolean>(false);
+  const [ringVisible, setRingVisible] = useState<boolean>(false);
 
-  const pillRef = useRef(null);
-  const textRef = useRef(null);
+  const pillRef = useRef<HTMLButtonElement>(null);
+  const textRef = useRef<HTMLTextAreaElement>(null);
   // Separates "closed because nobody has opened it yet" from "closed again", so
   // the first render does not yank focus out of wherever the reader left it.
   const hasOpened = useRef(false);
@@ -143,7 +174,7 @@ const AddPostForm = ({ onPostCreated, user }) => {
    * An explicit `user` prop still wins, for a caller that holds the row
    * already.
    */
-  const me = user ?? profile ?? { id: currentUser?.uid };
+  const me: AddPostUser = user ?? profile ?? { id: currentUser?.uid };
 
   /*
    * Opening focuses the textarea; closing hands focus back to the pill that
@@ -166,7 +197,7 @@ const AddPostForm = ({ onPostCreated, user }) => {
     setIsOpen(false);
   };
 
-  const handleSubmit = async (event) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     if (!text.trim()) {
@@ -183,7 +214,9 @@ const AddPostForm = ({ onPostCreated, user }) => {
       onPostCreated(post);
       close();
     } catch (err) {
-      setError(err.message);
+      // `strict` types the catch binding `unknown`, not `any` — narrow it
+      // before reading `.message` rather than reaching for a cast.
+      setError(err instanceof Error ? err.message : String(err));
     } finally {
       setIsSubmitting(false);
     }
@@ -192,11 +225,13 @@ const AddPostForm = ({ onPostCreated, user }) => {
   // Escape closes an empty composer and nothing else. A draft somebody has
   // typed is not something a key pressed by reflex gets to throw away — Cancel
   // does that, and Cancel is labelled.
-  const handleKeyDown = (event) => {
+  const handleKeyDown = (
+    event: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  ) => {
     if (event.key === "Escape" && !text) close();
   };
 
-  const frame = {
+  const frame: React.CSSProperties = {
     maxWidth: compact ? "100%" : PILL_WIDTH,
     margin: `${compact ? 22 : 34}px auto 0`,
   };
@@ -218,7 +253,7 @@ const AddPostForm = ({ onPostCreated, user }) => {
          * reader's own face, so neither should be read out as the label.
          */
         aria-label="Say something to the square"
-        onFocus={(event) =>
+        onFocus={(event: React.FocusEvent<HTMLButtonElement>) =>
           // :focus-visible is what separates keyboard focus from the focus a
           // mouse click leaves behind, and an inline style cannot hold a
           // pseudo-class. Same trick, same reason, as Button.
@@ -274,7 +309,11 @@ const AddPostForm = ({ onPostCreated, user }) => {
         as="textarea"
         label="Say something to the square"
         value={text}
-        onChange={(event) => setText(event.target.value)}
+        onChange={(
+          event: React.ChangeEvent<
+            HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+          >
+        ) => setText(event.target.value)}
         onKeyDown={handleKeyDown}
         maxLength={MAX_LENGTH}
         error={error}

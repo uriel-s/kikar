@@ -1,4 +1,5 @@
 import React, { useId, useState } from "react";
+import firebase from "firebase/compat/app";
 import * as postsApi from "../api/posts";
 import { machineTime, timeAgo } from "../lib/timeAgo";
 import Avatar from "./Avatar";
@@ -14,7 +15,12 @@ import Skeleton from "./ui/Skeleton";
  * that used to be here could not do: they arrived with a colour of their own and
  * pulled a whole icon package into the bundle for three shapes.
  */
-const Glyph = ({ filled = false, children }) => (
+interface GlyphProps {
+  filled?: boolean;
+  children?: React.ReactNode;
+}
+
+const Glyph = ({ filled = false, children }: GlyphProps) => (
   <svg
     width="18"
     height="18"
@@ -31,7 +37,11 @@ const Glyph = ({ filled = false, children }) => (
   </svg>
 );
 
-const HeartIcon = ({ filled }) => (
+interface HeartIconProps {
+  filled?: boolean;
+}
+
+const HeartIcon = ({ filled }: HeartIconProps) => (
   <Glyph filled={filled}>
     <path d="M12 20.4c-1.2-.8-7.4-4.9-7.4-9.9a4.3 4.3 0 0 1 7.4-2.9 4.3 4.3 0 0 1 7.4 2.9c0 5-6.2 9.1-7.4 9.9z" />
   </Glyph>
@@ -70,7 +80,7 @@ const TILTS = [-1.6, 1.4, 1.1, -1.2, -0.8, 0.7];
  * re-shuffles every sheet after it. The id is the one thing about a post that
  * never moves.
  */
-const tiltFor = (id) => {
+const tiltFor = (id: string | undefined): number => {
   const hash = [...String(id ?? "")].reduce(
     (h, ch) => (h * 31 + ch.charCodeAt(0)) % 360,
     7
@@ -78,7 +88,7 @@ const tiltFor = (id) => {
   return TILTS[hash % TILTS.length];
 };
 
-const AVATAR_SLOT = {
+const AVATAR_SLOT: React.CSSProperties = {
   display: "inline-flex",
   // The disc carries an explicit width, but a flex item still shrinks by
   // default — without this the face goes oval next to a long name.
@@ -89,9 +99,13 @@ const AVATAR_SLOT = {
   boxShadow: "0 0 0 3px var(--color-keyline)",
 };
 
-const AUTHOR_ROW = { display: "flex", alignItems: "center", gap: 12 };
+const AUTHOR_ROW: React.CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  gap: 12,
+};
 
-const AUTHOR_NAME = {
+const AUTHOR_NAME: React.CSSProperties = {
   fontFamily: "var(--font-display)",
   fontSize: 13,
   letterSpacing: "-0.005em",
@@ -100,9 +114,12 @@ const AUTHOR_NAME = {
   textTransform: "uppercase",
 };
 
-const TIMESTAMP = { fontSize: 11.5, color: "var(--color-paper-muted)" };
+const TIMESTAMP: React.CSSProperties = {
+  fontSize: 11.5,
+  color: "var(--color-paper-muted)",
+};
 
-const CONTENT = {
+const CONTENT: React.CSSProperties = {
   margin: "13px 0 0",
   fontSize: 15.5,
   lineHeight: 1.55,
@@ -124,7 +141,7 @@ const CONTENT = {
 // Button's own paddingInline at size 34.
 const ACTION_PADDING = 14;
 
-const ACTIONS = {
+const ACTIONS: React.CSSProperties = {
   display: "flex",
   alignItems: "center",
   gap: 18,
@@ -134,7 +151,7 @@ const ACTIONS = {
   marginLeft: -ACTION_PADDING,
 };
 
-const ACTION_LABEL = {
+const ACTION_LABEL: React.CSSProperties = {
   display: "inline-flex",
   alignItems: "center",
   gap: 7,
@@ -147,16 +164,17 @@ const ACTION_LABEL = {
   fontVariantNumeric: "tabular-nums",
 };
 
-const MUTED_ACTION = { color: "var(--color-paper-muted)" };
+const MUTED_ACTION: React.CSSProperties = { color: "var(--color-paper-muted)" };
 
 /*
  * The heart is warm red when it is filled and muted when it is not — never the
  * accent. theme.css says this at the token: mint on a like reads as a status
  * tick, not as affection.
  */
-const likeStyle = (liked) => (liked ? { color: "var(--color-like)" } : MUTED_ACTION);
+const likeStyle = (liked: boolean): React.CSSProperties =>
+  liked ? { color: "var(--color-like)" } : MUTED_ACTION;
 
-const DELETE_BUTTON = {
+const DELETE_BUTTON: React.CSSProperties = {
   ...MUTED_ACTION,
   marginLeft: "auto",
   // An icon button is square. Button's 14px inline padding is measured for a
@@ -165,7 +183,7 @@ const DELETE_BUTTON = {
   width: 34,
 };
 
-const PANEL = {
+const PANEL: React.CSSProperties = {
   marginTop: 14,
   paddingTop: 14,
   // A knock-back of the surface's own ink, not the keyline: the keyline is
@@ -174,9 +192,13 @@ const PANEL = {
   borderTop: "1px solid color-mix(in oklab, currentColor 14%, transparent)",
 };
 
-const SKELETON_STACK = { display: "flex", flexDirection: "column", gap: 10 };
+const SKELETON_STACK: React.CSSProperties = {
+  display: "flex",
+  flexDirection: "column",
+  gap: 10,
+};
 
-const COMMENT_LIST = {
+const COMMENT_LIST: React.CSSProperties = {
   display: "flex",
   flexDirection: "column",
   gap: 12,
@@ -185,14 +207,14 @@ const COMMENT_LIST = {
   listStyle: "none",
 };
 
-const COMMENT_META = {
+const COMMENT_META: React.CSSProperties = {
   margin: 0,
   fontSize: 12,
   fontWeight: 600,
   color: "var(--color-paper-muted)",
 };
 
-const COMMENT_TEXT = {
+const COMMENT_TEXT: React.CSSProperties = {
   margin: "2px 0 0",
   fontSize: 14,
   lineHeight: 1.5,
@@ -201,22 +223,75 @@ const COMMENT_TEXT = {
   overflowWrap: "anywhere",
 };
 
-const EMPTY_LINE = { margin: 0, fontSize: 13, color: "var(--color-paper-muted)" };
+const EMPTY_LINE: React.CSSProperties = {
+  margin: 0,
+  fontSize: 13,
+  color: "var(--color-paper-muted)",
+};
 
 // Field's own error type, restated here: this message answers for two
 // operations, only one of which is the field's.
-const ERROR = {
+const ERROR: React.CSSProperties = {
   margin: "12px 0 0",
   fontSize: 13,
   fontWeight: 600,
   color: "var(--color-like)",
 };
 
-const FORM = { marginTop: 14 };
+const FORM: React.CSSProperties = { marginTop: 14 };
 
-const FORM_ACTIONS = { display: "flex", justifyContent: "flex-end", marginTop: 10 };
+const FORM_ACTIONS: React.CSSProperties = {
+  display: "flex",
+  justifyContent: "flex-end",
+  marginTop: 10,
+};
 
 const MAX_COMMENT_LENGTH = 1000;
+
+/**
+ * The partial author shape a post or a comment carries — the same fields
+ * Avatar's own `AvatarUser` accepts. Not imported from Avatar.tsx because it
+ * is not exported there; kept local and permissive for the same reason as
+ * Avatar's own comment: `api/posts.ts` still returns an untyped row, so this
+ * is not the place a shared, stricter `User` type gets invented.
+ */
+interface PostAuthor {
+  id?: string;
+  name?: string;
+  avatarUrl?: string | null;
+}
+
+interface PostComment {
+  id: string;
+  author: PostAuthor;
+  content: string;
+  createdAt?: Date | string | number | null;
+}
+
+interface Post {
+  id: string;
+  author: PostAuthor;
+  content: string;
+  createdAt?: Date | string | number | null;
+  likeCount: number;
+  commentCount: number;
+  likedByMe: boolean;
+}
+
+interface PostCardProps {
+  /** The feed shape: author, content, createdAt, likeCount, commentCount,
+   * likedByMe. */
+  post: Post;
+  /** The signed-in Firebase user; only `.uid` is read. */
+  currentUser?: firebase.User | null;
+  /** (postId, likedByMe) => void */
+  onLike: (postId: string, likedByMe: boolean) => void;
+  /** (postId) => void, so the caller can move its own count */
+  onCommentAdded?: (postId: string) => void;
+  /** (postId) => void. Optional: its absence is what hides the delete
+   * affordance on search results */
+  onDelete?: (postId: string) => void;
+}
 
 /**
  * One notice on the plaza wall: a sheet of paper, tinted in its author's own
@@ -235,14 +310,20 @@ const MAX_COMMENT_LENGTH = 1000;
  *   onDelete        — (postId) => void. Optional: its absence is what hides the
  *                     delete affordance on search results
  */
-const PostCard = ({ post, currentUser, onLike, onCommentAdded, onDelete }) => {
-  const [newComment, setNewComment] = useState("");
-  const [comments, setComments] = useState([]);
-  const [commentsLoaded, setCommentsLoaded] = useState(false);
-  const [isLoadingComments, setIsLoadingComments] = useState(false);
-  const [showComments, setShowComments] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState("");
+const PostCard = ({
+  post,
+  currentUser,
+  onLike,
+  onCommentAdded,
+  onDelete,
+}: PostCardProps) => {
+  const [newComment, setNewComment] = useState<string>("");
+  const [comments, setComments] = useState<PostComment[]>([]);
+  const [commentsLoaded, setCommentsLoaded] = useState<boolean>(false);
+  const [isLoadingComments, setIsLoadingComments] = useState<boolean>(false);
+  const [showComments, setShowComments] = useState<boolean>(false);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [error, setError] = useState<string>("");
 
   // Generated, not a literal: one post can appear twice on a page — the feed
   // and a search result — and two panels sharing an id would leave both
@@ -275,13 +356,15 @@ const PostCard = ({ post, currentUser, onLike, onCommentAdded, onDelete }) => {
       setComments(loaded);
       setCommentsLoaded(true);
     } catch (err) {
-      setError(err.message);
+      // `strict` types the catch binding `unknown`, not `any` — narrow it
+      // before reading `.message` rather than reaching for a cast.
+      setError(err instanceof Error ? err.message : String(err));
     } finally {
       setIsLoadingComments(false);
     }
   };
 
-  const handleCommentSubmit = async (event) => {
+  const handleCommentSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!newComment.trim() || isSubmitting) return;
 
@@ -298,7 +381,7 @@ const PostCard = ({ post, currentUser, onLike, onCommentAdded, onDelete }) => {
       setNewComment("");
       onCommentAdded?.(post.id);
     } catch (err) {
-      setError(err.message);
+      setError(err instanceof Error ? err.message : String(err));
     } finally {
       setIsSubmitting(false);
     }
@@ -306,7 +389,12 @@ const PostCard = ({ post, currentUser, onLike, onCommentAdded, onDelete }) => {
 
   const handleDelete = () => {
     if (window.confirm("Are you sure you want to delete this post?")) {
-      onDelete(post.id);
+      // `onDelete` is optional in the props type, and this handler is only
+      // ever wired to a button rendered when `canDelete` is true (which
+      // implies `onDelete` is set) — but that conditional-rendering fact is
+      // invisible to TypeScript's control-flow analysis inside this closure,
+      // so the optional call is required rather than a direct invocation.
+      onDelete?.(post.id);
     }
   };
 
@@ -447,7 +535,11 @@ const PostCard = ({ post, currentUser, onLike, onCommentAdded, onDelete }) => {
             <Field
               label="Write a reply"
               value={newComment}
-              onChange={(event) => setNewComment(event.target.value)}
+              onChange={(
+                event: React.ChangeEvent<
+                  HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+                >
+              ) => setNewComment(event.target.value)}
               maxLength={MAX_COMMENT_LENGTH}
             />
 

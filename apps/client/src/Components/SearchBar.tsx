@@ -1,7 +1,16 @@
-// SearchBar.js
+// SearchBar.tsx
 import React, { useRef, useState } from "react";
-import { useHistory } from "react-router-dom";
-import { IoSearchSharp } from "react-icons/io5";
+import { useHistory } from "../lib/router";
+import { IoSearchSharp as IoSearchSharpIcon } from "react-icons/io5";
+import type { IconBaseProps } from "react-icons";
+
+// Same TS2786 as the one documented in lib/router.ts's header, hitting
+// react-icons instead of react-router-dom: IconType's return type is this
+// monorepo's mismatched, unpinned React 19 ReactNode (widened to allow
+// bigint), which is not assignable to the client's pinned React 18 one. One
+// icon, one file — narrow enough not to warrant its own shim module the way
+// router.ts's four components did.
+const IoSearchSharp = IoSearchSharpIcon as unknown as React.FC<IconBaseProps>;
 
 /*
  * Inline Slate tokens over the .search-* classes this still carries.
@@ -24,7 +33,7 @@ import { IoSearchSharp } from "react-icons/io5";
  * outranks.
  */
 
-const CONTAINER = {
+const CONTAINER: React.CSSProperties = {
   display: "flex",
   alignItems: "center",
   overflow: "hidden",
@@ -40,7 +49,7 @@ const CONTAINER = {
   transform: "none",
 };
 
-const INPUT = {
+const INPUT: React.CSSProperties = {
   flex: 1,
   minWidth: 0,
   padding: "9px 12px",
@@ -55,7 +64,7 @@ const INPUT = {
   outline: "none",
 };
 
-const SELECT = {
+const SELECT: React.CSSProperties = {
   flexShrink: 0,
   padding: "9px 8px",
   border: "none",
@@ -75,7 +84,7 @@ const SELECT = {
   marginRight: 0,
 };
 
-const BUTTON = {
+const BUTTON: React.CSSProperties = {
   flexShrink: 0,
   // Stretch, not centre: the button is the end of the field, so it has to be
   // as tall as the field is however tall the text inside makes that.
@@ -103,20 +112,20 @@ const BUTTON = {
 // its own button. .search-icon's white drop-shadow goes with it — it was there
 // to lift the icon off a mid-blue fill.
 const ICON_SIZE = 20;
-const ICON = { filter: "none" };
+const ICON: React.CSSProperties = { filter: "none" };
 
 const SearchBar = () => {
-  const [query, setQuery] = useState("");
-  const [searchType, setSearchType] = useState("all"); // Options: all, users, posts
+  const [query, setQuery] = useState<string>("");
+  const [searchType, setSearchType] = useState<string>("all"); // Options: all, users, posts
   // :focus-within in state, because an inline style cannot hold a pseudo-class —
   // the same reason Button tracks :focus-visible itself. On the three controls
   // rather than on the box around them: a <div> carrying focus handlers is a
   // non-interactive element with an interaction, which jsx-a11y is right about.
-  const [focused, setFocused] = useState(false);
-  const fieldRef = useRef(null);
+  const [focused, setFocused] = useState<boolean>(false);
+  const fieldRef = useRef<HTMLDivElement>(null);
   const history = useHistory();
 
-  const handleSearch = (e) => {
+  const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (query.trim()) {
       // Navigate to search results page with query parameters
@@ -127,9 +136,15 @@ const SearchBar = () => {
   // relatedTarget is where focus is GOING. Without the containment test the ring
   // drops for a frame every time somebody tabs from the input to the filter —
   // the field has not lost focus there, focus has moved inside it.
+  //
+  // Spread onto all three of <input>, <select> and <button> below, so onBlur's
+  // event has to satisfy every one of their FocusEvent prop types at once —
+  // hence the union rather than a single element's type.
   const focus = {
     onFocus: () => setFocused(true),
-    onBlur: (e) => setFocused(Boolean(fieldRef.current?.contains(e.relatedTarget))),
+    onBlur: (
+      e: React.FocusEvent<HTMLInputElement | HTMLSelectElement | HTMLButtonElement>
+    ) => setFocused(Boolean(fieldRef.current?.contains(e.relatedTarget))),
   };
 
   return (
@@ -147,14 +162,16 @@ const SearchBar = () => {
           type="text"
           placeholder="Search users and posts..."
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setQuery(e.target.value)}
           className="search-input"
           style={INPUT}
         />
         <select
           {...focus}
           value={searchType}
-          onChange={(e) => setSearchType(e.target.value)}
+          onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
+            setSearchType(e.target.value)
+          }
           className="search-type"
           style={SELECT}
         >
