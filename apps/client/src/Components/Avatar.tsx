@@ -15,7 +15,18 @@ const DEFAULT_SIZE = 40;
 // ratio when a stylesheet, not this component, decides how big the disc is.
 const TEXT_RATIO = 0.34;
 
-const boxOf = (px) => ({
+/**
+ * The partial user shape both `Avatar` and `AvatarGroup` accept. Every field
+ * is optional to match "a partial or missing user still renders" — this is
+ * not the place a shared, stricter `User` type gets invented.
+ */
+interface AvatarUser {
+  id?: string;
+  name?: string;
+  avatarUrl?: string | null;
+}
+
+const boxOf = (px: number): React.CSSProperties => ({
   width: px,
   height: px,
   fontSize: Math.round(px * TEXT_RATIO),
@@ -31,7 +42,10 @@ const boxOf = (px) => ({
  * because the caller asked for it; otherwise a class means "the stylesheet has
  * this covered", and only a bare <Avatar user={user} /> falls back to the step.
  */
-const boxFor = (size, className) => {
+const boxFor = (
+  size: number | undefined,
+  className: string
+): React.CSSProperties | null => {
   if (typeof size === "number") return boxOf(size);
   return className ? null : boxOf(DEFAULT_SIZE);
 };
@@ -39,7 +53,7 @@ const boxFor = (size, className) => {
 // `containerType: size` is what makes `34cqh` below resolve against the disc.
 // It also means the disc's size never depends on its text, so `aspectRatio`
 // keeps it round even when the only thing a legacy class sets is a width.
-const DISC = {
+const DISC: React.CSSProperties = {
   display: "inline-flex",
   alignItems: "center",
   justifyContent: "center",
@@ -53,6 +67,14 @@ const DISC = {
   letterSpacing: "0.02em",
   userSelect: "none",
 };
+
+interface AvatarProps {
+  user?: AvatarUser;
+  size?: number;
+  className?: string;
+  alt?: string;
+  ground?: "light" | "dark";
+}
 
 /**
  * Renders a user's avatar from the URL the API already returned.
@@ -75,8 +97,8 @@ const DISC = {
  *   className — passed straight through; kept for the three legacy screens
  *   alt       — overrides the accessible name on both the photo and the initials
  */
-const Avatar = ({ user, size, className = "", alt, ground = "light" }) => {
-  const [failed, setFailed] = useState(false);
+const Avatar = ({ user, size, className = "", alt, ground = "light" }: AvatarProps) => {
+  const [failed, setFailed] = useState<boolean>(false);
   const label = alt ?? `${user?.name ?? "User"}'s avatar`;
   const box = boxFor(size, className);
 
@@ -111,6 +133,15 @@ const Avatar = ({ user, size, className = "", alt, ground = "light" }) => {
   );
 };
 
+interface AvatarGroupProps {
+  users?: AvatarUser[];
+  max?: number;
+  size?: number;
+  ground?: "light" | "dark";
+  ring?: string;
+  className?: string;
+}
+
 /**
  * Overlapping faces — "Dana, Yossi and 3 others".
  *
@@ -134,7 +165,7 @@ export const AvatarGroup = ({
   ground = "light",
   ring,
   className = "",
-}) => {
+}: AvatarGroupProps) => {
   const faces = users.slice(0, Math.max(max, 0));
   const extra = users.length - faces.length;
   const ringColor =
@@ -162,7 +193,7 @@ export const AvatarGroup = ({
   const overlap = Math.round(size / 5);
   const { background, color } = neutralAvatarColor(ground);
 
-  const stacked = (index) => ({
+  const stacked = (index: number): React.CSSProperties => ({
     display: "inline-flex",
     borderRadius: "50%",
     marginLeft: index === 0 ? 0 : -overlap,

@@ -1,5 +1,5 @@
 import React from "react";
-import { Route, Redirect } from "react-router-dom";
+import { Route, Redirect, RouteComponentProps, RouteProps } from "../lib/router";
 import { useAuth } from "../contexts/AuthContext";
 
 // Explicit, not inherited: on every route but the plaza itself,
@@ -9,13 +9,20 @@ import { useAuth } from "../contexts/AuthContext";
 // Redirect below fires, would otherwise sit on the bare, unpainted <body>.
 // index.css used to cover that gap by hard-coding a dark body and a light `p`
 // everywhere; stated here instead so this line does not depend on it.
-const MESSAGE = {
+const MESSAGE: React.CSSProperties = {
   textAlign: "center",
   fontFamily: "var(--font-body)",
   color: "var(--color-ink)",
 };
 
-export default function PrivateRoute({ component: Component, ...rest }) {
+interface PrivateRouteProps extends Omit<RouteProps, "render"> {
+  component: React.ComponentType<RouteComponentProps>;
+}
+
+export default function PrivateRoute({
+  component: Component,
+  ...rest
+}: PrivateRouteProps) {
   const { currentUser } = useAuth();
 
   return (

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useHistory, Link } from "react-router-dom";
+import { useHistory, Link } from "../lib/router";
 import { useAuth } from "../contexts/AuthContext";
 import { useNarrowerThan } from "../lib/useMediaQuery";
 import { COMPACT } from "./Plaza";
@@ -21,7 +21,7 @@ import SearchBar from "./SearchBar";
  * PostCard.js and ui/EmptyState.js use — never emoji, never the FontAwesome
  * classes this file used to reach for.
  */
-const Glyph = ({ children, size = 18 }) => (
+const Glyph = ({ children, size = 18 }: { children: React.ReactNode; size?: number }) => (
   <svg
     width={size}
     height={size}
@@ -102,7 +102,7 @@ const CloseIcon = () => (
   </Glyph>
 );
 
-const WORDMARK = {
+const WORDMARK: React.CSSProperties = {
   fontFamily: "var(--font-display)",
   fontSize: 26,
   letterSpacing: "-0.02em",
@@ -112,9 +112,14 @@ const WORDMARK = {
   flexShrink: 0,
 };
 
-const NAV_ROW = { display: "flex", alignItems: "center", gap: 8, flexShrink: 0 };
+const NAV_ROW: React.CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  gap: 8,
+  flexShrink: 0,
+};
 
-const MOBILE_NAV = {
+const MOBILE_NAV: React.CSSProperties = {
   flexBasis: "100%",
   display: "flex",
   flexDirection: "column",
@@ -127,7 +132,7 @@ const MOBILE_NAV = {
 // <button>, and Sign in/Sign up have to stay real, router-navigable <a> tags
 // (right-click "open in new tab" included) rather than an onClick pretending
 // to be one.
-const LINK_PILL = {
+const LINK_PILL: React.CSSProperties = {
   display: "inline-flex",
   alignItems: "center",
   justifyContent: "center",
@@ -148,13 +153,24 @@ const LINK_PILL = {
 };
 
 const LINK_HOVER = "color-mix(in oklab, currentColor 10%, transparent)";
-const LINK_FOCUS_RING = { outline: "2px solid var(--color-accent)", outlineOffset: 2 };
+const LINK_FOCUS_RING: React.CSSProperties = {
+  outline: "2px solid var(--color-accent)",
+  outlineOffset: 2,
+};
 
 // A <Link> that takes on Button's ghost hover/focus behaviour. Button itself
 // tracks these in React state rather than CSS because an inline style cannot
 // hold a pseudo-class — see its header comment — and a bare <a> needs the
 // same treatment for the same reason.
-const NavLink = ({ to, onClick, children }) => {
+const NavLink = ({
+  to,
+  onClick,
+  children,
+}: {
+  to: string;
+  onClick?: React.MouseEventHandler<HTMLAnchorElement>;
+  children: React.ReactNode;
+}) => {
   const [hovered, setHovered] = useState(false);
   const [ringVisible, setRingVisible] = useState(false);
 
@@ -169,7 +185,9 @@ const NavLink = ({ to, onClick, children }) => {
       }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      onFocus={(event) => setRingVisible(event.target.matches(":focus-visible"))}
+      onFocus={(event: React.FocusEvent<HTMLAnchorElement>) =>
+        setRingVisible(event.target.matches(":focus-visible"))
+      }
       onBlur={() => setRingVisible(false)}
     >
       {children}
@@ -190,7 +208,7 @@ const Navbar = () => {
     history.push("/signin");
   };
 
-  const handleNavigate = (path) => {
+  const handleNavigate = (path: string) => {
     history.push(path);
     setIsMenuActive(false); // close the menu on navigation
   };

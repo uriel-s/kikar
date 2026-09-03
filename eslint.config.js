@@ -195,6 +195,15 @@ module.exports = [
       // what actually types these props — same reasoning as the client .js
       // block below.
       "react/prop-types": "off",
+
+      // Same three downgrades as the client .js block below, and for the same
+      // reason: Navbar's hamburger is a `<div onClick>` that trips the first
+      // two, and PostsPage/AllUsers-style fetch-then-setState effects trip the
+      // third, once those files convert to .tsx. Must stay in sync with the
+      // .js block until later stages remove the need for them there too.
+      "jsx-a11y/click-events-have-key-events": "warn",
+      "jsx-a11y/no-static-element-interactions": "warn",
+      "react-hooks/set-state-in-effect": "warn",
     },
   },
 

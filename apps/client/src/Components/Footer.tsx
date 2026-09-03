@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link } from "../lib/router";
 
 /*
  * Same 3-column information architecture as before (Kikar tagline / Links /
@@ -8,16 +8,20 @@ import { Link } from "react-router-dom";
  * of its own, ink/muted text directly on WavesBackground's floor, because
  * those two tokens (unlike paper-ink/paper-muted) are the pair meant for text
  * that is not sitting on a sheet of paper.
+ *
+ * Link comes from lib/router, not react-router-dom directly — see that
+ * file's header for why (a real @types/react version conflict elsewhere in
+ * the monorepo, not a Footer concern).
  */
 
-const ROOT = {
+const ROOT: React.CSSProperties = {
   boxSizing: "border-box",
   padding: "32px 40px 20px",
   fontFamily: "var(--font-body)",
   color: "var(--color-muted)",
 };
 
-const CONTAINER = {
+const CONTAINER: React.CSSProperties = {
   display: "flex",
   flexWrap: "wrap",
   justifyContent: "space-around",
@@ -26,9 +30,9 @@ const CONTAINER = {
   margin: "0 auto",
 };
 
-const SECTION = { flex: "1 1 200px", minWidth: 180 };
+const SECTION: React.CSSProperties = { flex: "1 1 200px", minWidth: 180 };
 
-const BRAND = {
+const BRAND: React.CSSProperties = {
   margin: "0 0 8px",
   fontFamily: "var(--font-display)",
   fontSize: 22,
@@ -38,7 +42,7 @@ const BRAND = {
 // A label style, not a second headline — the same small/bold/uppercase/spaced
 // treatment Plaza.js's DATE uses, just anchored to ink rather than muted
 // because it is standing in for a heading here.
-const HEADING = {
+const HEADING: React.CSSProperties = {
   margin: "0 0 12px",
   fontSize: 12,
   fontWeight: 700,
@@ -47,9 +51,9 @@ const HEADING = {
   color: "var(--color-ink)",
 };
 
-const TAGLINE = { margin: 0, fontSize: 14, lineHeight: 1.5 };
+const TAGLINE: React.CSSProperties = { margin: 0, fontSize: 14, lineHeight: 1.5 };
 
-const LIST = {
+const LIST: React.CSSProperties = {
   listStyle: "none",
   margin: 0,
   padding: 0,
@@ -58,7 +62,7 @@ const LIST = {
   gap: 8,
 };
 
-const LINK_BASE = {
+const LINK_BASE: React.CSSProperties = {
   color: "var(--color-muted)",
   textDecoration: "none",
   fontSize: 14,
@@ -67,7 +71,7 @@ const LINK_BASE = {
 
 const DIVIDER = "color-mix(in oklab, var(--color-ink) 14%, transparent)";
 
-const BOTTOM = {
+const BOTTOM: React.CSSProperties = {
   maxWidth: 1100,
   margin: "24px auto 0",
   paddingTop: 16,
@@ -75,12 +79,12 @@ const BOTTOM = {
   textAlign: "center",
 };
 
-const COPY = { margin: 0, fontSize: 12 };
+const COPY: React.CSSProperties = { margin: 0, fontSize: 12 };
 
 // A hover colour shift is the one interactive touch the old .footer-section
 // rules had; an inline style cannot hold :hover, so it is React state here —
 // the same reason Navbar's NavLink and Button itself track hover in state.
-const FooterLink = ({ to, children }) => {
+const FooterLink = ({ to, children }: { to: string; children: React.ReactNode }) => {
   const [hovered, setHovered] = useState(false);
 
   return (
