@@ -7,13 +7,11 @@ import Avatar from "./Avatar";
 import Button from "./ui/Button";
 import Field from "./ui/Field";
 import Notice from "./ui/Notice";
-
-const MAX_LENGTH = 5000;
-
 // The same two numbers the plaza header uses. A screen that invented its own
 // breakpoint would reflow half a beat before or after the header above it.
-const COMPACT = 900;
-const NARROW = 560;
+import { COMPACT, NARROW } from "./Plaza";
+
+const MAX_LENGTH = 5000;
 
 // The pill's width on a roomy screen. Below COMPACT it gives way and the
 // composer spans the column, which is what the mobile artboard draws.

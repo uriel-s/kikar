@@ -118,13 +118,9 @@ const SkeletonNotice = () => (
 
 /**
  * Deals `items` across `count` columns round robin — 0 to the first, 1 to the
- * second, 2 to the third, 3 back to the first.
- *
- * Not "fill column one, then column two". The feed arrives newest first, so
- * chunking it would put the three newest notices down the left-hand edge and
- * yesterday's across the top; dealing puts the newest three along the top row,
- * which is what the artboard draws and what anyone scanning a noticeboard
- * expects to find first.
+ * second, 2 to the third, 3 back to the first. Used for the loading
+ * placeholders, which exist for exactly one render and have no identity of
+ * their own to preserve.
  */
 const intoColumns = (items, count) => {
   const columns = Array.from({ length: count }, () => []);
@@ -132,14 +128,45 @@ const intoColumns = (items, count) => {
   return columns;
 };
 
+/**
+ * Deals `posts` across `count` columns by a hash of each post's id, not its
+ * position in the array.
+ *
+ * Posts are long-lived, unlike the placeholders above: `handlePostCreated`
+ * prepends, which shifts every existing post's array index by one. Dealt by
+ * position, that reassigns nearly every post to a different column's <ul> on
+ * the very next post anyone creates, and React unmounts the PostCard that
+ * used to live there — even though `key={post.id}` never changed — silently
+ * closing an open comment panel and dropping whatever the reader was
+ * mid-typing into it. A hash of the id, the same trick `tiltFor` in PostCard
+ * uses for the same reason, is stable under prepend, append, and delete
+ * alike. What it gives up: the "three newest notices land in the top row"
+ * property round robin gave the feed's first paint — a post's column is now
+ * fixed by its id, not by when it arrived.
+ */
+const columnFor = (id, count) => {
+  const hash = [...String(id ?? "")].reduce(
+    (h, ch) => (h * 31 + ch.charCodeAt(0)) % 997,
+    7
+  );
+  return hash % count;
+};
+
+const intoPostColumns = (posts, count) => {
+  const columns = Array.from({ length: count }, () => []);
+  posts.forEach((post) => columns[columnFor(post.id, count)].push(post));
+  return columns;
+};
+
 /*
  * THE TRADE-OFF, STATED: three columns means three lists, and a screen reader
- * walks them one after another. So the wall is announced column-major — the
- * 1st, 4th, 7th notice, then the 2nd, 5th, 8th — and not newest first, which
- * is the order the feed actually arrives in and the order the eye reads across
- * the top row. This is the standing cost of every masonry layout: there is no
- * markup that is simultaneously three independent vertical stacks visually and
- * one flat sequence to assistive technology.
+ * walks them one after another. So the wall is announced column-major — a
+ * scattered, id-determined subset of notices, then another, then a third —
+ * and not newest first, which is the order the feed actually arrives in and
+ * the order the eye reads across the top row. This is the standing cost of
+ * every masonry layout: there is no markup that is simultaneously three
+ * independent vertical stacks visually and one flat sequence to assistive
+ * technology.
  *
  * Taken deliberately, with two mitigations rather than a pretence that it is
  * not there. Each list says which column it is, so its position on the wall is
@@ -296,7 +323,7 @@ const PostsPage = () => {
     }
   };
 
-  const columns = intoColumns(posts, columnCount);
+  const columns = intoPostColumns(posts, columnCount);
   const placeholders = intoColumns(
     Array.from({ length: columnCount * SKELETONS_PER_COLUMN }, (_, index) => index),
     columnCount

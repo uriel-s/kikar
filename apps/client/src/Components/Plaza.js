@@ -30,10 +30,13 @@ import SearchBar from "./SearchBar";
  */
 
 // Below this the header can no longer hold one row, and the ground's desktop
-// padding is most of a phone's width.
-const COMPACT = 900;
+// padding is most of a phone's width. Exported: AddPost and PresenceStrip
+// reflow against these same two numbers and used to restate them by hand,
+// which is exactly the kind of copy that drifts the next time only one of the
+// three gets edited.
+export const COMPACT = 900;
 // The mobile artboard carries no date, and below this there is no room for one.
-const NARROW = 560;
+export const NARROW = 560;
 
 /*
  * Built once; formatting is the cheap half of using an Intl formatter.

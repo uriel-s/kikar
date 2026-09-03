@@ -1,11 +1,10 @@
 import React from "react";
 import { useNarrowerThan, usePrefersDark } from "../lib/useMediaQuery";
 import { AvatarGroup } from "./Avatar";
-
 // The header's own second breakpoint. A strip that thinned out at a width it
 // invented would drop faces half a beat before or after the row above it
 // reflows, which is visible as a stutter rather than as a layout.
-const NARROW = 560;
+import { NARROW } from "./Plaza";
 
 // Six faces on the desktop artboard, four on the mobile one.
 const FACES = 6;
