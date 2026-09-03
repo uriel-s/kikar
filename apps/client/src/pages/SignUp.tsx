@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link, useHistory } from "react-router-dom";
+import { Link, useHistory } from "../lib/router";
 import { useAuth } from "../contexts/AuthContext";
 import { validEmail } from "../Regex";
 import * as usersApi from "../api/users";
@@ -22,7 +22,7 @@ const EMPTY_FORM = {
 // Field's own error type, restated here: this message answers for the whole
 // form rather than one control, the same reasoning PostCard's comment-form
 // ERROR gives for doing the same thing.
-const ERROR = {
+const ERROR: React.CSSProperties = {
   margin: "0 0 16px",
   fontSize: 13,
   fontWeight: 600,
@@ -32,28 +32,28 @@ const ERROR = {
 // No background/max-width fight with the ground here — WavesBackground paves
 // the floor behind this whole route, so the frame only has to centre the
 // notice on it and keep it off the screen edge on a phone.
-const FRAME = {
+const FRAME: React.CSSProperties = {
   maxWidth: 440,
   margin: "48px auto 0",
   padding: "0 20px",
   boxSizing: "border-box",
 };
 
-const TITLE = {
+const TITLE: React.CSSProperties = {
   margin: "0 0 20px",
   fontFamily: "var(--font-display)",
   fontSize: 26,
   lineHeight: 1.2,
 };
 
-const FIELD_GAP = { marginTop: 14 };
+const FIELD_GAP: React.CSSProperties = { marginTop: 14 };
 
-const ACTIONS = { marginTop: 20 };
+const ACTIONS: React.CSSProperties = { marginTop: 20 };
 
 // ink/muted, not paper-ink/paper-muted: this line sits on the paved ground
 // below the notice, not on paper, the same reasoning Footer.js gives for its
 // own text.
-const FOOTER = {
+const FOOTER: React.CSSProperties = {
   maxWidth: 440,
   margin: "18px auto 0",
   padding: "0 20px",
@@ -69,7 +69,7 @@ const FOOTER = {
 // every bare <a> a colour and an underline) is gone, a Link with no style of
 // its own is indistinguishable from the surrounding sentence — exactly the
 // one line on this page whose whole job is being noticed.
-const FOOTER_LINK = {
+const FOOTER_LINK: React.CSSProperties = {
   color: "var(--color-accent)",
   fontWeight: 600,
   textDecoration: "underline",
@@ -82,8 +82,16 @@ function SignUp() {
   const { signup } = useAuth();
   const history = useHistory();
 
-  const setField = (field) => (event) =>
-    setForm((current) => ({ ...current, [field]: event.target.value }));
+  // Field's onChange prop type is an intersection of all three control
+  // element handlers (it can render as input/textarea/select), so the event
+  // parameter here has to be the union of their element types to satisfy it —
+  // the same shape AddPost's own Field onChange handlers use.
+  const setField =
+    (field: keyof typeof EMPTY_FORM) =>
+    (
+      event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+    ) =>
+      setForm((current) => ({ ...current, [field]: event.target.value }));
 
   /** Returns the first problem found, or null when the form is usable. */
   const validate = () => {
@@ -104,7 +112,7 @@ function SignUp() {
    * otherwise the user is left able to sign in with no profile — a state the old
    * flow produced silently and had no way to recover from.
    */
-  const handleSubmit = async (event) => {
+  const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
 
     const problem = validate();
@@ -129,11 +137,14 @@ function SignUp() {
 
       history.push("/");
     } catch (err) {
+      // `strict` types the catch binding `unknown`, not `any` — narrow it
+      // before reading `.message`, the same pattern UserCard's catch uses.
+      const message = err instanceof Error ? err.message : String(err);
       if (createdAccount) {
         await auth.currentUser?.delete().catch(() => {});
-        setError(`Could not create your profile: ${err.message}. Please try again.`);
+        setError(`Could not create your profile: ${message}. Please try again.`);
       } else {
-        setError(err.message || "Failed to create an account");
+        setError(message || "Failed to create an account");
       }
       setLoading(false);
     }

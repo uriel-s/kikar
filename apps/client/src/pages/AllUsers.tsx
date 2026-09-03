@@ -13,7 +13,11 @@ import * as usersApi from "../api/users";
 // at 1100 — off-plaza routes get only WavesBackground's paved floor and
 // whatever margin/padding the page states itself. 1100 restated here to match
 // the same scale the rest of the app already reads at.
-const FRAME = { maxWidth: 1100, margin: "32px auto 0", padding: "0 20px 40px" };
+const FRAME: React.CSSProperties = {
+  maxWidth: 1100,
+  margin: "32px auto 0",
+  padding: "0 20px 40px",
+};
 
 const CARD_WIDTH = 240;
 const GAP = 24;
@@ -34,7 +38,7 @@ const TWO_COLUMNS = 2 * CARD_WIDTH + GAP; // 504
  * there is no masonry to pack — one flat grid, in plain reading order, is
  * enough.
  */
-const useColumnCount = () => {
+const useColumnCount = (): number => {
   const belowFour = useNarrowerThan(FOUR_COLUMNS);
   const belowThree = useNarrowerThan(THREE_COLUMNS);
   const belowTwo = useNarrowerThan(TWO_COLUMNS);
@@ -48,7 +52,7 @@ const useColumnCount = () => {
 // PostsPage's wall does: between two breakpoints the exact column count can
 // still be a hair wider than the viewport, and the tracks have to be allowed
 // to give rather than force a scrollbar.
-const gridStyle = (count) => ({
+const gridStyle = (count: number): React.CSSProperties => ({
   display: "grid",
   gridTemplateColumns: `repeat(${count}, minmax(0, ${CARD_WIDTH}px))`,
   gap: GAP,
@@ -58,7 +62,7 @@ const gridStyle = (count) => ({
   listStyle: "none",
 });
 
-const FILTER_FIELD = { maxWidth: 240 };
+const FILTER_FIELD: React.CSSProperties = { maxWidth: 240 };
 
 /*
  * Ink, not --color-like: this message sits directly on the paved ground, not
@@ -68,14 +72,14 @@ const FILTER_FIELD = { maxWidth: 240 };
  * top-level error; Field's paper-context error is the one place --color-like
  * is correct, because a Field's error sits inside paper.
  */
-const ERROR = {
+const ERROR: React.CSSProperties = {
   margin: "0 0 20px",
   fontSize: 14,
   fontWeight: 700,
   color: "var(--color-ink)",
 };
 
-const SKELETON_CARD = {
+const SKELETON_CARD: React.CSSProperties = {
   display: "flex",
   flexDirection: "column",
   alignItems: "center",
@@ -103,7 +107,22 @@ const UserCardSkeleton = () => (
   </Notice>
 );
 
-const EMPTY_COPY = {
+/**
+ * The user shape this page reads and passes straight into `<UserCard
+ * user={...} />` — structurally compatible with UserCard's own local
+ * `UserCardUser`, which is not exported from UserCard.tsx. `id: string` is
+ * required since both the self-filter below and the friend-id `Set` key off
+ * it.
+ */
+interface AllUsersUser {
+  id: string;
+  name?: string;
+  avatarUrl?: string | null;
+}
+
+type UserFilter = "all" | "friends" | "non-friends";
+
+const EMPTY_COPY: Record<UserFilter, { title: string; description: string }> = {
   all: {
     title: "No one here yet",
     description: "There is no one to show. Check back once more people have joined.",
@@ -121,10 +140,10 @@ const EMPTY_COPY = {
 };
 
 const AllUsers = () => {
-  const [users, setUsers] = useState([]);
-  const [friendIds, setFriendIds] = useState(new Set());
-  const [nextCursor, setNextCursor] = useState(null);
-  const [filter, setFilter] = useState("all");
+  const [users, setUsers] = useState<AllUsersUser[]>([]);
+  const [friendIds, setFriendIds] = useState<Set<string>>(new Set());
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [filter, setFilter] = useState<UserFilter>("all");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const { currentUser } = useAuth();
@@ -145,10 +164,15 @@ const AllUsers = () => {
 
       setUsers(usersPage.users);
       setNextCursor(usersPage.nextCursor);
-      // The API returns friend objects now, not bare ids.
-      setFriendIds(new Set(friends.map((friend) => friend.id)));
+      // The API returns friend objects now, not bare ids. `friends` comes back
+      // untyped (api/users.ts's listFriends is Promise<any>), so the map
+      // callback needs its own minimal shape the same way UpdateProfile.tsx
+      // types its own untyped `getUser` result.
+      setFriendIds(new Set(friends.map((friend: { id: string }) => friend.id)));
     } catch (err) {
-      setError(err.message);
+      // `strict` types the catch binding `unknown`, not `any` — narrow it
+      // before reading `.message` rather than reaching for a cast.
+      setError(err instanceof Error ? err.message : String(err));
     } finally {
       setIsLoading(false);
     }
@@ -167,11 +191,11 @@ const AllUsers = () => {
       setUsers((current) => [...current, ...page.users]);
       setNextCursor(page.nextCursor);
     } catch (err) {
-      setError(err.message);
+      setError(err instanceof Error ? err.message : String(err));
     }
   };
 
-  const handleFriendChange = async (friendId, action) => {
+  const handleFriendChange = async (friendId: string, action: "add" | "remove") => {
     const previous = friendIds;
 
     setFriendIds((current) => {
@@ -183,13 +207,16 @@ const AllUsers = () => {
 
     try {
       if (action === "add") {
-        await usersApi.addFriend(uid, friendId);
+        // Non-null: this page only ever renders behind PrivateRoute, which
+        // redirects to /signin whenever `currentUser` (and so `uid`) is
+        // absent — by the time a friend action can fire, it is always set.
+        await usersApi.addFriend(uid!, friendId);
       } else {
-        await usersApi.removeFriend(uid, friendId);
+        await usersApi.removeFriend(uid!, friendId);
       }
     } catch (err) {
       setFriendIds(previous);
-      setError(err.message);
+      setError(err instanceof Error ? err.message : String(err));
       throw err;
     }
   };
@@ -220,7 +247,10 @@ const AllUsers = () => {
         as="select"
         label="Filter users by"
         value={filter}
-        onChange={(event) => setFilter(event.target.value)}
+        // Field's onChange union types the event as a plain input/select
+        // change event, so `.value` comes back as `string` — assert it back
+        // to the three literals this <select>'s own <option>s can produce.
+        onChange={(event) => setFilter(event.target.value as UserFilter)}
         style={FILTER_FIELD}
       >
         <option value="all">All</option>

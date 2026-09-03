@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
-import { useHistory } from "react-router-dom";
+import { useHistory } from "../lib/router";
 import * as usersApi from "../api/users";
 import Button from "../Components/ui/Button";
 import Field from "../Components/ui/Field";
@@ -9,10 +9,36 @@ import Skeleton from "../Components/ui/Skeleton";
 
 const MIN_PASSWORD_LENGTH = 6;
 
+/**
+ * The subset of a user row this form reads back to prefill itself. Kept
+ * local and permissive for the same reason as AddPost's own comment:
+ * `api/users.ts` still returns an untyped row (`getUser` is `Promise<any>`),
+ * so this is not the place a shared, stricter `User` type gets invented.
+ * Every field optional/nullable to match the `??`/`? :` fallbacks already
+ * guarding them below.
+ */
+interface UpdateProfileUser {
+  email?: string;
+  name?: string;
+  address?: string | null;
+  birthDate?: string | null;
+}
+
+/** The three text fields this form edits directly. Typed separately from
+ * `UpdateProfileUser` above: email is read-only here and password/avatar
+ * live in their own state, so this is the shape `setField`'s `keyof` actually
+ * needs — the same reasoning SignUp's `EMPTY_FORM` gives for its own form
+ * state type. */
+interface UpdateProfileFormState {
+  name: string;
+  address: string;
+  birthDate: string;
+}
+
 // Field's own error type, restated here: this message answers for the whole
 // form rather than one control, the same reasoning PostCard's comment-form
 // ERROR gives for doing the same thing.
-const ERROR = {
+const ERROR: React.CSSProperties = {
   margin: "0 0 16px",
   fontSize: 13,
   fontWeight: 600,
@@ -23,28 +49,28 @@ const ERROR = {
 // the floor behind this whole route, so the frame only has to centre the
 // notice on it and keep it off the screen edge on a phone. Same 440px auth
 // frame as Signin/SignUp — SignUp is this form's direct template.
-const FRAME = {
+const FRAME: React.CSSProperties = {
   maxWidth: 440,
   margin: "48px auto 0",
   padding: "0 20px",
   boxSizing: "border-box",
 };
 
-const TITLE = {
+const TITLE: React.CSSProperties = {
   margin: "0 0 20px",
   fontFamily: "var(--font-display)",
   fontSize: 26,
   lineHeight: 1.2,
 };
 
-const FIELD_GAP = { marginTop: 14 };
+const FIELD_GAP: React.CSSProperties = { marginTop: 14 };
 
-const ACTIONS = { marginTop: 20 };
+const ACTIONS: React.CSSProperties = { marginTop: 20 };
 
 // Below the notice, on the paved ground — same slot Signin/SignUp's FOOTER
 // occupies, but a Button rather than a text link, so it centres a flex item
 // instead of centring text.
-const FOOTER = {
+const FOOTER: React.CSSProperties = {
   maxWidth: 440,
   margin: "18px auto 0",
   padding: "0 20px",
@@ -53,7 +79,11 @@ const FOOTER = {
   justifyContent: "center",
 };
 
-const SKELETON_FIELD = { display: "flex", flexDirection: "column", gap: 6 };
+const SKELETON_FIELD: React.CSSProperties = {
+  display: "flex",
+  flexDirection: "column",
+  gap: 6,
+};
 
 // Email, Name, Address, Birth Date, Avatar — the fields visible before the
 // profile has loaded (New/Verify Password only ever appear once someone has
@@ -64,11 +94,15 @@ function UpdateProfile() {
   const { currentUser, updatePassword } = useAuth();
   const history = useHistory();
 
-  const [form, setForm] = useState({ name: "", address: "", birthDate: "" });
+  const [form, setForm] = useState<UpdateProfileFormState>({
+    name: "",
+    address: "",
+    birthDate: "",
+  });
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [passwordConfirm, setPasswordConfirm] = useState("");
-  const [image, setImage] = useState(null);
+  const [image, setImage] = useState<File | null>(null);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -81,7 +115,7 @@ function UpdateProfile() {
 
     usersApi
       .getUser(uid)
-      .then((user) => {
+      .then((user: UpdateProfileUser) => {
         if (cancelled) return;
         setEmail(user.email ?? "");
         setForm({
@@ -103,10 +137,18 @@ function UpdateProfile() {
     };
   }, [uid]);
 
-  const setField = (field) => (event) =>
-    setForm((current) => ({ ...current, [field]: event.target.value }));
+  // Field's onChange prop type is an intersection of all three control
+  // element handlers (it can render as input/textarea/select), so the event
+  // parameter here has to be the union of their element types to satisfy it —
+  // the same shape AddPost's own Field onChange handlers use.
+  const setField =
+    (field: keyof UpdateProfileFormState) =>
+    (
+      event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+    ) =>
+      setForm((current) => ({ ...current, [field]: event.target.value }));
 
-  const handleSubmit = async (event) => {
+  const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
 
     if (password && password !== passwordConfirm) {
@@ -122,14 +164,17 @@ function UpdateProfile() {
     setError("");
 
     try {
-      await usersApi.updateProfile(uid, {
+      // Non-null: this form only ever renders behind PrivateRoute, which
+      // redirects to /signin whenever `currentUser` (and so `uid`) is absent —
+      // by the time a submit can fire, it is always set.
+      await usersApi.updateProfile(uid!, {
         name: form.name.trim(),
         address: form.address.trim() || null,
         birthDate: form.birthDate || null,
       });
 
       if (image) {
-        await usersApi.uploadAvatar(uid, image);
+        await usersApi.uploadAvatar(uid!, image);
       }
 
       // Last, because a password change can invalidate the session and would
@@ -140,9 +185,12 @@ function UpdateProfile() {
 
       history.push("/");
     } catch (err) {
+      // `strict` types the catch binding `unknown`, not `any` — narrow it
+      // before reading `.message`, the same pattern SignUp's catch uses.
       // `+` binds tighter than `||`, so the old fallback here never ran and the
       // message read "undefined" whenever the server sent no body.
-      setError(err.message || "Failed to update profile");
+      const message = err instanceof Error ? err.message : String(err);
+      setError(message || "Failed to update profile");
       setIsSaving(false);
     }
   };
@@ -250,7 +298,16 @@ function UpdateProfile() {
             label="Avatar"
             type="file"
             accept="image/jpeg,image/png,image/webp"
-            onChange={(event) => setImage(event.target.files?.[0] ?? null)}
+            onChange={(
+              event: React.ChangeEvent<
+                HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+              >
+            ) =>
+              // `Field`'s onChange type is an intersection of all three control
+              // handlers (see setField above), so the event here is typed as the
+              // union — cast to reach `.files`, which only HTMLInputElement has.
+              setImage((event.target as HTMLInputElement).files?.[0] ?? null)
+            }
           />
         </div>
 

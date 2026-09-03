@@ -1,18 +1,38 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../contexts/AuthContext";
-import { useHistory } from "react-router-dom";
+import { useHistory } from "../lib/router";
 import Avatar from "../Components/Avatar";
 import Button from "../Components/ui/Button";
 import Notice from "../Components/ui/Notice";
 import Skeleton from "../Components/ui/Skeleton";
 import * as usersApi from "../api/users";
 
+/**
+ * The user shape this screen draws — the same fields Avatar's own
+ * `AvatarUser` accepts, plus the profile fields the info list reads. Not
+ * imported from Avatar.tsx because it is not exported there; kept local and
+ * permissive for the same reason as AddPost's own comment: `api/users.ts`
+ * still returns an untyped row (`getUser` is `Promise<any>`), so this is not
+ * the place a shared, stricter `User` type gets invented. `id` is required —
+ * every profile this screen ever renders came back from `getUser(uid)` for a
+ * real, signed-in account — while the display fields stay optional/nullable
+ * to match the `||`/`? :` fallbacks already guarding them below.
+ */
+interface DashboardUser {
+  id: string;
+  name?: string;
+  email?: string;
+  address?: string | null;
+  birthDate?: string | null;
+  avatarUrl?: string | null;
+}
+
 // No background/max-width fight with the ground here — WavesBackground paves
 // the floor behind this whole route, so the frame only has to centre the
 // notice on it and keep it off the screen edge on a phone. Same 440px auth
 // frame as Signin/SignUp: this is one person's own summary, not a wall of
 // content.
-const FRAME = {
+const FRAME: React.CSSProperties = {
   maxWidth: 440,
   margin: "48px auto 60px",
   padding: "0 20px",
@@ -23,9 +43,13 @@ const FRAME = {
 // `.dashboard-card { text-align: center }` trick — that only worked because
 // the legacy avatar was a bare inline <img>; the shared Avatar component
 // needs a real centring context.
-const CARD = { display: "flex", flexDirection: "column", alignItems: "center" };
+const CARD: React.CSSProperties = {
+  display: "flex",
+  flexDirection: "column",
+  alignItems: "center",
+};
 
-const NAME = {
+const NAME: React.CSSProperties = {
   margin: "16px 0 0",
   fontFamily: "var(--font-display)",
   fontSize: 22,
@@ -41,7 +65,7 @@ const NAME = {
 // card rather than one control, the same reasoning PostCard's comment-form
 // ERROR gives for doing the same thing. Paper context (inside the Notice),
 // so --color-like, not --color-ink.
-const ERROR = {
+const ERROR: React.CSSProperties = {
   margin: "12px 0 0",
   fontSize: 13,
   fontWeight: 600,
@@ -49,7 +73,7 @@ const ERROR = {
   color: "var(--color-like)",
 };
 
-const INFO_LIST = {
+const INFO_LIST: React.CSSProperties = {
   width: "100%",
   marginTop: 24,
   display: "flex",
@@ -60,7 +84,7 @@ const INFO_LIST = {
 
 // Small/uppercase/tracked, the same shape PostCard's ACTION_LABEL and
 // AUTHOR_NAME already use for a caption sitting above a value.
-const LABEL = {
+const LABEL: React.CSSProperties = {
   margin: 0,
   fontSize: 12,
   fontWeight: 700,
@@ -69,7 +93,7 @@ const LABEL = {
   color: "var(--color-paper-muted)",
 };
 
-const VALUE = {
+const VALUE: React.CSSProperties = {
   margin: "3px 0 0",
   fontSize: 15,
   lineHeight: 1.4,
@@ -79,7 +103,7 @@ const VALUE = {
 // Stretches its Button children to the card's full width — a column of two
 // full-width actions reads better under a centred profile than two pill
 // buttons floating side by side.
-const ACTIONS = {
+const ACTIONS: React.CSSProperties = {
   width: "100%",
   marginTop: 26,
   display: "flex",
@@ -87,8 +111,11 @@ const ACTIONS = {
   gap: 10,
 };
 
-const SKELETON_AVATAR_WRAP = { display: "flex", justifyContent: "center" };
-const SKELETON_LINES = {
+const SKELETON_AVATAR_WRAP: React.CSSProperties = {
+  display: "flex",
+  justifyContent: "center",
+};
+const SKELETON_LINES: React.CSSProperties = {
   display: "flex",
   flexDirection: "column",
   gap: 10,
@@ -98,7 +125,7 @@ const SKELETON_LINES = {
 
 export default function Dashboard() {
   const { currentUser, logout } = useAuth();
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState<DashboardUser | null>(null);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const history = useHistory();
@@ -114,7 +141,7 @@ export default function Dashboard() {
     // round trip to Firebase Storage to resolve it.
     usersApi
       .getUser(uid)
-      .then((loaded) => {
+      .then((loaded: DashboardUser) => {
         if (!cancelled) setUser(loaded);
       })
       .catch((err) => {
