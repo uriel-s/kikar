@@ -24,6 +24,9 @@
 const LOCALE = "en";
 const formatter = new Intl.RelativeTimeFormat(LOCALE, { numeric: "auto" });
 
+/** The three shapes a timestamp actually arrives in around this app. */
+type TimeValue = Date | string | number | null | undefined;
+
 // Largest first: the first unit the elapsed time reaches is the one it is said
 // in. Months and years are the usual calendar approximations — a feed is not an
 // almanac, and "2 months ago" being a day out is not a defect anyone can see.
@@ -35,7 +38,7 @@ const UNITS = [
   ["hour", 60 * 60],
   ["minute", 60],
   ["second", 1],
-];
+] as const;
 
 // Below this, "now". 45s rather than 60s so the last stretch of the first minute
 // does not tick "58 seconds ago" at a reader who watched the post appear.
@@ -50,7 +53,7 @@ const NOW_WINDOW = 45;
  * string, a malformed date — is null, because the alternative is one bad row
  * printing "Invalid Date" or throwing and taking the whole feed down with it.
  */
-const toDate = (value) => {
+const toDate = (value: TimeValue): Date | null => {
   // Every branch ends at the same NaN check. The number branch used to stop at
   // Number.isFinite, which is not the same test: Date's range is ±8.64e15, so a
   // finite 1e20 produced an Invalid Date that walked past the guard and threw
@@ -76,7 +79,7 @@ const toDate = (value) => {
  * `{timeAgo(post.createdAt)}` with no guard and get an absent timestamp rather
  * than a broken one.
  */
-export const timeAgo = (value) => {
+export const timeAgo = (value: TimeValue): string => {
   const date = toDate(value);
   if (!date) return "";
 
@@ -87,7 +90,10 @@ export const timeAgo = (value) => {
   const elapsed = (date.getTime() - Date.now()) / 1000;
   if (Math.abs(elapsed) < NOW_WINDOW) return formatter.format(0, "second");
 
-  const [unit, span] = UNITS.find(([, seconds]) => Math.abs(elapsed) >= seconds);
+  // Always finds a match: the last entry ("second", threshold 1) matches any
+  // elapsed value that reaches this line (the NOW_WINDOW check above already
+  // returned for anything smaller).
+  const [unit, span] = UNITS.find(([, seconds]) => Math.abs(elapsed) >= seconds)!;
 
   // Truncated, not rounded: 100 minutes is "1 hour ago", never "2 hours ago". A
   // relative time is read as "at least this long", so rounding up claims more
@@ -102,4 +108,5 @@ export const timeAgo = (value) => {
  * an attribute that is undefined — and `<time dateTime="">` is invalid markup
  * that assistive technology would read as an empty machine-readable date.
  */
-export const machineTime = (value) => toDate(value)?.toISOString();
+export const machineTime = (value: TimeValue): string | undefined =>
+  toDate(value)?.toISOString();

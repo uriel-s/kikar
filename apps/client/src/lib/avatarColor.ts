@@ -14,10 +14,23 @@
  * disc would drift with the hue.
  */
 
+type Ground = "light" | "dark";
+
+/** The `{ hue, background, color }` triple an avatar (or its neutral variant)
+ * is drawn from. `hue` is `null` for the neutral (hue-less) variant. */
+interface AvatarFill {
+  hue: number | null;
+  background: string;
+  color: string;
+}
+
 // [lightness, chroma] for the disc and for the initials on it, per ground. The
 // dark pair is not the light pair inverted: its text drops to chroma 0.035
 // because a light tint at 0.100 glows against a dark disc.
-const FILLS = {
+const FILLS: Record<
+  Ground,
+  { background: readonly [number, number]; text: readonly [number, number] }
+> = {
   light: { background: [0.9, 0.055], text: [0.4, 0.1] },
   dark: { background: [0.4, 0.085], text: [0.93, 0.035] },
 };
@@ -37,7 +50,7 @@ const WASH = { lightness: 0.62, chroma: 0.16, alpha: 0.08 };
  * person's*. A missing id is coerced rather than thrown on: a half-loaded user
  * has to render something, not take down the screen it appears on.
  */
-export const avatarHue = (id) =>
+export const avatarHue = (id: unknown): number =>
   [...String(id ?? "")].reduce((h, ch) => (h * 31 + ch.charCodeAt(0)) % 360, 7);
 
 /**
@@ -48,7 +61,7 @@ export const avatarHue = (id) =>
  * "light" is the default and is correct in both themes; "dark" exists for the
  * presence strip, which sits directly on the paved ground.
  */
-export const avatarColor = (id, ground = "light") => {
+export const avatarColor = (id: unknown, ground: Ground = "light"): AvatarFill => {
   const hue = avatarHue(id);
   const fill = FILLS[ground] ?? FILLS.light;
 
@@ -65,7 +78,7 @@ export const avatarColor = (id, ground = "light") => {
  * member of the same family that simply is not a person, rather than as a sixth
  * colour someone picked.
  */
-export const neutralAvatarColor = (ground = "light") => {
+export const neutralAvatarColor = (ground: Ground = "light"): AvatarFill => {
   const fill = FILLS[ground] ?? FILLS.light;
 
   return {
@@ -83,7 +96,7 @@ export const neutralAvatarColor = (ground = "light") => {
  * browser that cannot parse the oklch falls back to plain paper rather than to
  * nothing.
  */
-export const authorWash = (id) =>
+export const authorWash = (id: unknown): string =>
   `oklch(${WASH.lightness} ${WASH.chroma} ${avatarHue(id)} / ${WASH.alpha})`;
 
 /**
@@ -95,7 +108,7 @@ export const authorWash = (id) =>
  * with an astral character yields that character instead of half of a surrogate
  * pair.
  */
-export const initials = (name) =>
+export const initials = (name: unknown): string =>
   String(name ?? "")
     .trim()
     .split(/\s+/)
