@@ -1,0 +1,38 @@
+{
+  // The type-check. This is what `checks.sh types` runs (`npx tsc --noEmit`),
+  // so it has to name real files: a solution-style file that only references
+  // other projects would exit 0 without reading a line of source.
+  // apps/server/tsconfig.json is the one that builds.
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+
+    // Nothing is emitted from here, so this only names the program's root. It
+    // is required rather than optional because ts-jest reuses this file and
+    // turns emit back on, and TypeScript 6 refuses (TS5011) to infer a common
+    // source directory when a run emits — it would otherwise pick whichever
+    // directory the files of that one run happened to share.
+    "rootDir": ".",
+
+    // Named rather than left to TypeScript's automatic scan of
+    // node_modules/@types. The scan is repository-wide, so it would also load
+    // the client's React and d3 typings into the server's global scope, and a
+    // future `@types/*` arriving as somebody's transitive dependency would
+    // silently join them. "jest" is here and not in apps/server/tsconfig.json
+    // because this is the only config that includes tests/.
+    "types": ["node", "jest"]
+  },
+  // Tests as well as src. They are the safety net the whole refactor is
+  // measured against, so a type error in one has to fail the gate like any
+  // other. The client is deliberately absent — stage 4 of REFACTOR-PLAN.md
+  // converts it, and including it now would report errors nobody owns yet.
+  "include": ["apps/server/src/**/*", "apps/server/tests/**/*"],
+  "exclude": [
+    "**/node_modules",
+    // Written by `prisma generate`, gitignored, and not ours to check.
+    // TypeScript still reads its index.d.ts through the import in
+    // src/lib/prisma.js — that is where the model types come from.
+    "apps/server/src/generated",
+    "apps/server/dist"
+  ]
+}

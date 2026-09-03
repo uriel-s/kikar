@@ -12,6 +12,15 @@
  * it is the entry point that actually runs in production. A wrong relative
  * require or a changed env contract there would first surface as a dead site.
  *
+ * Both are loaded from `../dist`, not `../src`, and that is the point of this
+ * script: it tests the shape that ships. The jest suite runs the TypeScript
+ * sources; Vercel and the container both run what `npm run build
+ * --workspace=@kikar/server` emitted. A build step that dropped a file, or a
+ * relative path that only resolves inside src/, is invisible to a green suite
+ * and fatal in production — so the one check that boots the real thing boots
+ * the real artifact too. `checks.sh smoke` builds before running for that
+ * reason; on its own this script needs `dist/` to already exist.
+ *
  * Why this is a plain script rather than a jest test: firebase-admin/auth pulls
  * in jwks-rsa, which pulls in jose 6, which ships ESM only — no CJS build to
  * map to. Jest would need babel-jest and a transformIgnorePatterns exception to
@@ -28,7 +37,7 @@
 const assert = require("node:assert/strict");
 const crypto = require("node:crypto");
 const http = require("node:http");
-const { initializeFirebase, loadServiceAccount } = require("../src/config/firebase");
+const { initializeFirebase, loadServiceAccount } = require("../dist/config/firebase");
 
 const BUCKET = "kikar-startup-test.appspot.com";
 

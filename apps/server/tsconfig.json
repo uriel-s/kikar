@@ -1,0 +1,23 @@
+{
+  // The build. Produces the dist/ that `npm start`, the Dockerfile and
+  // api/index.mjs all load; the root tsconfig.json does the checking.
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "dist",
+
+    // Node only. The jest globals are deliberately absent: this config covers
+    // src/, and `describe` resolving there would let a test helper be written
+    // into shipping code without anything noticing.
+    "types": ["node"]
+  },
+  // src only. tests/ would otherwise land in dist/, and dist/ is what ships.
+  "include": ["src/**/*"],
+  "exclude": [
+    // Copied into dist/ verbatim by scripts/copyGenerated.js instead of being
+    // compiled: the Prisma client ships .wasm and .mjs loader files that tsc
+    // does not carry across, so a compiled copy would be missing the query
+    // compiler and fail on the first query.
+    "src/generated"
+  ]
+}

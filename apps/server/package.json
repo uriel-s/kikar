@@ -4,13 +4,15 @@
   "private": true,
   "description": "Kikar API - Express server backing the Kikar social platform",
   "license": "MIT",
-  "main": "src/server.js",
+  "main": "dist/server.js",
   "engines": {
     "node": ">=22.12"
   },
   "scripts": {
-    "start": "node src/server.js",
-    "dev": "nodemon src/server.js",
+    "build": "tsc -p tsconfig.json && node scripts/copyGenerated.js",
+    "start": "node dist/server.js",
+    "dev": "tsx watch src/server.js",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
@@ -18,8 +20,8 @@
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
     "db:studio": "prisma studio",
-    "db:import": "node scripts/importFromFirestore.js",
-    "db:seed": "node scripts/seed.js"
+    "db:import": "tsx scripts/importFromFirestore.js",
+    "db:seed": "tsx scripts/seed.js"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.9.1",
@@ -38,10 +40,14 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@types/jest": "^30.0.0",
+    "@types/node": "^22.20.1",
     "jest": "^30.4.2",
-    "nodemon": "^3.1.14",
     "pino-pretty": "^13.1.3",
     "prisma": "^7.9.1",
-    "supertest": "^7.2.2"
+    "supertest": "^7.2.2",
+    "ts-jest": "^29.4.12",
+    "tsx": "^4.23.13",
+    "typescript": "^6.0.3"
   }
 }

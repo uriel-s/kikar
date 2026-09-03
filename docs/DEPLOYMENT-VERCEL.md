@@ -8,16 +8,27 @@ which cannot be scripted — it is roughly fifteen minutes of clicking.
 
 ## What is already in place
 
-| File                            | What it does                                                        |
-| ------------------------------- | ------------------------------------------------------------------- |
-| `api/index.mjs`                 | Wraps `createApp()` as a serverless function, one pooled connection |
-| `vercel.json`                   | Builds the client, routes `/api/*` and `/health` to the function    |
-| `apps/server/prisma.config.js`  | Runs migrations through `DIRECT_URL`, not the pooler                |
-| `apps/server/src/config/env.js` | Accepts the optional `DIRECT_URL`                                   |
+| File                            | What it does                                                           |
+| ------------------------------- | ---------------------------------------------------------------------- |
+| `api/index.mjs`                 | Wraps `createApp()` from `apps/server/dist/` as a serverless function  |
+| `vercel.json`                   | Builds the server then the client, routes `/api/*` and `/health` to it |
+| `apps/server/tsconfig.json`     | Compiles the server to the CommonJS `dist/` the function imports       |
+| `apps/server/prisma.config.js`  | Runs migrations through `DIRECT_URL`, not the pooler                   |
+| `apps/server/src/config/env.js` | Accepts the optional `DIRECT_URL`                                      |
 
 Verified locally without a network or a database, and re-verified by
 `checks.sh smoke` on every push: the handler boots, `/health` answers
-`200 {"status":"ok"}`, and `/api/users` without a token answers `401`.
+`200 {"status":"ok"}`, and `/api/users` without a token answers `401`. That
+check builds the server first and loads `dist/`, not `src/`, so it is testing
+the same files the deployed function loads.
+
+The server is compiled from stage 3 of `REFACTOR-PLAN.md` onward, which is why
+`buildCommand` names two builds. **A deploy that builds only the client has no
+`apps/server/dist/`, and `api/index.mjs` imports it at the top level — so the
+function never loads and every request, `/health` included, returns
+`FUNCTION_INVOCATION_FAILED`.** That is the same symptom as the jose failure
+below and it is not the same cause; check that the build log ran two builds
+before going anywhere near the dependency tree.
 
 Two limits change meaning on this target and are worth knowing before you rely
 on them. The rate limiter is per-instance here rather than global — see the note

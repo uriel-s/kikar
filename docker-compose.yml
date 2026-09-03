@@ -44,7 +44,7 @@ services:
     # skips anything already applied.
     command: >
       sh -c "npm run db:deploy --workspace=@kikar/server &&
-             node apps/server/src/server.js"
+             node apps/server/dist/server.js"
 
   client:
     build:

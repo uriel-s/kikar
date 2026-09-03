@@ -21,7 +21,8 @@
 #   - `test` asserts the suite size against .claude/test-baseline. This is a
 #     refactor; a green suite that shrank is a failure, not a pass.
 #   - the Prisma client is generated, not committed, so `test` ensures it exists
-#     before running anything that imports it.
+#     before running anything that imports it, and `smoke` compiles the server
+#     first because it boots apps/server/dist — the artifact that ships.
 set -u
 
 # jest switches to interactive watch mode without this, and an automated caller
@@ -32,6 +33,8 @@ SERVER="@kikar/server"
 CLIENT="@kikar/client"
 GENERATED="apps/server/src/generated/prisma"
 SCHEMA="apps/server/prisma/schema.prisma"
+SERVER_SRC="apps/server/src"
+DIST="apps/server/dist"
 BASELINE_FILE=".claude/test-baseline"
 AUDIT_BASELINE=".claude/audit-baseline"
 
@@ -50,6 +53,32 @@ ensure_prisma_client() {
       echo "checks.sh: prisma generate FAILED" >&2
       return 1
     }
+  fi
+}
+
+# apps/server/dist is what actually runs: api/index.mjs imports it, the
+# container's CMD points at it, and `npm start` starts it. So the same reasoning
+# as ensure_prisma_client applies one layer up — rebuilt when it is missing or
+# older than any source file or compiler config, because a check that boots a
+# stale dist proves yesterday's code green and says nothing about the edit in
+# front of you. The build copies the generated client into dist, so that has to
+# exist first. Output is kept and printed only on failure: from stage 4 onward
+# the failure is a type error, and it is unreadable if it is swallowed.
+ensure_server_build() {
+  ensure_prisma_client || return 1
+
+  local stale="" output
+  if [ -d "$DIST" ]; then
+    stale="$(find "$SERVER_SRC" apps/server/tsconfig.json tsconfig.base.json -newer "$DIST" -not -path "*/generated/*" -print -quit 2>/dev/null)"
+  fi
+
+  if [ ! -d "$DIST" ] || [ -n "$stale" ]; then
+    echo "checks.sh: building the server"
+    if ! output="$(npm run build --workspace="$SERVER" 2>&1)"; then
+      printf '%s\n' "$output" >&2
+      echo "checks.sh: server build FAILED" >&2
+      return 1
+    fi
   fi
 }
 
@@ -213,7 +242,13 @@ run_build() {
 # a fake token verifier, so src/config/firebase.js is the one module the suite
 # never loads. Plain node rather than jest because firebase-admin/auth reaches
 # jose 6, which is ESM-only; see the header of the script itself.
-run_smoke() { node apps/server/tests/startup.smoke.js; }
+#
+# It is also the only check that loads the compiled output rather than the
+# sources, which is the other half of "the shape that ships" — hence the build.
+run_smoke() {
+  ensure_server_build || return 1
+  node apps/server/tests/startup.smoke.js
+}
 
 run_all() {
   local rc=0

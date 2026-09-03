@@ -26,6 +26,20 @@
  * An ESM entry point is loaded by Node directly, so the whole dependency graph
  * — CommonJS parts included — goes through the loader that does support it.
  *
+ * ## Why the imports point at `dist/` rather than `src/`
+ *
+ * The server is TypeScript from stage 3 of `REFACTOR-PLAN.md` onward, and tsc
+ * compiles it to CommonJS in `apps/server/dist/` (`npm run build
+ * --workspace=@kikar/server`). So this file still imports plain JavaScript —
+ * the same shape that is proven to load above — with a build step in front of
+ * it rather than a different module format. Compiling to ESM instead would
+ * change the very thing that made the deployment work.
+ *
+ * `vercel.json` therefore has to build the server as well as the client. These
+ * are top-level imports, so a deploy that skipped that build does not fall
+ * through to the 503 below — the module never loads and every request,
+ * `/health` included, returns FUNCTION_INVOCATION_FAILED.
+ *
  * The imports below are ESM importing CommonJS, which Node exposes as a default
  * export, hence the destructuring rather than named imports.
  *
@@ -40,11 +54,11 @@
  * - **A single pooled connection.** See the note at the pool below.
  */
 
-import envModule from "../apps/server/src/config/env.js";
-import firebaseModule from "../apps/server/src/config/firebase.js";
-import prismaModule from "../apps/server/src/lib/prisma.js";
-import loggerModule from "../apps/server/src/lib/logger.js";
-import appModule from "../apps/server/src/app.js";
+import envModule from "../apps/server/dist/config/env.js";
+import firebaseModule from "../apps/server/dist/config/firebase.js";
+import prismaModule from "../apps/server/dist/lib/prisma.js";
+import loggerModule from "../apps/server/dist/lib/logger.js";
+import appModule from "../apps/server/dist/app.js";
 
 const { parse } = envModule;
 const { initializeFirebase } = firebaseModule;

@@ -66,6 +66,14 @@ jobs:
       # anything that imports it can run.
       - run: npm run db:generate --workspace=@kikar/server
 
+      # The smoke step below boots apps/server/dist, so it has to be compiled
+      # first. Stated as its own step rather than left to checks.sh: that script
+      # does build when dist is missing, but relying on it would make the job
+      # silently dependent on a side effect, and a build failure would then be
+      # reported as a smoke failure.
+      - name: Build the server
+        run: npm run build --workspace=@kikar/server
+
       - name: Run tests
         run: npm run test --workspace=@kikar/server
 

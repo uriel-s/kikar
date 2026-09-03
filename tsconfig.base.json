@@ -1,0 +1,46 @@
+{
+  // Compiler options shared by every tsconfig in the repository. Nothing here
+  // emits or checks on its own; the files that extend it decide which they do.
+  "compilerOptions": {
+    // Node 22 is the floor everywhere — `engines`, `.nvmrc`, node:22-alpine —
+    // and it implements all of ES2023.
+    "target": "ES2023",
+    "lib": ["ES2023"],
+
+    // ESM syntax in, CommonJS out. `node16` takes the output format from the
+    // nearest package.json, and apps/server/package.json has no
+    // `"type": "module"`, so sources written with `import`/`export` compile to
+    // `require`. Two things depend on that emit:
+    //   - jest runs the output with no --experimental-vm-modules. Stage 9 of
+    //     REFACTOR-PLAN.md moves the suite to Vitest, and this flips with it.
+    //   - api/index.mjs stays an ESM file importing plain CommonJS, which is
+    //     the only shape proven to load on Vercel. See the header of that file.
+    // `node16` rather than a flat `commonjs` so dependencies' `exports` maps
+    // are still honoured; firebase-admin and the Prisma client both ship one.
+    "module": "node16",
+    "moduleResolution": "node16",
+
+    "strict": true,
+    "esModuleInterop": true,
+
+    // ts-jest compiles one file at a time and cannot see the rest of the
+    // program, so it warns (TS151002) whenever `module` is one of the node16
+    // family without this. Turning the option on is the real answer rather
+    // than muting the warning: it makes tsc reject the handful of constructs
+    // that only work when the whole program is compiled together — a
+    // re-exported type without `export type`, an ambient `const enum` — which
+    // are exactly the ones that would compile here and break under ts-jest.
+    "isolatedModules": true,
+
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+
+    // For the duration of the migration only. The server converts a layer at a
+    // time, so `.js` and `.ts` have to coexist under src/ while every
+    // intermediate stage stays green — JavaScript compiles, but is not
+    // type-checked, because checking it would report a wall of errors that no
+    // sub-task is assigned to fix. Both come out when the last file converts.
+    "allowJs": true,
+    "checkJs": false
+  }
+}

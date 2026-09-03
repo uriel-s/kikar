@@ -15,6 +15,7 @@ const react = require("eslint-plugin-react");
 const reactHooks = require("eslint-plugin-react-hooks");
 const jsxA11y = require("eslint-plugin-jsx-a11y");
 const prettier = require("eslint-config-prettier");
+const tseslint = require("typescript-eslint");
 
 module.exports = [
   {
@@ -82,9 +83,42 @@ module.exports = [
     },
   },
 
-  // Server tests — same as the server, plus the Jest globals.
+  // Server TypeScript. Wired up with the toolchain rather than with the first
+  // .ts file, because ESLint 9 does not lint TypeScript at all without a
+  // parser — `eslint .` would simply stop seeing the server as it converts, and
+  // this gate would go greener each stage by looking at less code.
+  //
+  // Deliberately the plain preset and not the type-aware one: that variant
+  // loads the whole program on every lint run, and `checks.sh types` already
+  // runs tsc. One tool owns types.
+  ...tseslint.configs.recommended.map((config) => ({
+    ...config,
+    files: ["apps/server/**/*.ts"],
+  })),
   {
-    files: ["apps/server/tests/**/*.js"],
+    files: ["apps/server/**/*.ts"],
+    languageOptions: {
+      ecmaVersion: 2024,
+      // ESM syntax on the way in; tsc emits CommonJS. See tsconfig.base.json.
+      sourceType: "module",
+      globals: globals.node,
+    },
+    rules: {
+      // The TypeScript rule replaces the core one, so the exception has to be
+      // restated: Express identifies an error handler by its arity, and
+      // `(err, req, res, next)` keeps its fourth parameter whether the body
+      // uses it or not.
+      "@typescript-eslint/no-unused-vars": [
+        "error",
+        { argsIgnorePattern: "^_", varsIgnorePattern: "^_", caughtErrors: "all" },
+      ],
+    },
+  },
+
+  // Server tests — same as the server, plus the Jest globals. Both extensions,
+  // because the suite converts to TypeScript one file at a time.
+  {
+    files: ["apps/server/tests/**/*.{js,ts}"],
     languageOptions: {
       globals: { ...globals.node, ...globals.jest },
     },
