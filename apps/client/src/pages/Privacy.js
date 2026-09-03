@@ -52,6 +52,11 @@ const LIST = {
   fontSize: 15,
   lineHeight: 1.6,
   color: "inherit",
+  // Explicit, not inherited from the browser default: index.css used to carry
+  // a `ul,ol { list-style: revert }` bridge rule that restored bullets over
+  // Tailwind preflight's `list-style: none`, and that bridge is gone together
+  // with index.css. Stated here so this list's bullets do not depend on either.
+  listStyle: "disc",
 };
 
 const Privacy = () => {
