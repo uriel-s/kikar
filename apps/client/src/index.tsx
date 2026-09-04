@@ -15,7 +15,9 @@ import "./styles/theme.css";
 
 import App from "./App";
 
-createRoot(document.getElementById("root")).render(
+// index.html defines this element unconditionally; it is never absent by the
+// time this module runs.
+createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <App />
   </React.StrictMode>

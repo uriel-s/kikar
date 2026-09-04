@@ -29,7 +29,7 @@ const CheckIcon = () => (
 // the floor behind this whole route, so the frame only has to centre the
 // notices on it and keep them off the screen edge on a phone. Narrower than
 // Privacy/Terms' 720px: this is a form, not a wall of prose.
-const FRAME = {
+const FRAME: React.CSSProperties = {
   maxWidth: 600,
   margin: "48px auto 60px",
   padding: "0 20px",
@@ -39,7 +39,7 @@ const FRAME = {
 // ink, not paper-ink: this heading sits on the paved ground above the
 // notices, not on paper inside one — same reasoning Footer.js gives for its
 // own text, and the same split Signin/SignUp's TITLE vs. FOOTER draw.
-const TITLE = {
+const TITLE: React.CSSProperties = {
   margin: "0 0 20px",
   fontFamily: "var(--font-display)",
   fontSize: 32,
@@ -47,11 +47,11 @@ const TITLE = {
   color: "var(--color-ink)",
 };
 
-const FIELD_GAP = { marginTop: 14 };
+const FIELD_GAP: React.CSSProperties = { marginTop: 14 };
 
-const ACTIONS = { marginTop: 20 };
+const ACTIONS: React.CSSProperties = { marginTop: 20 };
 
-const CONFIRMATION = {
+const CONFIRMATION: React.CSSProperties = {
   display: "flex",
   alignItems: "center",
   gap: 10,
@@ -68,9 +68,9 @@ const CONFIRMATION = {
 
 // A second sheet of paper below the form — the current markup's second
 // `.card`, kept as its own distinct Notice rather than folded into the form.
-const INFO_NOTICE = { marginTop: 24 };
+const INFO_NOTICE: React.CSSProperties = { marginTop: 24 };
 
-const SECTION_TITLE = {
+const SECTION_TITLE: React.CSSProperties = {
   margin: "0 0 14px",
   fontFamily: "var(--font-display)",
   fontSize: 18,
@@ -84,7 +84,7 @@ const SECTION_TITLE = {
 // light paper. Gone together with index.css, but stated here anyway so this
 // line does not depend on a rule that no longer exists — the same fix
 // PostCard's CONTENT/COMMENT_TEXT make against the same rule.
-const INFO_LINE = {
+const INFO_LINE: React.CSSProperties = {
   margin: "0 0 10px",
   fontSize: 15,
   lineHeight: 1.6,
@@ -97,7 +97,13 @@ const Contact = () => {
   const [formData, setFormData] = useState(EMPTY_FORM);
   const [submitted, setSubmitted] = useState(false);
 
-  const handleChange = (e) => {
+  // Field's onChange prop type is an intersection of all three control
+  // element handlers (it can render as input/textarea/select), so the event
+  // parameter here has to be the union of their element types to satisfy it —
+  // the same shape SignUp/AddPost's own Field onChange handlers use.
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  ) => {
     const { name, value } = e.target;
     setFormData((prevState) => ({
       ...prevState,
@@ -105,7 +111,7 @@ const Contact = () => {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     // Here you would typically send the form data to your server
     console.log(formData);

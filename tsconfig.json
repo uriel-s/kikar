@@ -24,8 +24,13 @@
   },
   // Tests as well as src. They are the safety net the whole refactor is
   // measured against, so a type error in one has to fail the gate like any
-  // other. The client is deliberately absent — stage 4 of REFACTOR-PLAN.md
-  // converts it, and including it now would report errors nobody owns yet.
+  // other. The client is permanently absent from this list, not just for
+  // now: apps/client/tsconfig.json is a standalone config with an
+  // incompatible shape (different module/moduleResolution/lib/target — see
+  // its own header comment for why), so it could never be folded in here via
+  // a plain `include` entry even now that stage 4 of REFACTOR-PLAN.md has
+  // converted it. It gets its own tsc invocation instead, run by
+  // `checks.sh types` via `npm run typecheck --workspace=@kikar/client`.
   "include": ["apps/server/src/**/*", "apps/server/tests/**/*"],
   "exclude": [
     "**/node_modules",

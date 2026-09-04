@@ -6,8 +6,52 @@ import { useAuth } from "../contexts/AuthContext";
 import * as usersApi from "../api/users";
 import * as postsApi from "../api/posts";
 
+/**
+ * The partial author shape a post carries — the same fields Avatar's own
+ * `AvatarUser` accepts, and structurally the same shape PostCard.tsx's own
+ * (non-exported) `PostAuthor` declares locally, for the same reason:
+ * `api/posts.ts` still returns an untyped row, so this is not the place a
+ * shared, stricter `User` type gets invented.
+ */
+interface PostAuthor {
+  id?: string;
+  name?: string;
+  avatarUrl?: string | null;
+}
+
+/**
+ * The feed shape this page reads and passes straight into `<PostCard
+ * post={...} />` — structurally compatible with PostCard's own (non-exported)
+ * local `Post` interface, which is not exported from PostCard.tsx.
+ */
+interface Post {
+  id: string;
+  author: PostAuthor;
+  content: string;
+  createdAt?: Date | string | number | null;
+  likeCount: number;
+  commentCount: number;
+  likedByMe: boolean;
+}
+
+/**
+ * The user shape this page reads and passes straight into `<UserCard
+ * user={...} />` — structurally compatible with UserCard's own (non-exported)
+ * local `UserCardUser`, which is not exported from UserCard.tsx.
+ */
+interface SearchUser {
+  id: string;
+  name?: string;
+  avatarUrl?: string | null;
+}
+
+interface SearchResultsState {
+  users: SearchUser[];
+  posts: Post[];
+}
+
 const SearchResults = () => {
-  const [results, setResults] = useState({ users: [], posts: [] });
+  const [results, setResults] = useState<SearchResultsState>({ users: [], posts: [] });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const location = useLocation();
@@ -49,7 +93,9 @@ const SearchResults = () => {
           setResults({ users, posts });
         }
       } catch (err) {
-        if (!cancelled) setError(err.message);
+        // `strict` types the catch binding `unknown`, not `any` — narrow it
+        // before reading `.message` rather than reaching for a cast.
+        if (!cancelled) setError(err instanceof Error ? err.message : String(err));
       } finally {
         if (!cancelled) setIsLoading(false);
       }
@@ -62,7 +108,7 @@ const SearchResults = () => {
     };
   }, [query, type]);
 
-  const patchPost = (postId, changes) =>
+  const patchPost = (postId: string, changes: Partial<Post>) =>
     setResults((current) => ({
       ...current,
       posts: current.posts.map((post) =>
@@ -70,7 +116,7 @@ const SearchResults = () => {
       ),
     }));
 
-  const handleLike = async (postId, isLiked) => {
+  const handleLike = async (postId: string, isLiked: boolean) => {
     const post = results.posts.find((candidate) => candidate.id === postId);
     if (!post) return;
 
@@ -86,11 +132,11 @@ const SearchResults = () => {
       patchPost(postId, { likeCount });
     } catch (err) {
       patchPost(postId, { likedByMe: post.likedByMe, likeCount: post.likeCount });
-      setError(err.message);
+      setError(err instanceof Error ? err.message : String(err));
     }
   };
 
-  const handleCommentAdded = (postId) => {
+  const handleCommentAdded = (postId: string) => {
     const post = results.posts.find((candidate) => candidate.id === postId);
     if (post) patchPost(postId, { commentCount: post.commentCount + 1 });
   };

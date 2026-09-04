@@ -1,14 +1,8 @@
 import "./App.css";
 import React from "react";
 import { AuthProvider } from "./contexts/AuthContext";
-import {
-  BrowserRouter as Router,
-  Switch,
-  Route,
-  Redirect,
-  useLocation,
-} from "react-router-dom";
-import "firebase/auth";
+import { BrowserRouter as Router, Switch, Route, Redirect } from "./lib/router";
+import { useLocation } from "react-router-dom";
 import PrivateRoute from "./Components/PrivateRoute";
 import Signin from "./pages/Signin";
 import SignUp from "./pages/SignUp";
@@ -39,7 +33,7 @@ const PLAZA_PATH = "/";
  * router's own way of saying "this path is handled, by nothing", and it keeps
  * the exclusion expressed in the same vocabulary as the route table below.
  */
-const OffPlaza = ({ children }) => (
+const OffPlaza = ({ children }: { children: React.ReactNode }) => (
   <Switch>
     <Route exact path={PLAZA_PATH} />
     <Route>{children}</Route>
@@ -57,7 +51,7 @@ const OffPlaza = ({ children }) => (
  * avoids a stray strip of bare body background immediately below a light paved
  * floor.
  */
-const Content = ({ children }) => {
+const Content = ({ children }: { children: React.ReactNode }) => {
   const onPlaza = useLocation().pathname === PLAZA_PATH;
 
   return (

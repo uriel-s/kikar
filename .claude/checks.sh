@@ -132,6 +132,11 @@ run_format() { npx prettier --check .; }
 run_arch() { echo "SKIP: no import-linter equivalent wired up"; }
 
 run_types() {
+  local rc=0
+
+  # Root tsconfig.json is server-only scope (see its own header comment) — it
+  # names apps/server/src and tests/ explicitly rather than scanning the repo,
+  # so this half never touches apps/client at all.
   if [ -f "tsconfig.json" ] && have tsc; then
     # src/lib/prisma.ts imports the generated client for its types, and the
     # routes/controllers import @kikar/shared — tsc cannot resolve the program
@@ -139,10 +144,28 @@ run_types() {
     # ensure_server_build already account for.
     ensure_prisma_client || return 1
     ensure_shared_build || return 1
-    npx tsc --noEmit
+    npx tsc --noEmit || rc=1
   else
     echo "SKIP: no TypeScript yet (added in the TS migration stage)"
   fi
+
+  # Stage 4 of REFACTOR-PLAN.md converted the client to TypeScript, so this
+  # gate has a client half too. apps/client/tsconfig.json is a standalone
+  # config (own module/lib/target — Vite's esbuild does the actual transpile;
+  # tsc here is semantic-checking only), so it cannot be folded into the root
+  # program above via `include` — it needs its own invocation. Unlike the
+  # server half it needs no ensure_* first: the client doesn't depend on the
+  # generated Prisma client or on @kikar/shared. Previously only `run_build`
+  # exercised the client (vite build, an esbuild transpile with no semantic
+  # type-checking), so a real type error here was only caught by an editor or
+  # a manually-run tsc — this closes that gap.
+  if [ -f "apps/client/tsconfig.json" ] && have tsc; then
+    npm run typecheck --workspace="$CLIENT" || rc=1
+  else
+    echo "SKIP: no client TypeScript config found"
+  fi
+
+  return $rc
 }
 
 # Gates on production dependencies — the code that actually ships and runs.

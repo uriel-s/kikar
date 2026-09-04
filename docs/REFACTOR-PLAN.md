@@ -189,7 +189,7 @@ repositories`, אז מטפסים בכיוון ההפוך:
 
 ---
 
-### שלב 4 — TypeScript בקליינט
+### שלב 4 — TypeScript בקליינט — ✅ בוצע (2026-09-04)
 
 Vite כבר יודע TypeScript, אז אין הגדרות בנייה חדשות.
 
@@ -197,6 +197,13 @@ Vite כבר יודע TypeScript, אז אין הגדרות בנייה חדשות.
 `pages/`. משנים סיומת לקובץ אחד, מתקנים את השגיאות, ממשיכים.
 
 **סיום:** אין `.js` ב-`apps/client/src`; `npm run typecheck` נקי.
+
+**מה בפועל בוצע:** ההמרה בוצעה על פני כמה סשנים, לפי הסדר שתואר למעלה, וכללה גם
+שני קבצים שלא הופיעו בפירוט המקורי — `firebase.js` ו-`Regex.js`. החלק האחרון
+(עמודים חלק ב' + `App`/`index`) גם הוסיף סקריפט `typecheck` ל-
+`apps/client/package.json` וחיבר אותו ל-`checks.sh` — `checks.sh types` בודק
+כעת גם את הקליינט, לא רק את השרת. `find apps/client/src -name "*.js" -o -name
+"*.jsx"` מחזיר ריק; `checks.sh all` ירוק.
 
 ---
 
