@@ -1,8 +1,10 @@
 import React, { useEffect, useRef, useState } from "react";
+import { useMutation, useQueryClient, type InfiniteData } from "@tanstack/react-query";
 import * as postsApi from "../api/posts";
 import { useAuth } from "../contexts/AuthContext";
 import { usePlazaProfile } from "../contexts/PlazaProfile";
 import { useNarrowerThan } from "../lib/useMediaQuery";
+import { queryKeys } from "../lib/queryKeys";
 import Avatar from "./Avatar";
 import Button from "./ui/Button";
 import Field from "./ui/Field";
@@ -27,10 +29,6 @@ interface AddPostUser {
 }
 
 interface AddPostFormProps {
-  /** Called with the created post. `postsApi.createPost` has no declared
-   * return type, so there is nothing more specific to read off it here than
-   * "pass it through". */
-  onPostCreated: (post: unknown) => void;
   /** The signed-in person, `{ id, name, avatarUrl }`. Optional; see the
    * comment on `me` for why this is never fetched here. */
   user?: AddPostUser;
@@ -142,19 +140,18 @@ const FOCUS_RING: React.CSSProperties = {
  * opens into.
  *
  * Props:
- *   onPostCreated — called with the created post
- *   user          — the signed-in person, `{ id, name, avatarUrl }`. Optional;
- *                   see the comment on `me` for why this is never fetched here
+ *   user — the signed-in person, `{ id, name, avatarUrl }`. Optional; see the
+ *          comment on `me` for why this is never fetched here
  */
-const AddPostForm = ({ onPostCreated, user }: AddPostFormProps) => {
+const AddPostForm = ({ user }: AddPostFormProps) => {
   const { currentUser } = useAuth();
   const profile = usePlazaProfile();
   const compact = useNarrowerThan(COMPACT);
   const narrow = useNarrowerThan(NARROW);
+  const queryClient = useQueryClient();
 
   const [text, setText] = useState<string>("");
-  const [error, setError] = useState<string>("");
-  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [validationError, setValidationError] = useState<string>("");
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const [ringVisible, setRingVisible] = useState<boolean>(false);
 
@@ -191,35 +188,67 @@ const AddPostForm = ({ onPostCreated, user }: AddPostFormProps) => {
     }
   }, [isOpen]);
 
+  // `createPostMutation.reset()` alongside the state clears: without it a
+  // stale mutation error would still be showing the next time the composer
+  // opens, which the old single `error` state — fully cleared by `close()` —
+  // never did.
   const close = () => {
     setText("");
-    setError("");
+    setValidationError("");
     setIsOpen(false);
+    createPostMutation.reset();
   };
 
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+  /**
+   * Creates the post and prepends it straight into the feed's infinite-query
+   * cache, so it appears at the top of the wall instantly. `invalidateQueries`
+   * would trigger a refetch instead and delay the post's appearance — an
+   * observable behavior change from what the old `onPostCreated` prop
+   * callback did.
+   */
+  const createPostMutation = useMutation({
+    mutationFn: (content: string) => postsApi.createPost(content),
+    onSuccess: (post) => {
+      // `postsApi.createPost` has no declared return type, so there is
+      // nothing more specific to type the prepended array element as than
+      // `unknown` here — the same reasoning the removed `onPostCreated: (post:
+      // unknown) => void` prop's comment gave.
+      queryClient.setQueryData<
+        InfiniteData<{ posts: unknown[]; nextCursor: string | null }>
+      >(
+        queryKeys.posts.feed(),
+        (old) =>
+          old && {
+            ...old,
+            pages: old.pages.map((page, index) =>
+              index === 0 ? { ...page, posts: [post, ...page.posts] } : page
+            ),
+          }
+      );
+      close();
+    },
+  });
+
+  const error =
+    validationError ||
+    (createPostMutation.error instanceof Error
+      ? createPostMutation.error.message
+      : createPostMutation.error
+        ? String(createPostMutation.error)
+        : "");
+
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     if (!text.trim()) {
-      setError("Post content cannot be empty.");
+      setValidationError("Post content cannot be empty.");
       return;
     }
 
-    setIsSubmitting(true);
-    setError("");
-    try {
-      // The author is taken from the verified token server-side, so nothing
-      // about identity is sent from here.
-      const post = await postsApi.createPost(text);
-      onPostCreated(post);
-      close();
-    } catch (err) {
-      // `strict` types the catch binding `unknown`, not `any` — narrow it
-      // before reading `.message` rather than reaching for a cast.
-      setError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setIsSubmitting(false);
-    }
+    setValidationError("");
+    // The author is taken from the verified token server-side, so nothing
+    // about identity is sent from here.
+    createPostMutation.mutate(text);
   };
 
   // Escape closes an empty composer and nothing else. A draft somebody has
@@ -333,11 +362,15 @@ const AddPostForm = ({ onPostCreated, user }: AddPostFormProps) => {
           {text.length} / {MAX_LENGTH}
         </span>
 
-        <Button type="submit" variant="primary" disabled={isSubmitting || !text.trim()}>
-          {isSubmitting ? "Posting…" : "Post"}
+        <Button
+          type="submit"
+          variant="primary"
+          disabled={createPostMutation.isPending || !text.trim()}
+        >
+          {createPostMutation.isPending ? "Posting…" : "Post"}
         </Button>
 
-        <Button variant="ghost" onClick={close} disabled={isSubmitting}>
+        <Button variant="ghost" onClick={close} disabled={createPostMutation.isPending}>
           Cancel
         </Button>
       </div>

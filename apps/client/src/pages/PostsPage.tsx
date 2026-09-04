@@ -1,4 +1,10 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useMemo } from "react";
+import {
+  useInfiniteQuery,
+  useMutation,
+  useQueryClient,
+  type InfiniteData,
+} from "@tanstack/react-query";
 import PostCard from "../Components/PostCard";
 import AddPostForm from "../Components/AddPost";
 import PresenceStrip from "../Components/PresenceStrip";
@@ -9,6 +15,7 @@ import Skeleton from "../Components/ui/Skeleton";
 import { useAuth } from "../contexts/AuthContext";
 import { useNarrowerThan } from "../lib/useMediaQuery";
 import { ApiRequestError } from "../lib/apiClient";
+import { queryKeys } from "../lib/queryKeys";
 import * as postsApi from "../api/posts";
 
 /*
@@ -233,49 +240,56 @@ const useColumnCount = (): number => {
 };
 
 const PostsPage = () => {
-  const [posts, setPosts] = useState<Post[]>([]);
-  const [nextCursor, setNextCursor] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const [error, setError] = useState("");
+  const [actionError, setActionError] = useState("");
   const { currentUser } = useAuth();
   const columnCount = useColumnCount();
+  const queryClient = useQueryClient();
 
-  const loadFirstPage = useCallback(async () => {
-    setIsLoading(true);
-    setError("");
-    try {
-      const { posts: page, nextCursor: cursor } = await postsApi.listPosts();
-      setPosts(page);
-      setNextCursor(cursor);
-    } catch (err) {
-      // `strict` types the catch binding `unknown`, not `any` — narrow it
-      // before reading `.message` rather than reaching for a cast.
-      setError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+  const feedQuery = useInfiniteQuery({
+    queryKey: queryKeys.posts.feed(),
+    queryFn: ({ pageParam }) => postsApi.listPosts({ cursor: pageParam }),
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
+  });
+  // Memoized on the query's own data, not left as a bare derived expression:
+  // `flatMap(...) ?? []` would otherwise hand back a new array identity every
+  // render, which defeats `peopleInTheSquare`'s memoization below (it depends
+  // on `posts`) for no reason — the underlying pages haven't changed.
+  const posts = useMemo(
+    () => feedQuery.data?.pages.flatMap((page) => page.posts) ?? [],
+    [feedQuery.data]
+  );
 
-  useEffect(() => {
-    loadFirstPage();
-  }, [loadFirstPage]);
+  // One visible error slot answers for the feed, a like, and a delete (see the
+  // role="alert" paragraph below) — the composer reports its own failures on
+  // its own field. `actionError` covers the like/delete mutations; the load
+  // failure is read straight off the query each render rather than mirrored
+  // into state, so there is nothing here to keep in sync with an effect.
+  const loadErrorMessage =
+    feedQuery.error instanceof Error
+      ? feedQuery.error.message
+      : feedQuery.error
+        ? String(feedQuery.error)
+        : "";
+  const error = actionError || loadErrorMessage;
 
-  const loadMore = async () => {
-    if (!nextCursor || isLoadingMore) return;
-
-    setIsLoadingMore(true);
-    try {
-      const { posts: page, nextCursor: cursor } = await postsApi.listPosts({
-        cursor: nextCursor,
-      });
-      setPosts((current) => [...current, ...page]);
-      setNextCursor(cursor);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setIsLoadingMore(false);
-    }
+  // Patches one post inside the infinite-query cache — the query-cache
+  // equivalent of the old local-state `patchPost` helper, same call sites and
+  // the same `Partial<Post>` merge semantics.
+  const patchFeedPost = (postId: string, changes: Partial<Post>) => {
+    queryClient.setQueryData<InfiniteData<{ posts: Post[]; nextCursor: string | null }>>(
+      queryKeys.posts.feed(),
+      (old) =>
+        old && {
+          ...old,
+          pages: old.pages.map((page) => ({
+            ...page,
+            posts: page.posts.map((post) =>
+              post.id === postId ? { ...post, ...changes } : post
+            ),
+          })),
+        }
+    );
   };
 
   /**
@@ -310,18 +324,11 @@ const PostsPage = () => {
     return people;
   }, [posts]);
 
-  const patchPost = (postId: string, changes: Partial<Post>) =>
-    setPosts((current) =>
-      current.map((post) => (post.id === postId ? { ...post, ...changes } : post))
-    );
-
-  // AddPostForm's `onPostCreated` is typed `(post: unknown) => void` — see its
-  // own comment for why (`postsApi.createPost` has no declared return type,
-  // so there is nothing more specific to type it against there) — so the
-  // created post is cast back to this page's own `Post` shape here, where the
-  // feed's own type is what everything downstream (PostCard, patchPost) needs.
-  const handlePostCreated = (post: unknown) => {
-    setPosts((current) => [post as Post, ...current]);
+  const handleCommentAdded = (postId: string) => {
+    const post = posts.find((candidate) => candidate.id === postId);
+    if (post) {
+      patchFeedPost(postId, { commentCount: post.commentCount + 1 });
+    }
   };
 
   /**
@@ -330,47 +337,63 @@ const PostsPage = () => {
    * The server owns the count, so its response is what finally lands — two
    * people liking at once no longer produces two different totals on screen.
    */
-  const handleLike = async (postId: string, isLiked: boolean) => {
-    const post = posts.find((candidate) => candidate.id === postId);
-    if (!post) return;
+  const likeMutation = useMutation({
+    mutationFn: ({ postId, isLiked }: { postId: string; isLiked: boolean }) =>
+      isLiked ? postsApi.unlikePost(postId) : postsApi.likePost(postId),
+    onMutate: ({ postId, isLiked }) => {
+      const post = posts.find((candidate) => candidate.id === postId);
+      if (post) {
+        patchFeedPost(postId, {
+          likedByMe: !isLiked,
+          likeCount: post.likeCount + (isLiked ? -1 : 1),
+        });
+      }
+      return { previous: post };
+    },
+    onSuccess: (likeCount, { postId }) => patchFeedPost(postId, { likeCount }),
+    onError: (err, { postId }, context) => {
+      if (context?.previous) {
+        patchFeedPost(postId, {
+          likedByMe: context.previous.likedByMe,
+          likeCount: context.previous.likeCount,
+        });
+      }
+      // `strict` types the catch binding `unknown`, not `any` — narrow it
+      // before reading `.message` rather than reaching for a cast.
+      setActionError(err instanceof Error ? err.message : String(err));
+    },
+  });
+  const handleLike = (postId: string, isLiked: boolean) =>
+    likeMutation.mutate({ postId, isLiked });
 
-    patchPost(postId, {
-      likedByMe: !isLiked,
-      likeCount: post.likeCount + (isLiked ? -1 : 1),
-    });
-
-    try {
-      const likeCount = isLiked
-        ? await postsApi.unlikePost(postId)
-        : await postsApi.likePost(postId);
-      patchPost(postId, { likeCount });
-    } catch (err) {
-      patchPost(postId, { likedByMe: post.likedByMe, likeCount: post.likeCount });
-      setError(err instanceof Error ? err.message : String(err));
-    }
-  };
-
-  const handleCommentAdded = (postId: string) => {
-    const post = posts.find((candidate) => candidate.id === postId);
-    if (post) {
-      patchPost(postId, { commentCount: post.commentCount + 1 });
-    }
-  };
-
-  const handleDelete = async (postId: string) => {
-    const snapshot = posts;
-    setPosts((current) => current.filter((post) => post.id !== postId));
-
-    try {
-      await postsApi.deletePost(postId);
-    } catch (err) {
+  const deleteMutation = useMutation({
+    mutationFn: (postId: string) => postsApi.deletePost(postId),
+    onMutate: (postId) => {
+      const snapshot = queryClient.getQueryData(queryKeys.posts.feed());
+      queryClient.setQueryData<
+        InfiniteData<{ posts: Post[]; nextCursor: string | null }>
+      >(
+        queryKeys.posts.feed(),
+        (old) =>
+          old && {
+            ...old,
+            pages: old.pages.map((page) => ({
+              ...page,
+              posts: page.posts.filter((post) => post.id !== postId),
+            })),
+          }
+      );
+      return { snapshot };
+    },
+    onError: (err, postId, context) => {
       // A post someone else already deleted should stay gone on screen.
       if (!(err instanceof ApiRequestError) || err.status !== 404) {
-        setPosts(snapshot);
+        queryClient.setQueryData(queryKeys.posts.feed(), context?.snapshot);
       }
-      setError(err instanceof Error ? err.message : String(err));
-    }
-  };
+      setActionError(err instanceof Error ? err.message : String(err));
+    },
+  });
+  const handleDelete = (postId: string) => deleteMutation.mutate(postId);
 
   const columns = intoPostColumns(posts, columnCount);
   const placeholders = intoColumns(
@@ -394,9 +417,9 @@ const PostsPage = () => {
       )}
 
       {/* The composer carries its own top margin, which is why nothing here
-          positions it. Still exactly one prop: it reads the signed-in user from
-          context and asks the server for nothing. */}
-      <AddPostForm onPostCreated={handlePostCreated} />
+          positions it. It reads the signed-in user from context and prepends
+          its own created post straight into the feed's query cache. */}
+      <AddPostForm />
 
       <PresenceStrip people={peopleInTheSquare} style={STRIP} />
 
@@ -404,8 +427,8 @@ const PostsPage = () => {
           the region is therefore the only thing left that can say it is
           loading. A screen reader announcing six grey rectangles is worse than
           silence. */}
-      <div style={REGION} aria-busy={isLoading}>
-        {isLoading ? (
+      <div style={REGION} aria-busy={feedQuery.isLoading}>
+        {feedQuery.isLoading ? (
           <div style={wallStyle(columnCount)}>
             {placeholders.map((items, index) => (
               <ul key={index} style={COLUMN} aria-label={columnLabel(index, columnCount)}>
@@ -449,10 +472,14 @@ const PostsPage = () => {
           4.62:1 by day and 5.69:1 at night — and is not safe on a notice, where
           the same border is 2.62:1 in Slate Night. This one stands on the
           ground. See the header of Components/ui/Button.js. */}
-      {nextCursor && (
+      {feedQuery.hasNextPage && (
         <div style={LOAD_MORE}>
-          <Button variant="secondary" onClick={loadMore} disabled={isLoadingMore}>
-            {isLoadingMore ? "Loading…" : "Load more"}
+          <Button
+            variant="secondary"
+            onClick={() => feedQuery.fetchNextPage()}
+            disabled={feedQuery.isFetchingNextPage}
+          >
+            {feedQuery.isFetchingNextPage ? "Loading…" : "Load more"}
           </Button>
         </div>
       )}
