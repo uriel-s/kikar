@@ -43,8 +43,6 @@ const crypto = require("node:crypto");
 const http = require("node:http");
 const { initializeFirebase, loadServiceAccount } = require("../dist/config/firebase");
 
-const BUCKET = "kikar-startup-test.appspot.com";
-
 // cert() parses the PEM, so a placeholder string is rejected. Generating a
 // throwaway key is better than committing a key-shaped secret that every
 // scanner will flag for the rest of this repository's life.
@@ -65,7 +63,6 @@ const buildServiceAccount = () => {
 const SERVICE_ACCOUNT_JSON = JSON.stringify(buildServiceAccount());
 const env = {
   FIREBASE_SERVICE_ACCOUNT_JSON: SERVICE_ACCOUNT_JSON,
-  FIREBASE_STORAGE_BUCKET: BUCKET,
 };
 
 const results = [];
@@ -81,12 +78,13 @@ const record = (name, run) => {
 // ---------------------------------------------------------------- firebase
 
 record("initializes firebase-admin and returns the handles server.ts injects", () => {
-  const { auth, bucket } = initializeFirebase(env);
+  const { auth } = initializeFirebase(env);
 
-  // Exactly what server.ts destructures and hands to createApp. If the SDK
-  // surface moves again, this is the line that says so.
+  // Exactly what server.ts destructures and hands to createApp. Storage is no
+  // longer part of this handle — server.ts builds the R2 bucket separately via
+  // config/storage.ts, which needs no firebase-admin app to exist first. If the
+  // SDK surface moves again, this is the line that says so.
   assert.equal(typeof auth.verifyIdToken, "function");
-  assert.equal(bucket.name, BUCKET);
 });
 
 record("reuses the existing app rather than initializing a second time", () => {
@@ -144,7 +142,11 @@ const checkVercelHandler = async () => {
   // requires exactly one, and would otherwise fail with "both are set".
   process.env.FIREBASE_SERVICE_ACCOUNT_PATH = "";
   process.env.FIREBASE_SERVICE_ACCOUNT_JSON = SERVICE_ACCOUNT_JSON;
-  process.env.FIREBASE_STORAGE_BUCKET = BUCKET;
+  process.env.R2_ACCOUNT_ID = "smoke-test-account";
+  process.env.R2_ACCESS_KEY_ID = "smoke-test-access-key";
+  process.env.R2_SECRET_ACCESS_KEY = "smoke-test-secret-key";
+  process.env.R2_BUCKET_NAME = "kikar-startup-test";
+  process.env.R2_PUBLIC_URL = "https://smoke-test.example.com";
   process.env.DATABASE_URL = "postgresql://smoke:smoke@127.0.0.1:5432/smoke";
   process.env.CORS_ORIGINS = "https://kikar.example";
 

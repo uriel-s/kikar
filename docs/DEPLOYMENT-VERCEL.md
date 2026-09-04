@@ -30,10 +30,13 @@ function never loads and every request, `/health` included, returns
 below and it is not the same cause; check that the build log ran two builds
 before going anywhere near the dependency tree.
 
-Two limits change meaning on this target and are worth knowing before you rely
-on them. The rate limiter is per-instance here rather than global — see the note
-at `apps/server/src/app.ts`. And Vercel caps a request body at 4.5 MB while the
-avatar limit is 5 MB; see the last section.
+One limit changes meaning on this target and is worth knowing before you rely
+on it: the rate limiter is per-instance here rather than global — see the note
+at `apps/server/src/app.ts`. (Vercel also caps a request body at 4.5 MB, below
+the 5 MB avatar limit — this does not bite avatars, though: stage 8a moved
+those to a presigned PUT straight to R2, so avatar bytes never pass through the
+Vercel function body at all. See the R2 CORS step below for what replaced it as
+the thing to get right.)
 
 ## The one thing that decides whether this works
 
@@ -71,7 +74,38 @@ throwaway Postgres, so if CI is green this will work.
 **2. Vercel** — import the GitHub repository. It reads `vercel.json`; leave the
 framework preset as "Other" and change nothing it offers to detect.
 
-**3. Environment variables** in Vercel, for Production and Preview both:
+**3. Cloudflare R2** — create the bucket avatars are stored in.
+
+- **Create a bucket**, named whatever `R2_BUCKET_NAME` will be set to below.
+- **Enable public access** for it (bucket → Settings → Public access → Allow
+  Access, or attach a custom domain, whichever becomes `R2_PUBLIC_URL` below).
+  Avatar URLs are served straight from that address, unauthenticated — there is
+  no signed-read path in this codebase.
+- **Set a CORS policy** on the bucket (bucket → Settings → CORS Policy). The
+  client PUTs avatar bytes directly to a presigned R2 URL
+  (`apps/client/src/api/users.ts`) — a cross-origin request from the Vercel
+  domain that triggers a browser preflight. Without a CORS rule allowing it,
+  every avatar upload fails in production even with every other setting
+  correct:
+
+  ```json
+  [
+    {
+      "AllowedOrigins": ["https://<your-vercel-domain>"],
+      "AllowedMethods": ["PUT"],
+      "AllowedHeaders": ["*"]
+    }
+  ]
+  ```
+
+  The Vercel domain is not known until after the first deploy (step 5 below) —
+  come back and fill this in once you have it, and again for any Preview
+  domain you rely on.
+
+Generate an R2 API token scoped to this bucket (Manage R2 API Tokens) for the
+`R2_ACCESS_KEY_ID` / `R2_SECRET_ACCESS_KEY` values below.
+
+**4. Environment variables** in Vercel, for Production and Preview both:
 
 | Variable                        | Value                                                                     |
 | ------------------------------- | ------------------------------------------------------------------------- |
@@ -79,7 +113,11 @@ framework preset as "Other" and change nothing it offers to detect.
 | `DIRECT_URL`                    | Neon **direct** string                                                    |
 | `DATABASE_SSL`                  | `true` — Neon always requires TLS                                         |
 | `FIREBASE_SERVICE_ACCOUNT_JSON` | the whole service account JSON, on one line                               |
-| `FIREBASE_STORAGE_BUCKET`       | `<project>.appspot.com`                                                   |
+| `R2_ACCOUNT_ID`                 | Cloudflare account id                                                     |
+| `R2_ACCESS_KEY_ID`              | R2 API token access key id                                                |
+| `R2_SECRET_ACCESS_KEY`          | R2 API token secret                                                       |
+| `R2_BUCKET_NAME`                | the R2 bucket avatars are stored in                                       |
+| `R2_PUBLIC_URL`                 | the bucket's public base URL (r2.dev subdomain or a custom domain)        |
 | `CORS_ORIGINS`                  | your Vercel URL — fill in after the first deploy                          |
 | `VITE_API_URL`                  | leave unset — a production build already resolves to a same-origin `/api` |
 | `VITE_FIREBASE_*`               | the six web-config values, same as `apps/client/.env`                     |
@@ -95,10 +133,12 @@ fails with `vite: not found`. Vercel already sets `NODE_ENV` correctly in the
 function runtime, so there is nothing to add. `vercel.json` passes
 `--include=dev` as a second line of defence.
 
-**4. Deploy.** Then set `CORS_ORIGINS` to the URL Vercel gave you and redeploy,
-because the first deploy is what tells you the domain.
+**5. Deploy.** Then set `CORS_ORIGINS` to the URL Vercel gave you and redeploy,
+because the first deploy is what tells you the domain. This is also the moment
+to go back and add that domain to the R2 CORS policy from step 3 — avatar
+uploads will 200 on everything except the direct-to-R2 PUT until that is done.
 
-**5. Firebase** — add the Vercel domain under Authentication → Settings →
+**6. Firebase** — add the Vercel domain under Authentication → Settings →
 Authorized domains, or sign-in will be rejected by Firebase rather than by us.
 
 ## The one that actually broke it: require() of an ESM-only package
@@ -179,9 +219,12 @@ see what actually arrives, and adjust the rewrite from there. Do not reach for
 this document recommended it — a fix that would have appeared to change nothing
 while the outage continued.
 
-## Known limit, decided later
+## Known limit: resolved
 
-Vercel caps a request body at 4.5 MB; the avatar limit is 5 MB. Nothing breaks
-until someone uploads between the two, and `REFACTOR-PLAN.md` schedules the real
-fix — a presigned upload straight to R2 — for stage 8. Lowering the cap to 4 MB
-is the one-line stopgap if it matters before then.
+Vercel caps a request body at 4.5 MB, and the avatar limit is 5 MB — until
+`REFACTOR-PLAN.md` stage 8a this was a live gap for anything uploaded between
+the two. It no longer is: avatars upload with a presigned PUT straight to R2
+(`apps/server/src/services/storageService.ts`), so avatar bytes never pass
+through the Vercel function body at all, regardless of size. What replaced it
+as the thing to get right in production is R2's own CORS policy — see step 3
+above.

@@ -1,5 +1,6 @@
 import { parse } from "./config/env";
 import { initializeFirebase } from "./config/firebase";
+import { createR2Bucket } from "./config/storage";
 import { createPrismaClient } from "./lib/prisma";
 import { createLogger } from "./lib/logger";
 import { createApp } from "./app";
@@ -12,7 +13,8 @@ const main = async () => {
   const logger = createLogger(env);
 
   const prisma = createPrismaClient(env);
-  const { auth, bucket } = initializeFirebase(env);
+  const { auth } = initializeFirebase(env);
+  const bucket = createR2Bucket(env);
 
   await prisma.$connect();
   logger.info("Connected to PostgreSQL");
