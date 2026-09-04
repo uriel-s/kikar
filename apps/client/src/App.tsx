@@ -3,8 +3,13 @@ import React from "react";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "./lib/queryClient";
 import { AuthProvider } from "./contexts/AuthContext";
-import { BrowserRouter as Router, Switch, Route, Redirect } from "./lib/router";
-import { useLocation } from "react-router-dom";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+  useLocation,
+} from "react-router-dom";
 import PrivateRoute from "./Components/PrivateRoute";
 import Signin from "./pages/Signin";
 import SignUp from "./pages/SignUp";
@@ -31,15 +36,18 @@ const PLAZA_PATH = "/";
  * a fixed, animated canvas — would be an animation underneath a ground that is
  * now opaque. Every other route is still the old design and needs both.
  *
- * A <Switch> rather than a pathname comparison: an empty first Route is the
- * router's own way of saying "this path is handled, by nothing", and it keeps
- * the exclusion expressed in the same vocabulary as the route table below.
+ * A <Routes> rather than a pathname comparison: an explicit `element={null}`
+ * at the plaza path is the router's own way of saying "this path is handled,
+ * by nothing", and a "*" fallback renders the children everywhere else — the
+ * same exclusion the v5 empty-Route-inside-a-Switch pattern expressed, just
+ * in v7's vocabulary (v6+ Route always needs a path; there is no bare
+ * catch-all "last Route wins" behavior without one).
  */
 const OffPlaza = ({ children }: { children: React.ReactNode }) => (
-  <Switch>
-    <Route exact path={PLAZA_PATH} />
-    <Route>{children}</Route>
-  </Switch>
+  <Routes>
+    <Route path={PLAZA_PATH} element={null} />
+    <Route path="*" element={<>{children}</>} />
+  </Routes>
 );
 
 /**
@@ -98,31 +106,66 @@ function App() {
             </OffPlaza>
 
             <Content>
-              <Switch>
+              <Routes>
                 {/* Private routes - require authentication */}
                 {/* The square is the home screen: the design has no separate
                     dashboard-shaped landing page. */}
-                <PrivateRoute exact path={PLAZA_PATH} component={Square} />
-                <PrivateRoute path="/me" component={Dashbord} />
-                <PrivateRoute path="/update-profile" component={UpdateProfile} />
-                <PrivateRoute path="/allusers" component={AllUsers} />
-                <PrivateRoute path="/search" component={SearchResults} />
+                <Route
+                  path={PLAZA_PATH}
+                  element={
+                    <PrivateRoute>
+                      <Square />
+                    </PrivateRoute>
+                  }
+                />
+                <Route
+                  path="/me"
+                  element={
+                    <PrivateRoute>
+                      <Dashbord />
+                    </PrivateRoute>
+                  }
+                />
+                <Route
+                  path="/update-profile"
+                  element={
+                    <PrivateRoute>
+                      <UpdateProfile />
+                    </PrivateRoute>
+                  }
+                />
+                <Route
+                  path="/allusers"
+                  element={
+                    <PrivateRoute>
+                      <AllUsers />
+                    </PrivateRoute>
+                  }
+                />
+                <Route
+                  path="/search"
+                  element={
+                    <PrivateRoute>
+                      <SearchResults />
+                    </PrivateRoute>
+                  }
+                />
 
                 {/* Footer and the old navbar still link to /posts, and so do any
                     bookmarks. The feed lives at / now, so send them there rather
                     than editing every call site. */}
-                <Redirect from="/posts" to={PLAZA_PATH} />
+                <Route path="/posts" element={<Navigate to={PLAZA_PATH} replace />} />
 
                 {/* Public routes */}
-                <Route path="/signup" component={SignUp} />
-                <Route path="/signin" component={Signin} />
-                <Route path="/privacy" component={Privacy} />
-                <Route path="/terms" component={Terms} />
-                <Route path="/contact" component={Contact} />
+                <Route path="/signup" element={<SignUp />} />
+                <Route path="/signin" element={<Signin />} />
+                <Route path="/privacy" element={<Privacy />} />
+                <Route path="/terms" element={<Terms />} />
+                <Route path="/contact" element={<Contact />} />
 
                 {/* Redirect to home if no route matches */}
-                <Redirect to={PLAZA_PATH} />
-              </Switch>
+                <Route path="*" element={<Navigate to={PLAZA_PATH} replace />} />
+              </Routes>
             </Content>
 
             <Footer />

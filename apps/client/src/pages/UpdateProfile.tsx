@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "../contexts/AuthContext";
-import { useHistory } from "../lib/router";
+import { useNavigate } from "react-router-dom";
 import { queryKeys } from "../lib/queryKeys";
 import * as usersApi from "../api/users";
 import Button from "../Components/ui/Button";
@@ -94,7 +94,7 @@ const SKELETON_FIELD_COUNT = 5;
 
 function UpdateProfile() {
   const { currentUser, updatePassword } = useAuth();
-  const history = useHistory();
+  const navigate = useNavigate();
 
   const uid = currentUser?.uid;
 
@@ -194,7 +194,7 @@ function UpdateProfile() {
         await updatePassword(password);
       }
 
-      history.push("/");
+      navigate("/");
     } catch (err) {
       // `strict` types the catch binding `unknown`, not `any` — narrow it
       // before reading `.message`, the same pattern SignUp's catch uses.
@@ -335,7 +335,7 @@ function UpdateProfile() {
           same slot Signin/SignUp's footer link occupies. See the header of
           Components/ui/Button.js. */}
       <div style={FOOTER}>
-        <Button variant="secondary" onClick={() => history.push("/")}>
+        <Button variant="secondary" onClick={() => navigate("/")}>
           Cancel
         </Button>
       </div>

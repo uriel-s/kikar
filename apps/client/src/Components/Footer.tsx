@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link } from "../lib/router";
+import { Link } from "react-router-dom";
 
 /*
  * Same 3-column information architecture as before (Kikar tagline / Links /
@@ -8,10 +8,6 @@ import { Link } from "../lib/router";
  * of its own, ink/muted text directly on WavesBackground's floor, because
  * those two tokens (unlike paper-ink/paper-muted) are the pair meant for text
  * that is not sitting on a sheet of paper.
- *
- * Link comes from lib/router, not react-router-dom directly — see that
- * file's header for why (a real @types/react version conflict elsewhere in
- * the monorepo, not a Footer concern).
  */
 
 const ROOT: React.CSSProperties = {

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link, useHistory } from "../lib/router";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { validEmail } from "../Regex";
 import * as usersApi from "../api/users";
@@ -80,7 +80,7 @@ function SignUp() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const { signup } = useAuth();
-  const history = useHistory();
+  const navigate = useNavigate();
 
   // Field's onChange prop type is an intersection of all three control
   // element handlers (it can render as input/textarea/select), so the event
@@ -135,7 +135,7 @@ function SignUp() {
         birthDate: form.birthDate || null,
       });
 
-      history.push("/");
+      navigate("/");
     } catch (err) {
       // `strict` types the catch binding `unknown`, not `any` — narrow it
       // before reading `.message`, the same pattern UserCard's catch uses.

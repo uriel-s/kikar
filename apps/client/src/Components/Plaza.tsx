@@ -1,7 +1,6 @@
 import React from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "../lib/router";
-import { useLocation } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { PlazaProfileContext, PlazaProfileValue } from "../contexts/PlazaProfile";
 import * as usersApi from "../api/users";

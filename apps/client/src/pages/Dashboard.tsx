@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "../contexts/AuthContext";
-import { useHistory } from "../lib/router";
+import { useNavigate } from "react-router-dom";
 import { queryKeys } from "../lib/queryKeys";
 import Avatar from "../Components/Avatar";
 import Button from "../Components/ui/Button";
@@ -127,7 +127,7 @@ const SKELETON_LINES: React.CSSProperties = {
 
 export default function Dashboard() {
   const { currentUser, logout } = useAuth();
-  const history = useHistory();
+  const navigate = useNavigate();
 
   const uid = currentUser?.uid;
 
@@ -159,7 +159,7 @@ export default function Dashboard() {
     setLogoutError("");
     try {
       await logout();
-      history.push("/signin");
+      navigate("/signin");
     } catch {
       setLogoutError("Failed to log out");
     }
@@ -243,7 +243,7 @@ export default function Dashboard() {
           </div>
 
           <div style={ACTIONS}>
-            <Button variant="primary" onClick={() => history.push("/update-profile")}>
+            <Button variant="primary" onClick={() => navigate("/update-profile")}>
               Update Profile
             </Button>
             <Button variant="ghost" onClick={handleLogout}>
