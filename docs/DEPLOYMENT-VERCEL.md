@@ -79,7 +79,11 @@ framework preset as "Other" and change nothing it offers to detect.
 | `DIRECT_URL`                    | Neon **direct** string                                                    |
 | `DATABASE_SSL`                  | `true` — Neon always requires TLS                                         |
 | `FIREBASE_SERVICE_ACCOUNT_JSON` | the whole service account JSON, on one line                               |
-| `FIREBASE_STORAGE_BUCKET`       | `<project>.appspot.com`                                                   |
+| `R2_ACCOUNT_ID`                 | Cloudflare account id                                                     |
+| `R2_ACCESS_KEY_ID`              | R2 API token access key id                                                |
+| `R2_SECRET_ACCESS_KEY`          | R2 API token secret                                                       |
+| `R2_BUCKET_NAME`                | the R2 bucket avatars are stored in                                       |
+| `R2_PUBLIC_URL`                 | the bucket's public base URL (r2.dev subdomain or a custom domain)        |
 | `CORS_ORIGINS`                  | your Vercel URL — fill in after the first deploy                          |
 | `VITE_API_URL`                  | leave unset — a production build already resolves to a same-origin `/api` |
 | `VITE_FIREBASE_*`               | the six web-config values, same as `apps/client/.env`                     |
