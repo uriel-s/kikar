@@ -50,10 +50,32 @@ export const removeFriend = async (userId: string, friendId: string) => {
   await api.delete(`/users/${userId}/friends/${friendId}`);
 };
 
-export const uploadAvatar = async (id: string, file: File) => {
-  const form = new FormData();
-  form.append("avatar", file);
+const requestAvatarUploadUrl = async (id: string): Promise<string> => {
+  const { data } = await api.post(`/users/${id}/avatar/upload-url`);
+  return data.uploadUrl;
+};
 
-  const { data } = await api.put(`/users/${id}/avatar`, form);
+const confirmAvatarUpload = async (id: string) => {
+  const { data } = await api.put(`/users/${id}/avatar`);
   return data.user;
+};
+
+/**
+ * Uploads a new avatar in three steps: ask this API for a presigned R2 URL,
+ * PUT the file straight to R2 with it, then tell this API the upload is done
+ * so it can validate and record it. The middle step deliberately bypasses
+ * `api` (apiClient's axios instance) — R2 is a different origin than this
+ * app's own API, and the presigned URL already carries its own authorization
+ * in its query string, so attaching a Firebase bearer token here would be
+ * meaningless and could break the URL's signature.
+ */
+export const uploadAvatar = async (id: string, file: File) => {
+  const uploadUrl = await requestAvatarUploadUrl(id);
+
+  const putResponse = await fetch(uploadUrl, { method: "PUT", body: file });
+  if (!putResponse.ok) {
+    throw new Error("Failed to upload image");
+  }
+
+  return confirmAvatarUpload(id);
 };
