@@ -6,7 +6,7 @@ import { authenticated } from "../middleware/auth";
 import type { PathParams } from "../middleware/auth";
 import type { createUserRepository } from "../repositories/userRepository";
 import { schemas } from "@kikar/shared";
-import type { createStorageService } from "../services/storageService";
+import { createStorageService, MAX_AVATAR_BYTES } from "../services/storageService";
 
 const UNIQUE_VIOLATION = "P2002";
 const RECORD_NOT_FOUND = "P2025";
@@ -141,34 +141,61 @@ const createUserController = ({ users, storage }: UserControllerDeps) => ({
     }
   }),
 
+  requestAvatarUploadUrl: authenticated<UserIdParams>(async (req, res) => {
+    const { url, fields } = await storage.createAvatarUploadUrl(req.user.uid);
+    return res.json({ url, fields });
+  }),
+
   /**
-   * Replaces the caller's avatar and stores the resulting URL.
+   * Confirms a direct-to-R2 avatar upload and records its URL.
    *
-   * The old handler listed every object under profile_pictures/ and deleted the
-   * first whose name merely *contained* the uid — so a user whose id was a
-   * prefix of another's could delete somebody else's picture. It also wrote the
-   * response inside a stream callback after already having returned on error,
-   * which could send headers twice.
+   * The browser already POSTed the bytes to R2 using the presigned policy
+   * from requestAvatarUploadUrl — this server never saw them in a request
+   * body, and they landed on a STAGING key, not the public one a user's
+   * current avatar (if any) is already being served from. What used to be
+   * multer's fileFilter plus this handler's own magic-byte check, both
+   * before the save, is now one check after it: download the staged object
+   * back and inspect its actual bytes, because a declared `image/*`
+   * Content-Type (the policy's own condition) is not proof of what the bytes
+   * actually are. Only once that check passes is the staged upload promoted
+   * onto the public key — a rejected upload is discarded from staging and
+   * never touches whatever avatar already existed there.
+   *
+   * The size check runs first, and against a HEAD rather than the downloaded
+   * buffer. The presigned POST's own `content-length-range` condition already
+   * stops an oversized object from landing in the first place, but this
+   * backstop still runs — the confirm call is what proves the object is
+   * within bounds from this process's own point of view, not R2's word alone.
    */
   updateAvatar: authenticated<UserIdParams>(async (req, res) => {
-    if (!req.file) {
+    const size = await storage.pendingUploadSize(req.user.uid);
+    if (size === null) {
       throw ApiError.badRequest("No image uploaded");
     }
 
-    // multer's fileFilter only saw the Content-Type the client claimed. This is
-    // the check that actually holds: the bytes have to be a real JPEG, PNG, or
-    // WebP, and the type we store is the one we detected, never the declared one.
-    const contentType = detectImageType(req.file.buffer);
+    if (size > MAX_AVATAR_BYTES) {
+      await storage.discardPendingUpload(req.user.uid);
+      throw ApiError.payloadTooLarge("Image must be 5MB or smaller");
+    }
+
+    const buffer = await storage.downloadPendingUpload(req.user.uid);
+    if (!buffer) {
+      throw ApiError.badRequest("No image uploaded");
+    }
+
+    const contentType = detectImageType(buffer);
     if (!contentType) {
+      await storage.discardPendingUpload(req.user.uid);
       throw ApiError.badRequest("File is not a valid JPEG, PNG, or WebP image");
     }
 
-    const avatarUrl = await storage.uploadAvatar({
-      uid: req.user.uid,
-      buffer: req.file.buffer,
-      contentType,
-    });
+    // The detected type, never whatever the direct-to-R2 POST declared, is
+    // what gets served — see the "Avatar uploads" invariant in CLAUDE.md.
+    // This is also the moment the upload stops being staged and becomes the
+    // public avatar, overwriting whatever was there before.
+    await storage.promoteAvatar(req.user.uid, contentType);
 
+    const avatarUrl = storage.publicAvatarUrl(req.user.uid);
     const user = await users.setAvatarUrl(req.user.uid, avatarUrl);
     return res.json({ user });
   }),

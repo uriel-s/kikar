@@ -1,10 +1,11 @@
 /**
  * Identifies an image by its actual bytes.
  *
- * multer's fileFilter can only see the Content-Type the client put on the
- * multipart part, which is just a string the uploader chose — declaring
- * `image/png` while sending an archive passes it. Sniffing the leading bytes is
- * what makes the "only images" rule true rather than advisory.
+ * Avatars upload directly to R2 via a presigned URL, so nothing here ever
+ * sees a client-declared Content-Type to distrust — R2 stores whatever bytes
+ * a PUT sends regardless of what it claims to be. Sniffing the leading bytes
+ * after the fact is what makes the "only images" rule true rather than
+ * advisory.
  *
  * Returns the detected MIME type, or null if the buffer is not one of the
  * formats we accept.
@@ -34,9 +35,9 @@ const SIGNATURES: { mime: ImageMimeType; test: (b: Buffer) => boolean }[] = [
 ];
 
 // `unknown` rather than `Buffer`, because the isBuffer guard below is the whole
-// point of the function: multer hands over whatever the request contained, and
-// the tests call it with undefined to prove a missing file is a null and not a
-// crash.
+// point of the function: the caller hands over whatever bytes were read back
+// from storage, and the tests call it with undefined to prove a missing file
+// is a null and not a crash.
 export const detectImageType = (buffer: unknown): ImageMimeType | null => {
   if (!Buffer.isBuffer(buffer) || buffer.length === 0) {
     return null;

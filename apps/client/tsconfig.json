@@ -1,0 +1,36 @@
+{
+  // Not `"extends": "../../tsconfig.base.json"` — that config is server-shaped
+  // and wrong for this app on every axis that matters: it emits CommonJS
+  // (`module: "node16"`) for tsc to compile src/ -> dist/, but here Vite's
+  // esbuild does the actual transpilation and tsc only ever runs with
+  // `--noEmit`, purely for editors and CI to type-check; and it has no DOM lib,
+  // because apps/server never touches `window` or `FormData`. A client config
+  // inheriting it would need to override module, moduleResolution and lib
+  // anyway, which is most of what a base config is for. Standalone is the
+  // honest shape.
+  "compilerOptions": {
+    "target": "ES2022",
+    "useDefineForClassFields": true,
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+
+    // Most of src/ is still plain JavaScript during this migration — this
+    // stage converts six files, not the app. The new .ts files import
+    // directly from some of what stays JS (e.g. apiClient.ts importing
+    // ../firebase), so allowJs lets tsc infer types from those modules
+    // instead of erroring on every such import. It does not turn on
+    // type-checking for .js files themselves (that's checkJs, left unset/off).
+    "allowJs": true,
+
+    "jsx": "react-jsx",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "isolatedModules": true,
+    "moduleDetection": "force",
+    "noEmit": true
+  },
+  "include": ["src"]
+}

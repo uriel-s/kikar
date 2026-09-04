@@ -102,7 +102,12 @@ module.exports = [
   // runs tsc. One tool owns types.
   ...tseslint.configs.recommended.map((config) => ({
     ...config,
-    files: ["apps/server/**/*.ts", "packages/shared/**/*.ts"],
+    files: [
+      "apps/server/**/*.ts",
+      "packages/shared/**/*.ts",
+      "apps/client/src/**/*.ts",
+      "apps/client/src/**/*.tsx",
+    ],
   })),
   {
     files: ["apps/server/**/*.ts"],
@@ -140,6 +145,65 @@ module.exports = [
         "error",
         { argsIgnorePattern: "^_", varsIgnorePattern: "^_", caughtErrors: "all" },
       ],
+    },
+  },
+
+  // Client TypeScript — covers src/lib and src/api, which have no JSX. The
+  // block below covers src/contexts and src/Components/ui, which do.
+  {
+    files: ["apps/client/src/**/*.ts"],
+    languageOptions: {
+      ecmaVersion: 2024,
+      sourceType: "module",
+      globals: globals.browser,
+    },
+    rules: {
+      "@typescript-eslint/no-unused-vars": [
+        "error",
+        { argsIgnorePattern: "^_", varsIgnorePattern: "^_", caughtErrors: "all" },
+      ],
+    },
+  },
+
+  // Client TypeScript with JSX — contexts/ and Components/ui today (the
+  // directories this /work run converts); Components/ and pages/ stay .js
+  // until later stages. Combines the typescript-eslint parser registered
+  // above with the same react/jsx-a11y plugins the client's .js block below
+  // uses — JSX and accessibility rules don't care whether the file is .js or
+  // .tsx. No `parserOptions.ecmaFeatures.jsx` needed: the typescript-eslint
+  // parser infers JSX from the .tsx extension automatically.
+  {
+    files: ["apps/client/src/**/*.tsx"],
+    languageOptions: {
+      ecmaVersion: 2024,
+      sourceType: "module",
+      globals: globals.browser,
+    },
+    plugins: { react, "react-hooks": reactHooks, "jsx-a11y": jsxA11y },
+    settings: { react: { version: "detect" } },
+    rules: {
+      ...react.configs.flat.recommended.rules,
+      ...reactHooks.configs.recommended.rules,
+      ...jsxA11y.flatConfigs.recommended.rules,
+
+      "@typescript-eslint/no-unused-vars": [
+        "error",
+        { argsIgnorePattern: "^_", varsIgnorePattern: "^_", caughtErrors: "all" },
+      ],
+
+      // The codebase uses no prop-types and is on TypeScript now, which is
+      // what actually types these props — same reasoning as the client .js
+      // block below.
+      "react/prop-types": "off",
+
+      // Same three downgrades as the client .js block below, and for the same
+      // reason: Navbar's hamburger is a `<div onClick>` that trips the first
+      // two, and PostsPage/AllUsers-style fetch-then-setState effects trip the
+      // third, once those files convert to .tsx. Must stay in sync with the
+      // .js block until later stages remove the need for them there too.
+      "jsx-a11y/click-events-have-key-events": "warn",
+      "jsx-a11y/no-static-element-interactions": "warn",
+      "react-hooks/set-state-in-effect": "warn",
     },
   },
 

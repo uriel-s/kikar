@@ -2,14 +2,12 @@ import express from "express";
 import type { Express } from "express";
 import cors from "cors";
 import helmet from "helmet";
-import multer from "multer";
 import pinoHttp from "pino-http";
 import type { Options as PinoHttpOptions } from "pino-http";
 import rateLimit from "express-rate-limit";
 
 import type { PrismaClient } from "./generated/prisma";
 import type { Env } from "./config/env";
-import type { ImageMimeType } from "./lib/imageType";
 import { createUserRepository } from "./repositories/userRepository";
 import { createPostRepository } from "./repositories/postRepository";
 import { createUserController } from "./controllers/userController";
@@ -21,31 +19,6 @@ import { createPostRoutes } from "./routes/postRoutes";
 import { requireAuth } from "./middleware/auth";
 import type { TokenVerifier } from "./middleware/auth";
 import { notFound, errorHandler } from "./middleware/errorHandler";
-
-const MAX_AVATAR_BYTES = 5 * 1024 * 1024;
-
-// Declared as the types lib/imageType.ts can actually recognise from magic
-// bytes, so adding a fourth here without teaching the detector about it is a
-// compile error rather than an upload that gets rejected after the fact.
-// Widened to ReadonlySet<string> because multer only ever offers the declared
-// Content-Type, which is a bare string — and a lie, which is why the stored
-// type still comes from the bytes.
-const ALLOWED_IMAGE_TYPES: ReadonlySet<string> = new Set<ImageMimeType>([
-  "image/jpeg",
-  "image/png",
-  "image/webp",
-]);
-
-const uploadAvatar = multer({
-  storage: multer.memoryStorage(),
-  limits: { fileSize: MAX_AVATAR_BYTES, files: 1 },
-  fileFilter: (_req, file, cb) => {
-    if (!ALLOWED_IMAGE_TYPES.has(file.mimetype)) {
-      return cb(new Error("Only JPEG, PNG, and WebP images are allowed"));
-    }
-    return cb(null, true);
-  },
-});
 
 /**
  * Everything createApp touches, so nothing is constructed at import time.
@@ -130,7 +103,6 @@ const createApp = ({ env, auth, bucket, prisma, logger }: CreateAppDeps): Expres
     "/api/users",
     createUserRoutes({
       controller: createUserController({ users, storage }),
-      uploadAvatar,
     })
   );
   app.use(
@@ -144,4 +116,4 @@ const createApp = ({ env, auth, bucket, prisma, logger }: CreateAppDeps): Expres
   return app;
 };
 
-export { createApp, MAX_AVATAR_BYTES, ALLOWED_IMAGE_TYPES };
+export { createApp };

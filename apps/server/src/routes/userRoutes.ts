@@ -1,6 +1,5 @@
 import express from "express";
 import type { Router } from "express";
-import type { Multer } from "multer";
 import { validate } from "../middleware/validate";
 import { requireSelf } from "../middleware/auth";
 import { schemas } from "@kikar/shared";
@@ -8,16 +7,9 @@ import type { createUserController } from "../controllers/userController";
 
 export interface UserRoutesDeps {
   controller: ReturnType<typeof createUserController>;
-  // The configured multer instance, built in app.ts. It carries the 5 MB cap
-  // and the mimetype pre-filter, so a router that constructed its own would
-  // silently drop both.
-  uploadAvatar: Multer;
 }
 
-export const createUserRoutes = ({
-  controller,
-  uploadAvatar,
-}: UserRoutesDeps): Router => {
+export const createUserRoutes = ({ controller }: UserRoutesDeps): Router => {
   const router = express.Router();
 
   router.post("/", validate(schemas.registerUser), controller.register);
@@ -51,11 +43,21 @@ export const createUserRoutes = ({
     controller.removeFriend
   );
 
+  // Requests a presigned POST policy for the caller's own avatar object; the
+  // browser POSTs directly to R2 from here, never through this server.
+  router.post(
+    "/:id/avatar/upload-url",
+    validate(schemas.userId),
+    requireSelf("id"),
+    controller.requestAvatarUploadUrl
+  );
+
+  // Confirms a direct upload: reads the object back, validates it by its
+  // magic bytes, and only then records the avatar URL.
   router.put(
     "/:id/avatar",
     validate(schemas.userId),
     requireSelf("id"),
-    uploadAvatar.single("avatar"),
     controller.updateAvatar
   );
 

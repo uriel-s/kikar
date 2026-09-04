@@ -17,7 +17,7 @@ Originally two repositories built in 2021–2025; consolidated and rebuilt in 20
 | API        | Node 22, Express 5               | Express 5 forwards async errors to the error handler natively          |
 | Data       | PostgreSQL 17, Prisma 7          | Relational data with real constraints and indexed search               |
 | Identity   | Firebase Auth                    | Keeps passwords out of this system entirely                            |
-| Files      | Firebase Storage                 | Avatar images                                                          |
+| Files      | Cloudflare R2                    | Avatar images, uploaded directly by the browser via a presigned URL    |
 | Validation | zod                              | One schema language for both request bodies and environment config     |
 | Logging    | pino                             | Structured JSON in production, readable in development                 |
 | Container  | Docker, nginx                    | Multi-stage builds, non-root runtime                                   |
@@ -128,7 +128,7 @@ apps/
     prisma/          Schema and SQL migrations
     scripts/         Firestore import, demo seed
     src/
-      config/        Environment parsing, Firebase initialization
+      config/        Environment parsing, Firebase and R2 initialization
       controllers/   HTTP handling, no data access
       middleware/    Authentication, validation, error handling
       repositories/  All database access
@@ -149,27 +149,28 @@ network.
 Every route below requires `Authorization: Bearer <firebase-id-token>`.
 `/health` is the only public endpoint.
 
-| Method   | Path                               | Notes                                        |
-| -------- | ---------------------------------- | -------------------------------------------- |
-| `GET`    | `/health`                          | Public — for load balancer checks            |
-| `POST`   | `/api/users`                       | Creates the caller's own profile             |
-| `GET`    | `/api/users`                       | Paginated                                    |
-| `GET`    | `/api/users/search?q=`             | Minimum 2 characters                         |
-| `GET`    | `/api/users/:id`                   | Private fields only when `:id` is the caller |
-| `PATCH`  | `/api/users/:id`                   | Caller only                                  |
-| `PUT`    | `/api/users/:id/avatar`            | Caller only, multipart, 5 MB limit           |
-| `GET`    | `/api/users/:id/friends`           |                                              |
-| `GET`    | `/api/users/:id/friends/:friendId` | Friendship check                             |
-| `POST`   | `/api/users/:id/friends`           | Caller only                                  |
-| `DELETE` | `/api/users/:id/friends/:friendId` | Caller only                                  |
-| `GET`    | `/api/posts`                       | Newest first, keyset-paginated               |
-| `POST`   | `/api/posts`                       | Author taken from the token                  |
-| `GET`    | `/api/posts/search?q=`             |                                              |
-| `DELETE` | `/api/posts/:postId`               | Author only                                  |
-| `PUT`    | `/api/posts/:postId/like`          | Idempotent                                   |
-| `DELETE` | `/api/posts/:postId/like`          | Idempotent                                   |
-| `GET`    | `/api/posts/:postId/comments`      | Paginated                                    |
-| `POST`   | `/api/posts/:postId/comments`      |                                              |
+| Method   | Path                               | Notes                                              |
+| -------- | ---------------------------------- | -------------------------------------------------- |
+| `GET`    | `/health`                          | Public — for load balancer checks                  |
+| `POST`   | `/api/users`                       | Creates the caller's own profile                   |
+| `GET`    | `/api/users`                       | Paginated                                          |
+| `GET`    | `/api/users/search?q=`             | Minimum 2 characters                               |
+| `GET`    | `/api/users/:id`                   | Private fields only when `:id` is the caller       |
+| `PATCH`  | `/api/users/:id`                   | Caller only                                        |
+| `POST`   | `/api/users/:id/avatar/upload-url` | Caller only — a presigned R2 upload URL            |
+| `PUT`    | `/api/users/:id/avatar`            | Caller only — confirms a direct upload, 5 MB limit |
+| `GET`    | `/api/users/:id/friends`           |                                                    |
+| `GET`    | `/api/users/:id/friends/:friendId` | Friendship check                                   |
+| `POST`   | `/api/users/:id/friends`           | Caller only                                        |
+| `DELETE` | `/api/users/:id/friends/:friendId` | Caller only                                        |
+| `GET`    | `/api/posts`                       | Newest first, keyset-paginated                     |
+| `POST`   | `/api/posts`                       | Author taken from the token                        |
+| `GET`    | `/api/posts/search?q=`             |                                                    |
+| `DELETE` | `/api/posts/:postId`               | Author only                                        |
+| `PUT`    | `/api/posts/:postId/like`          | Idempotent                                         |
+| `DELETE` | `/api/posts/:postId/like`          | Idempotent                                         |
+| `GET`    | `/api/posts/:postId/comments`      | Paginated                                          |
+| `POST`   | `/api/posts/:postId/comments`      |                                                    |
 
 Errors are always `{ "error": { "message": string, "details"?: [...] } }`.
 Internal failures return a generic message; the details go to the logs.
@@ -223,9 +224,10 @@ npm run test --workspace=@kikar/server
 - **`validation.test.js`** — bad input is rejected at the edge, page sizes are
   capped, unknown fields are refused, and internal error text never reaches the
   response body.
-- **`avatarUpload.test.js`** — an upload is identified by its magic bytes, so
-  arbitrary content declaring `Content-Type: image/png` is refused; a user
-  cannot replace someone else's avatar.
+- **`avatarUpload.test.js`** — an upload is identified by its magic bytes after
+  it lands in R2, so content that isn't a real image is refused even though R2
+  itself will store any bytes a client PUTs there; a user cannot replace
+  someone else's avatar.
 
 CI additionally builds the client, applies the migrations against a real
 PostgreSQL service to prove they run from empty, and builds both images.
@@ -336,8 +338,8 @@ Stated plainly rather than implied away:
   code never had it.
 - **No notifications.** The original README advertised real-time notifications.
   Nothing of the sort existed then or now.
-- **Avatars are public objects.** `makePublic()` means anyone with the URL can
-  read one. Signed URLs would be the fix.
+- **Avatars are public objects.** The R2 bucket is configured for public read,
+  so anyone with the URL can read one. Signed read URLs would be the fix.
 - **No refresh-token handling beyond the SDK's.** A revoked session surfaces as
   a 401 the UI reports as an error rather than redirecting to sign-in.
 - **The client has no tests.** The server suite covers the security-critical
