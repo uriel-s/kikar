@@ -243,8 +243,9 @@ them.
 - Its response interceptor normalizes the API's error envelope into
   `ApiRequestError` (`message`, `status`, `details`) — catch that, not raw axios
   errors.
-- Firebase uses the **compat** SDK (`firebase/compat/app`), so it is
-  `auth.signInWithEmailAndPassword(...)`, not the modular v9 API.
+- Firebase uses the **modular** SDK (`firebase/auth`), so it is
+  `signInWithEmailAndPassword(auth, email, password)`, not compat's
+  `auth.signInWithEmailAndPassword(...)`.
 - Routing is React Router **v5** (`Switch`, `component=`), not v6.
 
 ### Avatar uploads

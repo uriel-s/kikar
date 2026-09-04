@@ -1,5 +1,5 @@
-import firebase from "firebase/compat/app";
-import "firebase/compat/auth";
+import { initializeApp } from "firebase/app";
+import { getAuth } from "firebase/auth";
 
 /**
  * Firebase web configuration.
@@ -33,7 +33,7 @@ if (missing.length > 0) {
   );
 }
 
-const app = firebase.initializeApp(config);
+const app = initializeApp(config);
 
-export const auth = app.auth();
+export const auth = getAuth(app);
 export default app;

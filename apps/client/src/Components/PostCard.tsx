@@ -1,6 +1,6 @@
 import React, { useId, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import firebase from "firebase/compat/app";
+import type { User } from "firebase/auth";
 import * as postsApi from "../api/posts";
 import { machineTime, timeAgo } from "../lib/timeAgo";
 import { queryKeys } from "../lib/queryKeys";
@@ -292,7 +292,7 @@ interface PostCardProps {
    * likedByMe. */
   post: Post;
   /** The signed-in Firebase user; only `.uid` is read. */
-  currentUser?: firebase.User | null;
+  currentUser?: User | null;
   /** (postId, likedByMe) => void */
   onLike: (postId: string, likedByMe: boolean) => void;
   /** (postId) => void, so the caller can move its own count */
