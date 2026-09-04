@@ -151,11 +151,15 @@ const createUserController = ({ users, storage }: UserControllerDeps) => ({
    *
    * The browser already POSTed the bytes to R2 using the presigned policy
    * from requestAvatarUploadUrl — this server never saw them in a request
-   * body. What used to be multer's fileFilter plus this handler's own
-   * magic-byte check, both before the save, is now one check after it:
-   * download the object back and inspect its actual bytes, because a
-   * declared `image/*` Content-Type (the policy's own condition) is not proof
-   * of what the bytes actually are.
+   * body, and they landed on a STAGING key, not the public one a user's
+   * current avatar (if any) is already being served from. What used to be
+   * multer's fileFilter plus this handler's own magic-byte check, both
+   * before the save, is now one check after it: download the staged object
+   * back and inspect its actual bytes, because a declared `image/*`
+   * Content-Type (the policy's own condition) is not proof of what the bytes
+   * actually are. Only once that check passes is the staged upload promoted
+   * onto the public key — a rejected upload is discarded from staging and
+   * never touches whatever avatar already existed there.
    *
    * The size check runs first, and against a HEAD rather than the downloaded
    * buffer. The presigned POST's own `content-length-range` condition already
@@ -164,30 +168,32 @@ const createUserController = ({ users, storage }: UserControllerDeps) => ({
    * within bounds from this process's own point of view, not R2's word alone.
    */
   updateAvatar: authenticated<UserIdParams>(async (req, res) => {
-    const size = await storage.avatarSize(req.user.uid);
+    const size = await storage.pendingUploadSize(req.user.uid);
     if (size === null) {
       throw ApiError.badRequest("No image uploaded");
     }
 
     if (size > MAX_AVATAR_BYTES) {
-      await storage.deleteAvatarObject(req.user.uid);
+      await storage.discardPendingUpload(req.user.uid);
       throw ApiError.payloadTooLarge("Image must be 5MB or smaller");
     }
 
-    const buffer = await storage.downloadAvatar(req.user.uid);
+    const buffer = await storage.downloadPendingUpload(req.user.uid);
     if (!buffer) {
       throw ApiError.badRequest("No image uploaded");
     }
 
     const contentType = detectImageType(buffer);
     if (!contentType) {
-      await storage.deleteAvatarObject(req.user.uid);
+      await storage.discardPendingUpload(req.user.uid);
       throw ApiError.badRequest("File is not a valid JPEG, PNG, or WebP image");
     }
 
-    // The detected type, never whatever the direct-to-R2 PUT declared, is what
-    // gets served — see the "Avatar uploads" invariant in CLAUDE.md.
-    await storage.setAvatarContentType(req.user.uid, contentType);
+    // The detected type, never whatever the direct-to-R2 POST declared, is
+    // what gets served — see the "Avatar uploads" invariant in CLAUDE.md.
+    // This is also the moment the upload stops being staged and becomes the
+    // public avatar, overwriting whatever was there before.
+    await storage.promoteAvatar(req.user.uid, contentType);
 
     const avatarUrl = storage.publicAvatarUrl(req.user.uid);
     const user = await users.setAvatarUrl(req.user.uid, avatarUrl);

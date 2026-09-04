@@ -52,9 +52,11 @@ export const createR2Bucket = (env: R2Env): AvatarBucket => {
     // A presigned POST, not a bare PUT: its policy conditions are enforced by
     // R2 itself against the upload as it happens, closing the gap a plain PUT
     // left — any object this policy accepts is already within the size cap
-    // and declared as an image before the confirm endpoint ever runs. The
-    // confirm step's own magic-byte check still runs afterward, since a
-    // declared `image/*` Content-Type is not proof of the actual bytes.
+    // and declared as an image before the confirm endpoint ever runs. Those
+    // conditions bound what can be declared, not what the bytes are, so the
+    // key given here is always storageService's staging key — the confirm
+    // step's magic-byte check, and then `promote`, are what a validated
+    // upload still has to go through before it reaches the public key.
     createUploadUrl: async (key) => {
       const { url, fields } = await createPresignedPost(client, {
         Bucket: env.R2_BUCKET_NAME,
@@ -97,19 +99,24 @@ export const createR2Bucket = (env: R2Env): AvatarBucket => {
     },
 
     // The policy only constrains the DECLARED Content-Type to an image/*
-    // prefix, so the object as R2 first stores it still carries whatever the
-    // uploader declared within that prefix, not the detected type. Copying
-    // the object onto itself with MetadataDirective "REPLACE" is the S3-API
-    // way to retag metadata in place, without re-uploading the bytes.
-    retagContentType: async (key, contentType) => {
+    // prefix, so the staged object still carries whatever the uploader
+    // declared within that prefix, not the detected type — this is what
+    // retags it to the detected type as it becomes the public object.
+    // A server-side R2-to-R2 copy (never downloading and re-uploading the
+    // bytes through this process), followed by removing the staged object so
+    // nothing is left at the staging key once promotion succeeds.
+    promote: async (fromKey, toKey, contentType) => {
       await client.send(
         new CopyObjectCommand({
           Bucket: env.R2_BUCKET_NAME,
-          CopySource: `${env.R2_BUCKET_NAME}/${encodeURIComponent(key)}`,
-          Key: key,
+          CopySource: `${env.R2_BUCKET_NAME}/${encodeURIComponent(fromKey)}`,
+          Key: toKey,
           ContentType: contentType,
           MetadataDirective: "REPLACE",
         })
+      );
+      await client.send(
+        new DeleteObjectCommand({ Bucket: env.R2_BUCKET_NAME, Key: fromKey })
       );
     },
 

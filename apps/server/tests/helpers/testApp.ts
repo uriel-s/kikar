@@ -39,8 +39,9 @@ const fakeAuth = (users: FakeUsers = {}) => ({
 /**
  * A stand-in for R2: an in-memory object store keyed exactly like the real
  * bucket. `seed` has no counterpart on the real AvatarBucket — it exists so a
- * test can simulate the browser's direct POST upload to R2, which in
- * production never touches this server at all.
+ * test can simulate the browser's direct POST upload to R2 (seed the staging
+ * key), or a pre-existing avatar already being served (seed the public key),
+ * either of which in production never touches this server at all.
  */
 const fakeBucket = () => {
   const store = new Map<string, Buffer>();
@@ -56,18 +57,31 @@ const fakeBucket = () => {
     // rejected without ever downloading the object.
     headSize: async (key: string) => store.get(key)?.length ?? null,
     download: async (key: string) => store.get(key) ?? null,
-    retagContentType: async (key: string, contentType: string) => {
-      contentTypes.set(key, contentType);
+    // Mirrors the real bucket's copy-then-delete: `fromKey`'s bytes and
+    // content type move to `toKey` (retagged to `contentType`), and `fromKey`
+    // no longer holds anything afterward.
+    promote: async (fromKey: string, toKey: string, contentType: string) => {
+      const bytes = store.get(fromKey);
+      if (bytes) {
+        store.set(toKey, bytes);
+      }
+      contentTypes.set(toKey, contentType);
+      store.delete(fromKey);
+      contentTypes.delete(fromKey);
     },
     delete: async (key: string) => {
       store.delete(key);
       contentTypes.delete(key);
     },
     publicUrl: (key: string) => `https://storage.test/${key}`,
-    seed: (key: string, data: Buffer) => {
+    /** Test-only: seeds `key` with `data`, and its content type when given. */
+    seed: (key: string, data: Buffer, contentType?: string) => {
       store.set(key, data);
+      if (contentType) {
+        contentTypes.set(key, contentType);
+      }
     },
-    /** Test-only: what retagContentType last recorded for `key`, or undefined. */
+    /** Test-only: what promote last retagged `key` to, or undefined. */
     contentTypeOf: (key: string) => contentTypes.get(key),
   };
 };
