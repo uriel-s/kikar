@@ -1,12 +1,12 @@
 import pino from "pino";
 import { createApp } from "../../src/app";
 import type { CreateAppDeps } from "../../src/app";
+import type { AvatarBucket } from "../../src/services/storageService";
 
 const TEST_ENV = {
   NODE_ENV: "test",
   PORT: 5000,
   CORS_ORIGINS: ["http://localhost:3000"],
-  FIREBASE_STORAGE_BUCKET: "test-bucket",
 };
 
 // A real pino instance rather than a hand-rolled stub: pino-http reaches into
@@ -36,13 +36,27 @@ const fakeAuth = (users: FakeUsers = {}) => ({
   },
 });
 
-const fakeBucket = () => ({
-  file: () => ({
-    save: async () => {},
-    makePublic: async () => {},
-    publicUrl: () => "https://storage.test/avatar",
-  }),
-});
+/**
+ * A stand-in for R2: an in-memory object store keyed exactly like the real
+ * bucket. `seed` has no counterpart on the real AvatarBucket — it exists so a
+ * test can simulate the browser's direct PUT to R2, which in production never
+ * touches this server at all.
+ */
+const fakeBucket = () => {
+  const store = new Map<string, Buffer>();
+
+  return {
+    createUploadUrl: async (key: string) => `https://storage.test/upload/${key}`,
+    download: async (key: string) => store.get(key) ?? null,
+    delete: async (key: string) => {
+      store.delete(key);
+    },
+    publicUrl: (key: string) => `https://storage.test/${key}`,
+    seed: (key: string, data: Buffer) => {
+      store.set(key, data);
+    },
+  };
+};
 
 /**
  * A hand-stubbed Prisma client: a plain object carrying only the model methods
@@ -70,9 +84,9 @@ export interface PrismaCallArgs {
  * The one type assertion in the suite, kept in a single named place.
  *
  * Every other dependency createApp takes is typed on what app.ts actually uses
- * — `Pick<Env, "CORS_ORIGINS">`, a verifier that is only `verifyIdToken`, a
- * bucket that is only `file()` — so TEST_ENV, fakeAuth(), fakeBucket() and the
- * silent pino instance above all satisfy `CreateAppDeps` with no cast. `prisma`
+ * — `Pick<Env, "CORS_ORIGINS">`, a verifier that is only `verifyIdToken`, an
+ * `AvatarBucket` — so TEST_ENV, fakeAuth(), fakeBucket() and the silent pino
+ * instance above all satisfy `CreateAppDeps` with no cast. `prisma`
  * is the exception: the repositories take the generated `PrismaClient`, a class
  * with hundreds of members that a suite with no database cannot honestly
  * produce. Asserting here rather than in each test file keeps that seam visible
@@ -84,14 +98,15 @@ const asPrismaClient = (stub: PrismaStub | undefined): CreateAppDeps["prisma"] =
 export interface TestAppOptions {
   prisma?: PrismaStub;
   users?: FakeUsers;
+  bucket?: AvatarBucket;
 }
 
 /** Builds the real app wired to whatever fakes a test hands it. */
-const buildTestApp = ({ prisma, users }: TestAppOptions = {}) =>
+const buildTestApp = ({ prisma, users, bucket }: TestAppOptions = {}) =>
   createApp({
     env: TEST_ENV,
     auth: fakeAuth(users),
-    bucket: fakeBucket(),
+    bucket: bucket ?? fakeBucket(),
     prisma: asPrismaClient(prisma),
     logger: silentLogger,
   });

@@ -1,7 +1,6 @@
 import fs from "node:fs";
 import { cert, getApps, initializeApp, type ServiceAccount } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
-import { getStorage } from "firebase-admin/storage";
 import type { Env } from "./env";
 
 // Only the fields each function reads — see the note on `Env` in ./env. It also
@@ -12,7 +11,6 @@ type ServiceAccountEnv = Pick<
   Env,
   "FIREBASE_SERVICE_ACCOUNT_JSON" | "FIREBASE_SERVICE_ACCOUNT_PATH"
 >;
-type FirebaseEnv = ServiceAccountEnv & Pick<Env, "FIREBASE_STORAGE_BUCKET">;
 
 // `catch` binds `unknown` under strict. Both throwers below raise real Errors,
 // so narrowing costs nothing here and is honest about the one case a cast would
@@ -57,19 +55,18 @@ export const loadServiceAccount = (env: ServiceAccountEnv): ServiceAccount => {
 /**
  * Initializes firebase-admin once and returns the handles the app needs.
  *
- * Firebase covers identity and file storage only. Application data lives in
- * PostgreSQL, reached through the repository layer.
+ * Firebase covers identity only now. Avatar storage is Cloudflare R2, set up
+ * separately in `config/storage.ts` — see that file for why. Application data
+ * lives in PostgreSQL, reached through the repository layer.
  */
-export const initializeFirebase = (env: FirebaseEnv) => {
+export const initializeFirebase = (env: ServiceAccountEnv) => {
   if (getApps().length === 0) {
     initializeApp({
       credential: cert(loadServiceAccount(env)),
-      storageBucket: env.FIREBASE_STORAGE_BUCKET,
     });
   }
 
   return {
     auth: getAuth(),
-    bucket: getStorage().bucket(),
   };
 };

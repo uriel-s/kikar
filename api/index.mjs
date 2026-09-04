@@ -56,12 +56,14 @@
 
 import envModule from "../apps/server/dist/config/env.js";
 import firebaseModule from "../apps/server/dist/config/firebase.js";
+import storageModule from "../apps/server/dist/config/storage.js";
 import prismaModule from "../apps/server/dist/lib/prisma.js";
 import loggerModule from "../apps/server/dist/lib/logger.js";
 import appModule from "../apps/server/dist/app.js";
 
 const { parse } = envModule;
 const { initializeFirebase } = firebaseModule;
+const { createR2Bucket } = storageModule;
 const { createPrismaClient } = prismaModule;
 const { createLogger } = loggerModule;
 const { createApp } = appModule;
@@ -76,7 +78,8 @@ const getApp = () => {
 
   const env = parse();
   const logger = createLogger(env);
-  const { auth, bucket } = initializeFirebase(env);
+  const { auth } = initializeFirebase(env);
+  const bucket = createR2Bucket(env);
 
   // One connection per instance, not the pg default of ten.
   //
@@ -98,7 +101,7 @@ export default function handler(req, res) {
   // here, a bad env var throws out of the handler and the caller gets the
   // platform's generic failure page instead of this API's documented
   // `{ error: { message } }` shape — and the operator has to go digging in
-  // function logs to learn that FIREBASE_STORAGE_BUCKET was misspelled.
+  // function logs to learn that R2_BUCKET_NAME was misspelled.
   //
   // `app` is only assigned after a successful build, so a failed boot is
   // retried on the next request rather than cached.

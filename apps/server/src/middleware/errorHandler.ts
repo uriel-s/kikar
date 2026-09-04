@@ -1,20 +1,13 @@
 import type { ErrorRequestHandler, RequestHandler } from "express";
-import multer from "multer";
 import { ApiError } from "../lib/ApiError";
 
 export const notFound: RequestHandler = (req, _res, next) => {
   next(ApiError.notFound(`No route matches ${req.method} ${req.originalUrl}`));
 };
 
-/** Translates multer's upload failures into the status the client deserves. */
+/** Normalizes a framework-level error into an ApiError where one is warranted. */
 const normalize = (err: unknown): ApiError | null => {
   if (err instanceof ApiError) return err;
-
-  if (err instanceof multer.MulterError) {
-    return err.code === "LIMIT_FILE_SIZE"
-      ? ApiError.payloadTooLarge("Image must be 5MB or smaller")
-      : ApiError.badRequest(err.message);
-  }
 
   // express.json() rejects malformed payloads with a SyntaxError carrying a status.
   // `"status" in err` narrows a property the built-in SyntaxError does not

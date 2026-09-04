@@ -12,6 +12,10 @@ const UNIQUE_VIOLATION = "P2002";
 const RECORD_NOT_FOUND = "P2025";
 const FOREIGN_KEY_VIOLATION = "P2003";
 
+// R2 places no size limit of its own on a plain presigned PUT; this is the
+// server-side backstop now that multer's stream-level cap is gone.
+const MAX_AVATAR_BYTES = 5 * 1024 * 1024;
+
 const isPrismaError = (err: unknown, code: string): boolean =>
   err instanceof Prisma.PrismaClientKnownRequestError && err.code === code;
 
@@ -141,34 +145,39 @@ const createUserController = ({ users, storage }: UserControllerDeps) => ({
     }
   }),
 
+  requestAvatarUploadUrl: authenticated<UserIdParams>(async (req, res) => {
+    const uploadUrl = await storage.createAvatarUploadUrl(req.user.uid);
+    return res.json({ uploadUrl });
+  }),
+
   /**
-   * Replaces the caller's avatar and stores the resulting URL.
+   * Confirms a direct-to-R2 avatar upload and records its URL.
    *
-   * The old handler listed every object under profile_pictures/ and deleted the
-   * first whose name merely *contained* the uid — so a user whose id was a
-   * prefix of another's could delete somebody else's picture. It also wrote the
-   * response inside a stream callback after already having returned on error,
-   * which could send headers twice.
+   * The browser already PUT the bytes to R2 using a presigned URL from
+   * requestAvatarUploadUrl — this server never saw them in a request body.
+   * What used to be multer's fileFilter plus this handler's own magic-byte
+   * check, both before the save, is now one check after it: download the
+   * object back and inspect its actual bytes, because R2 will happily store
+   * whatever a PUT sends regardless of what it claims to be.
    */
   updateAvatar: authenticated<UserIdParams>(async (req, res) => {
-    if (!req.file) {
+    const buffer = await storage.downloadAvatar(req.user.uid);
+    if (!buffer) {
       throw ApiError.badRequest("No image uploaded");
     }
 
-    // multer's fileFilter only saw the Content-Type the client claimed. This is
-    // the check that actually holds: the bytes have to be a real JPEG, PNG, or
-    // WebP, and the type we store is the one we detected, never the declared one.
-    const contentType = detectImageType(req.file.buffer);
+    if (buffer.length > MAX_AVATAR_BYTES) {
+      await storage.deleteAvatarObject(req.user.uid);
+      throw ApiError.payloadTooLarge("Image must be 5MB or smaller");
+    }
+
+    const contentType = detectImageType(buffer);
     if (!contentType) {
+      await storage.deleteAvatarObject(req.user.uid);
       throw ApiError.badRequest("File is not a valid JPEG, PNG, or WebP image");
     }
 
-    const avatarUrl = await storage.uploadAvatar({
-      uid: req.user.uid,
-      buffer: req.file.buffer,
-      contentType,
-    });
-
+    const avatarUrl = storage.publicAvatarUrl(req.user.uid);
     const user = await users.setAvatarUrl(req.user.uid, avatarUrl);
     return res.json({ user });
   }),

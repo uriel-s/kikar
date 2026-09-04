@@ -53,7 +53,21 @@ export const schema = z.object({
     .default("true")
     .transform((value) => value === "true"),
 
-  FIREBASE_STORAGE_BUCKET: z.string().min(1, "FIREBASE_STORAGE_BUCKET is required"),
+  // Cloudflare R2 (S3-compatible) bucket avatars are stored in. See
+  // docs/REFACTOR-PLAN.md stage 8 for why R2 replaced Firebase Storage: no
+  // egress fee, and a presigned URL is what gets the server out of the upload
+  // request entirely (Vercel's 4.5MB body limit was the forcing function).
+  R2_ACCOUNT_ID: z.string().min(1, "R2_ACCOUNT_ID is required"),
+  R2_ACCESS_KEY_ID: z.string().min(1, "R2_ACCESS_KEY_ID is required"),
+  R2_SECRET_ACCESS_KEY: z.string().min(1, "R2_SECRET_ACCESS_KEY is required"),
+  R2_BUCKET_NAME: z.string().min(1, "R2_BUCKET_NAME is required"),
+  // Public base URL objects are served from — the bucket's r2.dev subdomain or
+  // a custom domain with public access enabled. No trailing slash:
+  // storageService appends "/<key>" directly.
+  R2_PUBLIC_URL: z
+    .string()
+    .min(1, "R2_PUBLIC_URL is required")
+    .transform((value) => value.replace(/\/$/, "")),
 
   // Exactly one of these must be set — see refine below.
   FIREBASE_SERVICE_ACCOUNT_JSON: z.string().optional(),

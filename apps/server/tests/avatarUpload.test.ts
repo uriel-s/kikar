@@ -1,5 +1,5 @@
 import request from "supertest";
-import { buildTestApp, authHeader } from "./helpers/testApp";
+import { buildTestApp, authHeader, fakeBucket } from "./helpers/testApp";
 import { detectImageType } from "../src/lib/imageType";
 
 const PNG = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x01]);
@@ -20,7 +20,7 @@ describe("detectImageType", () => {
 
   it("rejects anything else", () => {
     expect(detectImageType(Buffer.from("#!/bin/sh\nrm -rf /"))).toBeNull();
-    expect(detectImageType(Buffer.from("PKzip"))).toBeNull();
+    expect(detectImageType(Buffer.from("PKzip"))).toBeNull();
     expect(detectImageType(Buffer.from("<svg onload=alert(1)>"))).toBeNull();
     expect(detectImageType(Buffer.alloc(0))).toBeNull();
     expect(detectImageType(undefined)).toBeNull();
@@ -37,71 +37,91 @@ describe("detectImageType", () => {
   });
 });
 
-describe("PUT /api/users/:id/avatar", () => {
-  const appWith = (setAvatarUrl: jest.Mock = jest.fn(async () => ({ id: "alice" }))) =>
-    buildTestApp({ prisma: { user: { update: setAvatarUrl } } });
+/**
+ * Avatars now upload directly to R2: the browser PUTs to a presigned URL this
+ * API hands out, and only reports back afterward. These tests simulate that
+ * direct upload with `bucket.seed(...)` — the fake's one method with no
+ * counterpart on the real AvatarBucket, standing in for bytes that in
+ * production never pass through this server at all.
+ */
+describe("avatar upload", () => {
+  const AVATAR_KEY = "profile_pictures/alice";
 
-  it("stores a real PNG", async () => {
-    const update = jest.fn(async () => ({ id: "alice", name: "Alice" }));
-    const res = await request(appWith(update))
-      .put("/api/users/alice/avatar")
-      .set(authHeader("alice"))
-      .attach("avatar", PNG, { filename: "me.png", contentType: "image/png" });
+  describe("POST /api/users/:id/avatar/upload-url", () => {
+    it("returns a presigned upload URL for the caller's own avatar", async () => {
+      const res = await request(buildTestApp())
+        .post("/api/users/alice/avatar/upload-url")
+        .set(authHeader("alice"));
 
-    expect(res.status).toBe(200);
-    expect(update).toHaveBeenCalled();
+      expect(res.status).toBe(200);
+      expect(typeof res.body.uploadUrl).toBe("string");
+      expect(res.body.uploadUrl.length).toBeGreaterThan(0);
+    });
   });
 
-  /**
-   * The check that matters: declaring image/png gets a payload past multer's
-   * fileFilter, so the bytes have to be inspected before anything is stored.
-   *
-   * "MZ" is the DOS executable magic - definitively not an image. The bytes
-   * after it are written as "\u0090\0" escapes rather than literal control
-   * characters: a literal NUL made git classify this file as binary, so every
-   * edit to a security test showed up in review as "Bin nnnn -> nnnn bytes"
-   * instead of a readable diff.
-   */
-  it("rejects a non-image disguised with an image Content-Type", async () => {
-    const update = jest.fn();
-    const res = await request(appWith(update))
-      .put("/api/users/alice/avatar")
-      .set(authHeader("alice"))
-      .attach("avatar", Buffer.from("MZ\u0090\0not an image at all"), {
-        filename: "payload.png",
-        contentType: "image/png",
-      });
+  describe("PUT /api/users/:id/avatar (confirms a direct upload)", () => {
+    const appWith = (buffer?: Buffer) => {
+      const bucket = fakeBucket();
+      if (buffer) bucket.seed(AVATAR_KEY, buffer);
+      const setAvatarUrl = jest.fn(async () => ({ id: "alice", name: "Alice" }));
+      const app = buildTestApp({ bucket, prisma: { user: { update: setAvatarUrl } } });
+      return { app, bucket, setAvatarUrl };
+    };
 
-    expect(res.status).toBe(400);
-    expect(res.body.error.message).toMatch(/not a valid/i);
-    expect(update).not.toHaveBeenCalled();
+    it("stores a real PNG that was uploaded directly to R2", async () => {
+      const { app, setAvatarUrl } = appWith(PNG);
+      const res = await request(app).put("/api/users/alice/avatar").set(authHeader("alice"));
+
+      expect(res.status).toBe(200);
+      expect(setAvatarUrl).toHaveBeenCalled();
+    });
+
+    /**
+     * The check that matters: R2 will store any bytes a client PUTs to a
+     * presigned URL regardless of what it claims to be, so what is actually a
+     * DOS executable ("MZ") has to be caught here, after the fact, rather than
+     * trusted because a JPEG made it through. Written as "\u0090\0" escapes
+     * rather than literal control characters for the same reason the original
+     * test was: a literal NUL made git classify this file as binary, so every
+     * edit to a security test showed up in review as "Bin nnnn -> nnnn bytes"
+     * instead of a readable diff.
+     */
+    it("rejects a confirmed upload that is not a valid image, and removes it from storage", async () => {
+      const { app, bucket, setAvatarUrl } = appWith(
+        Buffer.from("MZ\u0090\0not an image at all")
+      );
+      const res = await request(app).put("/api/users/alice/avatar").set(authHeader("alice"));
+
+      expect(res.status).toBe(400);
+      expect(res.body.error.message).toMatch(/not a valid/i);
+      expect(setAvatarUrl).not.toHaveBeenCalled();
+      expect(await bucket.download(AVATAR_KEY)).toBeNull();
+    });
+
+    it("rejects confirmation when nothing has been uploaded yet", async () => {
+      const { app, setAvatarUrl } = appWith();
+      const res = await request(app).put("/api/users/alice/avatar").set(authHeader("alice"));
+
+      expect(res.status).toBe(400);
+      expect(res.body.error.message).toMatch(/no image uploaded/i);
+      expect(setAvatarUrl).not.toHaveBeenCalled();
+    });
   });
 
-  it("refuses to let one user replace another user's avatar", async () => {
-    const update = jest.fn();
-    const res = await request(appWith(update))
-      .put("/api/users/bob/avatar")
-      .set(authHeader("alice"))
-      .attach("avatar", PNG, { filename: "me.png", contentType: "image/png" });
+  it("rejects unauthenticated or cross-user requests on both avatar endpoints", async () => {
+    const app = buildTestApp();
 
-    expect(res.status).toBe(403);
-    expect(update).not.toHaveBeenCalled();
-  });
+    const noToken = await request(app).post("/api/users/alice/avatar/upload-url");
+    expect(noToken.status).toBe(401);
 
-  it("requires authentication", async () => {
-    const res = await request(appWith())
-      .put("/api/users/alice/avatar")
-      .attach("avatar", PNG, { filename: "me.png", contentType: "image/png" });
-
-    expect(res.status).toBe(401);
-  });
-
-  it("rejects a request with no file", async () => {
-    const res = await request(appWith())
-      .put("/api/users/alice/avatar")
+    const crossUserUploadUrl = await request(app)
+      .post("/api/users/bob/avatar/upload-url")
       .set(authHeader("alice"));
+    expect(crossUserUploadUrl.status).toBe(403);
 
-    expect(res.status).toBe(400);
-    expect(res.body.error.message).toMatch(/no image uploaded/i);
+    const crossUserConfirm = await request(app)
+      .put("/api/users/bob/avatar")
+      .set(authHeader("alice"));
+    expect(crossUserConfirm.status).toBe(403);
   });
 });
