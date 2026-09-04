@@ -1,5 +1,5 @@
 import React, { useRef, useState } from "react";
-import { Link, useHistory } from "../lib/router";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import Button from "../Components/ui/Button";
 import Field from "../Components/ui/Field";
@@ -67,7 +67,7 @@ function Signin() {
   const { login } = useAuth();
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const history = useHistory();
+  const navigate = useNavigate();
 
   // Firebase signin and link to dashboard
   async function handleSubmit(e: React.FormEvent) {
@@ -78,7 +78,7 @@ function Signin() {
       // Both refs are attached to Fields rendered unconditionally below, so
       // they are never null by the time a submit can fire.
       await login(emailRef.current!.value, passwordRef.current!.value);
-      history.push("/"); // Redirect to homepage or dashboard
+      navigate("/"); // Redirect to homepage or dashboard
     } catch {
       setError("Failed to login");
     } finally {

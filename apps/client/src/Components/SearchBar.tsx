@@ -1,15 +1,15 @@
 // SearchBar.tsx
 import React, { useRef, useState } from "react";
-import { useHistory } from "../lib/router";
+import { useNavigate } from "react-router-dom";
 import { IoSearchSharp as IoSearchSharpIcon } from "react-icons/io5";
 import type { IconBaseProps } from "react-icons";
 
-// Same TS2786 as the one documented in lib/router.ts's header, hitting
-// react-icons instead of react-router-dom: IconType's return type is this
-// monorepo's mismatched, unpinned React 19 ReactNode (widened to allow
-// bigint), which is not assignable to the client's pinned React 18 one. One
-// icon, one file — narrow enough not to warrant its own shim module the way
-// router.ts's four components did.
+// This monorepo's client pins @types/react to 18.3.31, but react-icons'
+// IconType return type resolves against whatever @types/react a nearby
+// node_modules hoist finds — when that is a mismatched 19.x, TS2786 fires the
+// same way it used to for react-router-dom before that package started
+// shipping its own types. One icon, one file — narrow enough not to warrant
+// its own shim module.
 const IoSearchSharp = IoSearchSharpIcon as unknown as React.FC<IconBaseProps>;
 
 /*
@@ -123,13 +123,13 @@ const SearchBar = () => {
   // non-interactive element with an interaction, which jsx-a11y is right about.
   const [focused, setFocused] = useState<boolean>(false);
   const fieldRef = useRef<HTMLDivElement>(null);
-  const history = useHistory();
+  const navigate = useNavigate();
 
   const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (query.trim()) {
       // Navigate to search results page with query parameters
-      history.push(`/search?q=${encodeURIComponent(query)}&type=${searchType}`);
+      navigate(`/search?q=${encodeURIComponent(query)}&type=${searchType}`);
     }
   };
 

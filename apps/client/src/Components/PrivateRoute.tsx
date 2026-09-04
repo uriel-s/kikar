@@ -1,12 +1,12 @@
 import React from "react";
-import { Route, Redirect, RouteComponentProps, RouteProps } from "../lib/router";
+import { Navigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 
 // Explicit, not inherited: on every route but the plaza itself,
 // WavesBackground paints the paved ground and ink reads fine on it, but the
 // plaza route deliberately opts out of that background (Plaza.js paints its
 // own once signed in) — so this line, which renders for one frame before the
-// Redirect below fires, would otherwise sit on the bare, unpainted <body>.
+// Navigate below fires, would otherwise sit on the bare, unpainted <body>.
 // index.css used to cover that gap by hard-coding a dark body and a light `p`
 // everywhere; stated here instead so this line does not depend on it.
 const MESSAGE: React.CSSProperties = {
@@ -15,29 +15,25 @@ const MESSAGE: React.CSSProperties = {
   color: "var(--color-ink)",
 };
 
-interface PrivateRouteProps extends Omit<RouteProps, "render"> {
-  component: React.ComponentType<RouteComponentProps>;
+interface PrivateRouteProps {
+  children: React.ReactNode;
 }
 
-export default function PrivateRoute({
-  component: Component,
-  ...rest
-}: PrivateRouteProps) {
+// v7's route guard is a plain wrapper component, not a custom <Route> — this
+// app's route list is flat (10 routes, no nested sub-trees), so a children-in/
+// children-or-<Navigate>-out wrapper covers it without inventing a parent
+// layout route and an <Outlet> this app has no other use for.
+export default function PrivateRoute({ children }: PrivateRouteProps) {
   const { currentUser } = useAuth();
 
-  return (
-    <Route
-      {...rest}
-      render={(props) =>
-        currentUser ? (
-          <Component {...props} />
-        ) : (
-          <>
-            <p style={MESSAGE}>You need to sign in to view this page.</p>
-            <Redirect to="/signin" />
-          </>
-        )
-      }
-    />
-  );
+  if (!currentUser) {
+    return (
+      <>
+        <p style={MESSAGE}>You need to sign in to view this page.</p>
+        <Navigate to="/signin" replace />
+      </>
+    );
+  }
+
+  return <>{children}</>;
 }

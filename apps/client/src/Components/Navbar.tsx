@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useHistory, Link } from "../lib/router";
+import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { useNarrowerThan } from "../lib/useMediaQuery";
 import { COMPACT } from "./Plaza";
@@ -197,7 +197,7 @@ const NavLink = ({
 
 const Navbar = () => {
   const { logout, currentUser } = useAuth();
-  const history = useHistory();
+  const navigate = useNavigate();
   const [isMenuActive, setIsMenuActive] = useState(false);
   // Same breakpoint Plaza's own header collapses at, imported rather than
   // restated — see the comment on COMPACT there about copies drifting.
@@ -205,11 +205,11 @@ const Navbar = () => {
 
   const handleLogout = async () => {
     await logout();
-    history.push("/signin");
+    navigate("/signin");
   };
 
   const handleNavigate = (path: string) => {
-    history.push(path);
+    navigate(path);
     setIsMenuActive(false); // close the menu on navigation
   };
 
