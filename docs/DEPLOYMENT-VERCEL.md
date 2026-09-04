@@ -34,9 +34,10 @@ One limit changes meaning on this target and is worth knowing before you rely
 on it: the rate limiter is per-instance here rather than global — see the note
 at `apps/server/src/app.ts`. (Vercel also caps a request body at 4.5 MB, below
 the 5 MB avatar limit — this does not bite avatars, though: stage 8a moved
-those to a presigned PUT straight to R2, so avatar bytes never pass through the
-Vercel function body at all. See the R2 CORS step below for what replaced it as
-the thing to get right.)
+those to a presigned POST straight to R2 (its own policy conditions cap size
+and content type before the object can even land), so avatar bytes never pass
+through the Vercel function body at all. See the R2 CORS step below for what
+replaced it as the thing to get right.)
 
 ## The one thing that decides whether this works
 
@@ -82,7 +83,7 @@ framework preset as "Other" and change nothing it offers to detect.
   Avatar URLs are served straight from that address, unauthenticated — there is
   no signed-read path in this codebase.
 - **Set a CORS policy** on the bucket (bucket → Settings → CORS Policy). The
-  client PUTs avatar bytes directly to a presigned R2 URL
+  client POSTs avatar bytes directly to a presigned R2 upload policy
   (`apps/client/src/api/users.ts`) — a cross-origin request from the Vercel
   domain that triggers a browser preflight. Without a CORS rule allowing it,
   every avatar upload fails in production even with every other setting
@@ -92,7 +93,7 @@ framework preset as "Other" and change nothing it offers to detect.
   [
     {
       "AllowedOrigins": ["https://<your-vercel-domain>"],
-      "AllowedMethods": ["PUT"],
+      "AllowedMethods": ["POST"],
       "AllowedHeaders": ["*"]
     }
   ]
@@ -136,7 +137,7 @@ function runtime, so there is nothing to add. `vercel.json` passes
 **5. Deploy.** Then set `CORS_ORIGINS` to the URL Vercel gave you and redeploy,
 because the first deploy is what tells you the domain. This is also the moment
 to go back and add that domain to the R2 CORS policy from step 3 — avatar
-uploads will 200 on everything except the direct-to-R2 PUT until that is done.
+uploads will 200 on everything except the direct-to-R2 POST until that is done.
 
 **6. Firebase** — add the Vercel domain under Authentication → Settings →
 Authorized domains, or sign-in will be rejected by Firebase rather than by us.
@@ -223,8 +224,9 @@ while the outage continued.
 
 Vercel caps a request body at 4.5 MB, and the avatar limit is 5 MB — until
 `REFACTOR-PLAN.md` stage 8a this was a live gap for anything uploaded between
-the two. It no longer is: avatars upload with a presigned PUT straight to R2
-(`apps/server/src/services/storageService.ts`), so avatar bytes never pass
-through the Vercel function body at all, regardless of size. What replaced it
-as the thing to get right in production is R2's own CORS policy — see step 3
-above.
+the two. It no longer is: avatars upload with a presigned POST straight to R2
+(`apps/server/src/services/storageService.ts`), whose own policy conditions
+enforce the size cap and an `image/*` Content-Type before the object can even
+land, so avatar bytes never pass through the Vercel function body at all,
+regardless of size. What replaced it as the thing to get right in production
+is R2's own CORS policy — see step 3 above.

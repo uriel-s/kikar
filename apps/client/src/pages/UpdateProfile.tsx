@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { queryKeys } from "../lib/queryKeys";
@@ -95,6 +95,7 @@ const SKELETON_FIELD_COUNT = 5;
 function UpdateProfile() {
   const { currentUser, updatePassword } = useAuth();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   const uid = currentUser?.uid;
 
@@ -178,14 +179,17 @@ function UpdateProfile() {
       // Non-null: this form only ever renders behind PrivateRoute, which
       // redirects to /signin whenever `currentUser` (and so `uid`) is absent —
       // by the time a submit can fire, it is always set.
-      await usersApi.updateProfile(uid!, {
+      let updatedUser = await usersApi.updateProfile(uid!, {
         name: form.name.trim(),
         address: form.address.trim() || null,
         birthDate: form.birthDate || null,
       });
 
       if (image) {
-        await usersApi.uploadAvatar(uid!, image);
+        // Returns the full row again, already reflecting the name/address/
+        // birthDate change just above — the DB write it read back from
+        // committed before this call started.
+        updatedUser = await usersApi.uploadAvatar(uid!, image);
       }
 
       // Last, because a password change can invalidate the session and would
@@ -193,6 +197,12 @@ function UpdateProfile() {
       if (password) {
         await updatePassword(password);
       }
+
+      // Dashboard and Plaza read this exact cache entry. Without this, the
+      // next mount of either (this navigate() included) renders whatever was
+      // cached before the save for one paint, until TanStack Query's own
+      // background refetch quietly corrects it.
+      queryClient.setQueryData(queryKeys.users.detail(uid!), updatedUser);
 
       navigate("/");
     } catch (err) {

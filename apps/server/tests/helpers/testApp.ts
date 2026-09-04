@@ -39,15 +39,18 @@ const fakeAuth = (users: FakeUsers = {}) => ({
 /**
  * A stand-in for R2: an in-memory object store keyed exactly like the real
  * bucket. `seed` has no counterpart on the real AvatarBucket — it exists so a
- * test can simulate the browser's direct PUT to R2, which in production never
- * touches this server at all.
+ * test can simulate the browser's direct POST upload to R2, which in
+ * production never touches this server at all.
  */
 const fakeBucket = () => {
   const store = new Map<string, Buffer>();
   const contentTypes = new Map<string, string>();
 
   return {
-    createUploadUrl: async (key: string) => `https://storage.test/upload/${key}`,
+    createUploadUrl: async (key: string) => ({
+      url: "https://storage.test/upload",
+      fields: { key, Policy: "test-policy", "X-Amz-Signature": "test-signature" },
+    }),
     // Mirrors the real bucket's HEAD-before-GET shape: reports size without
     // handing back the bytes, which is what lets the oversized-upload path be
     // rejected without ever downloading the object.

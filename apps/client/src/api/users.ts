@@ -50,9 +50,14 @@ export const removeFriend = async (userId: string, friendId: string) => {
   await api.delete(`/users/${userId}/friends/${friendId}`);
 };
 
-const requestAvatarUploadUrl = async (id: string): Promise<string> => {
+interface AvatarUploadPolicy {
+  url: string;
+  fields: Record<string, string>;
+}
+
+const requestAvatarUploadUrl = async (id: string): Promise<AvatarUploadPolicy> => {
   const { data } = await api.post(`/users/${id}/avatar/upload-url`);
-  return data.uploadUrl;
+  return { url: data.url, fields: data.fields };
 };
 
 const confirmAvatarUpload = async (id: string) => {
@@ -61,19 +66,30 @@ const confirmAvatarUpload = async (id: string) => {
 };
 
 /**
- * Uploads a new avatar in three steps: ask this API for a presigned R2 URL,
- * PUT the file straight to R2 with it, then tell this API the upload is done
- * so it can validate and record it. The middle step deliberately bypasses
- * `api` (apiClient's axios instance) — R2 is a different origin than this
- * app's own API, and the presigned URL already carries its own authorization
- * in its query string, so attaching a Firebase bearer token here would be
- * meaningless and could break the URL's signature.
+ * Uploads a new avatar in three steps: ask this API for a presigned R2 POST
+ * policy, submit the file straight to R2 as multipart form data, then tell
+ * this API the upload is done so it can validate and record it. The middle
+ * step deliberately bypasses `api` (apiClient's axios instance) — R2 is a
+ * different origin than this app's own API, and the policy's fields already
+ * carry their own authorization, so attaching a Firebase bearer token here
+ * would be meaningless and could break the policy's signature.
+ *
+ * R2's own policy (a size ceiling, an `image/*` Content-Type prefix) rejects
+ * a bad upload outright, before this app's confirm step ever runs — every
+ * field the policy returned must be included as its own form field, and
+ * `Content-Type` plus the file itself must come last, or R2 rejects the
+ * whole submission.
  */
 export const uploadAvatar = async (id: string, file: File) => {
-  const uploadUrl = await requestAvatarUploadUrl(id);
+  const { url, fields } = await requestAvatarUploadUrl(id);
 
-  const putResponse = await fetch(uploadUrl, { method: "PUT", body: file });
-  if (!putResponse.ok) {
+  const formData = new FormData();
+  Object.entries(fields).forEach(([key, value]) => formData.append(key, value));
+  formData.append("Content-Type", file.type);
+  formData.append("file", file);
+
+  const postResponse = await fetch(url, { method: "POST", body: formData });
+  if (!postResponse.ok) {
     throw new Error("Failed to upload image");
   }
 

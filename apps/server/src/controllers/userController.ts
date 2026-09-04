@@ -6,15 +6,11 @@ import { authenticated } from "../middleware/auth";
 import type { PathParams } from "../middleware/auth";
 import type { createUserRepository } from "../repositories/userRepository";
 import { schemas } from "@kikar/shared";
-import type { createStorageService } from "../services/storageService";
+import { createStorageService, MAX_AVATAR_BYTES } from "../services/storageService";
 
 const UNIQUE_VIOLATION = "P2002";
 const RECORD_NOT_FOUND = "P2025";
 const FOREIGN_KEY_VIOLATION = "P2003";
-
-// R2 places no size limit of its own on a plain presigned PUT; this is the
-// server-side backstop now that multer's stream-level cap is gone.
-const MAX_AVATAR_BYTES = 5 * 1024 * 1024;
 
 const isPrismaError = (err: unknown, code: string): boolean =>
   err instanceof Prisma.PrismaClientKnownRequestError && err.code === code;
@@ -146,24 +142,26 @@ const createUserController = ({ users, storage }: UserControllerDeps) => ({
   }),
 
   requestAvatarUploadUrl: authenticated<UserIdParams>(async (req, res) => {
-    const uploadUrl = await storage.createAvatarUploadUrl(req.user.uid);
-    return res.json({ uploadUrl });
+    const { url, fields } = await storage.createAvatarUploadUrl(req.user.uid);
+    return res.json({ url, fields });
   }),
 
   /**
    * Confirms a direct-to-R2 avatar upload and records its URL.
    *
-   * The browser already PUT the bytes to R2 using a presigned URL from
-   * requestAvatarUploadUrl — this server never saw them in a request body.
-   * What used to be multer's fileFilter plus this handler's own magic-byte
-   * check, both before the save, is now one check after it: download the
-   * object back and inspect its actual bytes, because R2 will happily store
-   * whatever a PUT sends regardless of what it claims to be.
+   * The browser already POSTed the bytes to R2 using the presigned policy
+   * from requestAvatarUploadUrl — this server never saw them in a request
+   * body. What used to be multer's fileFilter plus this handler's own
+   * magic-byte check, both before the save, is now one check after it:
+   * download the object back and inspect its actual bytes, because a
+   * declared `image/*` Content-Type (the policy's own condition) is not proof
+   * of what the bytes actually are.
    *
    * The size check runs first, and against a HEAD rather than the downloaded
-   * buffer: the presigned PUT has no size limit of its own, so an oversized
-   * object must be rejected without ever pulling its full bytes into this
-   * process's memory.
+   * buffer. The presigned POST's own `content-length-range` condition already
+   * stops an oversized object from landing in the first place, but this
+   * backstop still runs — the confirm call is what proves the object is
+   * within bounds from this process's own point of view, not R2's word alone.
    */
   updateAvatar: authenticated<UserIdParams>(async (req, res) => {
     const size = await storage.avatarSize(req.user.uid);

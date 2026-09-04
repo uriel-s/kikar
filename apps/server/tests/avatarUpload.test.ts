@@ -38,9 +38,9 @@ describe("detectImageType", () => {
 });
 
 /**
- * Avatars now upload directly to R2: the browser PUTs to a presigned URL this
- * API hands out, and only reports back afterward. These tests simulate that
- * direct upload with `bucket.seed(...)` and inspect the result with
+ * Avatars now upload directly to R2: the browser POSTs to a presigned policy
+ * this API hands out, and only reports back afterward. These tests simulate
+ * that direct upload with `bucket.seed(...)` and inspect the result with
  * `bucket.contentTypeOf(...)` — the fake's two extras with no counterpart on
  * the real AvatarBucket, standing in for bytes and metadata that in
  * production never pass through this server at all.
@@ -49,14 +49,17 @@ describe("avatar upload", () => {
   const AVATAR_KEY = "profile_pictures/alice";
 
   describe("POST /api/users/:id/avatar/upload-url", () => {
-    it("returns a presigned upload URL for the caller's own avatar", async () => {
+    it("returns a presigned upload policy for the caller's own avatar", async () => {
       const res = await request(buildTestApp())
         .post("/api/users/alice/avatar/upload-url")
         .set(authHeader("alice"));
 
       expect(res.status).toBe(200);
-      expect(typeof res.body.uploadUrl).toBe("string");
-      expect(res.body.uploadUrl.length).toBeGreaterThan(0);
+      expect(typeof res.body.url).toBe("string");
+      expect(res.body.url.length).toBeGreaterThan(0);
+      expect(res.body.fields).toEqual(
+        expect.objectContaining({ key: expect.any(String) })
+      );
     });
   });
 

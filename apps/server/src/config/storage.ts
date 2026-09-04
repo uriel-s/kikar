@@ -3,12 +3,12 @@ import {
   DeleteObjectCommand,
   GetObjectCommand,
   HeadObjectCommand,
-  PutObjectCommand,
   S3Client,
 } from "@aws-sdk/client-s3";
-import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { createPresignedPost } from "@aws-sdk/s3-presigned-post";
 import type { Env } from "./env";
 import type { AvatarBucket } from "../services/storageService";
+import { MAX_AVATAR_BYTES } from "../services/storageService";
 
 type R2Env = Pick<
   Env,
@@ -19,9 +19,9 @@ type R2Env = Pick<
   | "R2_PUBLIC_URL"
 >;
 
-// A signed PUT is valid for 5 minutes — long enough for a slow mobile upload
-// to start, short enough that a leaked URL (browser history, a proxy log) is
-// useless soon after.
+// A signed upload policy is valid for 5 minutes — long enough for a slow
+// mobile upload to start, short enough that a leaked URL (browser history, a
+// proxy log) is useless soon after.
 const UPLOAD_URL_TTL_SECONDS = 300;
 
 const isNoSuchKey = (err: unknown): boolean =>
@@ -49,14 +49,24 @@ export const createR2Bucket = (env: R2Env): AvatarBucket => {
   });
 
   return {
-    createUploadUrl: (key) =>
-      getSignedUrl(
-        client,
-        new PutObjectCommand({ Bucket: env.R2_BUCKET_NAME, Key: key }),
-        {
-          expiresIn: UPLOAD_URL_TTL_SECONDS,
-        }
-      ),
+    // A presigned POST, not a bare PUT: its policy conditions are enforced by
+    // R2 itself against the upload as it happens, closing the gap a plain PUT
+    // left — any object this policy accepts is already within the size cap
+    // and declared as an image before the confirm endpoint ever runs. The
+    // confirm step's own magic-byte check still runs afterward, since a
+    // declared `image/*` Content-Type is not proof of the actual bytes.
+    createUploadUrl: async (key) => {
+      const { url, fields } = await createPresignedPost(client, {
+        Bucket: env.R2_BUCKET_NAME,
+        Key: key,
+        Conditions: [
+          ["content-length-range", 0, MAX_AVATAR_BYTES],
+          ["starts-with", "$Content-Type", "image/"],
+        ],
+        Expires: UPLOAD_URL_TTL_SECONDS,
+      });
+      return { url, fields };
+    },
 
     headSize: async (key) => {
       try {
@@ -86,10 +96,11 @@ export const createR2Bucket = (env: R2Env): AvatarBucket => {
       }
     },
 
-    // A presigned PUT binds no Content-Type of its own, so the object as R2
-    // first stores it carries whatever (or nothing) the uploader declared.
-    // Copying the object onto itself with MetadataDirective "REPLACE" is the
-    // S3-API way to retag metadata in place, without re-uploading the bytes.
+    // The policy only constrains the DECLARED Content-Type to an image/*
+    // prefix, so the object as R2 first stores it still carries whatever the
+    // uploader declared within that prefix, not the detected type. Copying
+    // the object onto itself with MetadataDirective "REPLACE" is the S3-API
+    // way to retag metadata in place, without re-uploading the bytes.
     retagContentType: async (key, contentType) => {
       await client.send(
         new CopyObjectCommand({
