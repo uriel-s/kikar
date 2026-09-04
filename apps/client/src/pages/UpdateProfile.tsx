@@ -1,6 +1,8 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "../contexts/AuthContext";
 import { useHistory } from "../lib/router";
+import { queryKeys } from "../lib/queryKeys";
 import * as usersApi from "../api/users";
 import Button from "../Components/ui/Button";
 import Field from "../Components/ui/Field";
@@ -94,6 +96,16 @@ function UpdateProfile() {
   const { currentUser, updatePassword } = useAuth();
   const history = useHistory();
 
+  const uid = currentUser?.uid;
+
+  // Keyed on the shared profile cache entry — Dashboard and Plaza fetch this
+  // exact same row.
+  const profileQuery = useQuery<UpdateProfileUser>({
+    queryKey: queryKeys.users.detail(uid ?? ""),
+    queryFn: () => usersApi.getUser(uid!),
+    enabled: Boolean(uid),
+  });
+
   const [form, setForm] = useState<UpdateProfileFormState>({
     name: "",
     address: "",
@@ -103,39 +115,38 @@ function UpdateProfile() {
   const [password, setPassword] = useState("");
   const [passwordConfirm, setPasswordConfirm] = useState("");
   const [image, setImage] = useState<File | null>(null);
-  const [error, setError] = useState("");
-  const [isLoading, setIsLoading] = useState(true);
+  const [submitError, setSubmitError] = useState("");
   const [isSaving, setIsSaving] = useState(false);
 
-  const uid = currentUser?.uid;
-
+  // Seeds the editable form fields from the fetched profile exactly once. A
+  // later background refetch of the same cache key (e.g. triggered by
+  // revisiting this route) must not silently overwrite whatever the person
+  // has already typed, which is why this is gated by a ref instead of just
+  // depending on `profileQuery.data` alone.
+  const seededRef = useRef(false);
   useEffect(() => {
-    if (!uid) return;
-    let cancelled = false;
-
-    usersApi
-      .getUser(uid)
-      .then((user: UpdateProfileUser) => {
-        if (cancelled) return;
-        setEmail(user.email ?? "");
-        setForm({
-          name: user.name ?? "",
-          address: user.address ?? "",
-          // The API returns an ISO timestamp; <input type="date"> wants YYYY-MM-DD.
-          birthDate: user.birthDate ? user.birthDate.slice(0, 10) : "",
-        });
-      })
-      .catch((err) => {
-        if (!cancelled) setError(err.message);
-      })
-      .finally(() => {
-        if (!cancelled) setIsLoading(false);
+    if (profileQuery.data && !seededRef.current) {
+      seededRef.current = true;
+      setEmail(profileQuery.data.email ?? "");
+      setForm({
+        name: profileQuery.data.name ?? "",
+        address: profileQuery.data.address ?? "",
+        // The API returns an ISO timestamp; <input type="date"> wants YYYY-MM-DD.
+        birthDate: profileQuery.data.birthDate
+          ? profileQuery.data.birthDate.slice(0, 10)
+          : "",
       });
+    }
+  }, [profileQuery.data]);
 
-    return () => {
-      cancelled = true;
-    };
-  }, [uid]);
+  const isLoading = profileQuery.isLoading;
+  const loadErrorMessage =
+    profileQuery.error instanceof Error
+      ? profileQuery.error.message
+      : profileQuery.error
+        ? String(profileQuery.error)
+        : "";
+  const error = submitError || loadErrorMessage;
 
   // Field's onChange prop type is an intersection of all three control
   // element handlers (it can render as input/textarea/select), so the event
@@ -152,16 +163,16 @@ function UpdateProfile() {
     event.preventDefault();
 
     if (password && password !== passwordConfirm) {
-      setError("Passwords do not match");
+      setSubmitError("Passwords do not match");
       return;
     }
     if (password && password.length < MIN_PASSWORD_LENGTH) {
-      setError(`Password must be at least ${MIN_PASSWORD_LENGTH} characters`);
+      setSubmitError(`Password must be at least ${MIN_PASSWORD_LENGTH} characters`);
       return;
     }
 
     setIsSaving(true);
-    setError("");
+    setSubmitError("");
 
     try {
       // Non-null: this form only ever renders behind PrivateRoute, which
@@ -190,7 +201,7 @@ function UpdateProfile() {
       // `+` binds tighter than `||`, so the old fallback here never ran and the
       // message read "undefined" whenever the server sent no body.
       const message = err instanceof Error ? err.message : String(err);
-      setError(message || "Failed to update profile");
+      setSubmitError(message || "Failed to update profile");
       setIsSaving(false);
     }
   };

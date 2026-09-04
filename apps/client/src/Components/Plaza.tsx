@@ -1,9 +1,11 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Link } from "../lib/router";
 import { useLocation } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { PlazaProfileContext, PlazaProfileValue } from "../contexts/PlazaProfile";
 import * as usersApi from "../api/users";
+import { queryKeys } from "../lib/queryKeys";
 import { useNarrowerThan, usePrefersDark } from "../lib/useMediaQuery";
 import Avatar from "./Avatar";
 import SearchBar from "./SearchBar";
@@ -136,7 +138,6 @@ const Plaza = ({ children }: { children: React.ReactNode }) => {
   // The pills are the one place the two palettes do not share a rule; see above.
   const night = usePrefersDark();
   const narrow = useNarrowerThan(NARROW);
-  const [profile, setProfile] = useState<PlazaProfileValue | null>(null);
 
   const uid = currentUser?.uid;
 
@@ -145,33 +146,23 @@ const Plaza = ({ children }: { children: React.ReactNode }) => {
    * avatars are uploaded to our own server and stored on the user row, which
    * never touches the Firebase account record, so reading photoURL would show
    * every user their initials forever. One request, the same one Dashboard
-   * makes.
+   * makes — keyed on the same shared profile cache entry, so navigating
+   * between the plaza, /me, and /update-profile reuses one cached fetch.
    *
    * Until it lands the avatar renders from { id: uid } alone, which is all
    * avatarColor needs — the disc appears in the right person's hue immediately
    * and the initials fill in, instead of the header re-laying out when the
-   * profile resolves.
+   * profile resolves. Failure is deliberately silent (never reading
+   * `profileQuery.error`): a header avatar is not worth an error banner, the
+   * hue-and-initials fallback is already a correct avatar for this person,
+   * and the screen underneath reports its own failures.
    */
-  useEffect(() => {
-    if (!uid) return undefined;
-
-    let cancelled = false;
-
-    usersApi
-      .getUser(uid)
-      .then((loaded) => {
-        if (!cancelled) setProfile(loaded);
-      })
-      .catch(() => {
-        // Deliberately silent. A header avatar is not worth an error banner:
-        // the hue-and-initials fallback is already a correct avatar for this
-        // person, and the screen underneath reports its own failures.
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [uid]);
+  const profileQuery = useQuery<PlazaProfileValue>({
+    queryKey: queryKeys.users.detail(uid ?? ""),
+    queryFn: () => usersApi.getUser(uid!),
+    enabled: Boolean(uid),
+  });
+  const profile = profileQuery.data ?? null;
 
   const me = profile ?? { id: uid };
 
