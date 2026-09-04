@@ -1,13 +1,21 @@
 import React, { useContext, useState, useEffect, useMemo, useCallback } from "react";
-import firebase from "firebase/compat/app";
+import {
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged,
+  updatePassword as firebaseUpdatePassword,
+  User,
+  UserCredential,
+} from "firebase/auth";
 import { auth } from "../firebase";
 
 /** The `{ currentUser, login, signup, logout, updatePassword }` shape every
  * consumer of `useAuth()` receives. */
 interface AuthContextValue {
-  currentUser: firebase.User | null;
-  login: (email: string, password: string) => Promise<firebase.auth.UserCredential>;
-  signup: (email: string, password: string) => Promise<firebase.auth.UserCredential>;
+  currentUser: User | null;
+  login: (email: string, password: string) => Promise<UserCredential>;
+  signup: (email: string, password: string) => Promise<UserCredential>;
   logout: () => Promise<void>;
   updatePassword: (password: string) => Promise<void>;
 }
@@ -23,21 +31,22 @@ export function useAuth() {
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [currentUser, setCurrentUser] = useState<firebase.User | null>(null);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
   const signup = useCallback(
     (email: string, password: string) =>
-      auth.createUserWithEmailAndPassword(email, password),
+      createUserWithEmailAndPassword(auth, email, password),
     []
   );
 
   const login = useCallback(
-    (email: string, password: string) => auth.signInWithEmailAndPassword(email, password),
+    (email: string, password: string) =>
+      signInWithEmailAndPassword(auth, email, password),
     []
   );
 
-  const logout = useCallback(() => auth.signOut(), []);
+  const logout = useCallback(() => signOut(auth), []);
 
   const updatePassword = useCallback((password: string) => {
     if (!auth.currentUser) {
@@ -45,12 +54,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
     // Read from auth.currentUser rather than the state snapshot: the snapshot is
     // captured at render time and can be stale by the time this runs.
-    return auth.currentUser.updatePassword(password);
+    return firebaseUpdatePassword(auth.currentUser, password);
   }, []);
 
   useEffect(
     () =>
-      auth.onAuthStateChanged((user) => {
+      onAuthStateChanged(auth, (user) => {
         setCurrentUser(user);
         setLoading(false);
       }),
