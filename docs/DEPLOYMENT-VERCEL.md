@@ -103,6 +103,17 @@ framework preset as "Other" and change nothing it offers to detect.
   come back and fill this in once you have it, and again for any Preview
   domain you rely on.
 
+- **Add a lifecycle rule** expiring the staging prefix (bucket → Settings →
+  Object lifecycle rules → Add rule → prefix `avatar_uploads/` → action
+  "Delete" → age 1 day — R2 lifecycle rules are day-granular, there is no
+  hourly option). An upload lands under `avatar_uploads/` first and is only
+  promoted to `profile_pictures/` once the confirm step validates it
+  (`apps/server/src/controllers/userController.ts`, `updateAvatar`). "Enable
+  public access" above applies to the whole bucket, not a prefix, so without
+  this rule a staged upload that is never confirmed sits at a public,
+  guessable URL indefinitely instead of just until the next promotion or
+  manual cleanup.
+
 Generate an R2 API token scoped to this bucket (Manage R2 API Tokens) for the
 `R2_ACCESS_KEY_ID` / `R2_SECRET_ACCESS_KEY` values below.
 

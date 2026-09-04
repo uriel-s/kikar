@@ -43,8 +43,8 @@ export const createUserRoutes = ({ controller }: UserRoutesDeps): Router => {
     controller.removeFriend
   );
 
-  // Requests a presigned URL for the caller's own avatar object; the browser
-  // PUTs directly to R2 from here, never through this server.
+  // Requests a presigned POST policy for the caller's own avatar object; the
+  // browser POSTs directly to R2 from here, never through this server.
   router.post(
     "/:id/avatar/upload-url",
     validate(schemas.userId),

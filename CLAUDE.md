@@ -30,7 +30,7 @@ npm run db:studio  --workspace=@kikar/server
 
 npm run typecheck                               # tsc --noEmit over the server's src + tests
 npm run build --workspace=@kikar/server         # src/ -> dist/, the artifact that ships
-npm run test --workspace=@kikar/server          # 52 tests, jest + supertest through ts-jest
+npm run test --workspace=@kikar/server          # 55 tests, jest + supertest through ts-jest
 npm run test --workspace=@kikar/server -- tests/authorization.test.ts   # one file
 npm run test --workspace=@kikar/server -- -t "cannot"                   # by name
 npm run build --workspace=@kikar/client
@@ -70,7 +70,7 @@ bash .claude/checks.sh lint
 Checks whose tool is not wired up yet print `SKIP:` and pass. Two behaviours are
 specific to this repository and worth knowing:
 
-- **`test` pins the suite size** against `.claude/test-baseline` (currently 52).
+- **`test` pins the suite size** against `.claude/test-baseline` (currently 55).
   A green suite that shrank is a failure. During a refactor the count must not
   move; when a change to it is intended, write the new number into that file
   deliberately.
@@ -142,7 +142,7 @@ After ALL sub-tasks are complete:
 `docs/REFACTOR-PLAN.md` is the plan; `docs/code-quality-review-2026-08-04.md` is
 the measured "before" state. One rule governs every stage:
 
-**Behaviour must not change.** The 52 server tests are the safety net that
+**Behaviour must not change.** The 55 server tests are the safety net that
 proves it, which is why `checks.sh test` pins their count. A stage that makes
 tests disappear has not passed — it has removed the evidence. If a test genuinely
 must change, change it deliberately and say so.
@@ -246,14 +246,27 @@ them.
 - Firebase uses the **modular** SDK (`firebase/auth`), so it is
   `signInWithEmailAndPassword(auth, email, password)`, not compat's
   `auth.signInWithEmailAndPassword(...)`.
-- Routing is React Router **v5** (`Switch`, `component=`), not v6.
+- Routing is React Router **v7**: `Routes`/`Route path=... element={...}`, and
+  `Navigate` where v5 used `Redirect`. Route guards (`PrivateRoute.tsx`) are
+  plain wrapper components that render their children or a `Navigate`, not a
+  custom `<Route>`.
 
 ### Avatar uploads
 
 Uploads are identified by **magic bytes** (`lib/imageType.ts`), and the detected
-type — never the declared `Content-Type` — is what gets stored. Each user has
-exactly one object at the deterministic path `profile_pictures/<uid>`, so
-replacing is a plain overwrite. 5 MB cap, enforced by multer and surfaced as 413.
+type — never the declared `Content-Type` — is what gets stored. A presigned
+POST lands the bytes on a staging key, `avatar_uploads/<uid>`; the 5 MB cap is
+enforced there by R2's own POST-policy `content-length-range` condition, then
+re-checked with a HEAD in the confirm endpoint (`updateAvatar`) before the
+object is even downloaded, which returns 413 if it is still oversized. Only
+once that endpoint's magic-byte check also passes is the staged object
+promoted onto the public, deterministic `profile_pictures/<uid>` key — one
+object per user, so promoting is a plain overwrite. R2's public-read access is
+bucket-wide, not scoped by key prefix, so a staged upload that is never
+confirmed sits at a guessable public URL — unreferenced by anyone's avatar,
+but not private — until an R2 lifecycle rule expires `avatar_uploads/` objects
+on a TTL (see `docs/DEPLOYMENT-VERCEL.md`), or the key is promoted or cleaned
+up manually.
 
 ## Conventions
 
