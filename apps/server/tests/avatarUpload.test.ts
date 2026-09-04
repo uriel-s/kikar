@@ -70,7 +70,9 @@ describe("avatar upload", () => {
 
     it("stores a real PNG that was uploaded directly to R2", async () => {
       const { app, setAvatarUrl } = appWith(PNG);
-      const res = await request(app).put("/api/users/alice/avatar").set(authHeader("alice"));
+      const res = await request(app)
+        .put("/api/users/alice/avatar")
+        .set(authHeader("alice"));
 
       expect(res.status).toBe(200);
       expect(setAvatarUrl).toHaveBeenCalled();
@@ -90,7 +92,9 @@ describe("avatar upload", () => {
       const { app, bucket, setAvatarUrl } = appWith(
         Buffer.from("MZ\u0090\0not an image at all")
       );
-      const res = await request(app).put("/api/users/alice/avatar").set(authHeader("alice"));
+      const res = await request(app)
+        .put("/api/users/alice/avatar")
+        .set(authHeader("alice"));
 
       expect(res.status).toBe(400);
       expect(res.body.error.message).toMatch(/not a valid/i);
@@ -100,7 +104,9 @@ describe("avatar upload", () => {
 
     it("rejects confirmation when nothing has been uploaded yet", async () => {
       const { app, setAvatarUrl } = appWith();
-      const res = await request(app).put("/api/users/alice/avatar").set(authHeader("alice"));
+      const res = await request(app)
+        .put("/api/users/alice/avatar")
+        .set(authHeader("alice"));
 
       expect(res.status).toBe(400);
       expect(res.body.error.message).toMatch(/no image uploaded/i);

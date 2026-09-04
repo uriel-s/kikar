@@ -43,6 +43,7 @@ export const createStorageService = (bucket: AvatarBucket) => {
     deleteAvatarObject: (uid: string): Promise<void> => bucket.delete(keyFor(uid)),
 
     // Cache-bust so the browser picks up the new image immediately.
-    publicAvatarUrl: (uid: string): string => `${bucket.publicUrl(keyFor(uid))}?v=${Date.now()}`,
+    publicAvatarUrl: (uid: string): string =>
+      `${bucket.publicUrl(keyFor(uid))}?v=${Date.now()}`,
   };
 };

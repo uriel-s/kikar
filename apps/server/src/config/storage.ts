@@ -25,7 +25,8 @@ const UPLOAD_URL_TTL_SECONDS = 300;
 const isNoSuchKey = (err: unknown): boolean =>
   err instanceof Error &&
   (err.name === "NoSuchKey" ||
-    (err as { $metadata?: { httpStatusCode?: number } }).$metadata?.httpStatusCode === 404);
+    (err as { $metadata?: { httpStatusCode?: number } }).$metadata?.httpStatusCode ===
+      404);
 
 /**
  * Avatar storage on Cloudflare R2, reached through its S3-compatible API.
@@ -47,9 +48,13 @@ export const createR2Bucket = (env: R2Env): AvatarBucket => {
 
   return {
     createUploadUrl: (key) =>
-      getSignedUrl(client, new PutObjectCommand({ Bucket: env.R2_BUCKET_NAME, Key: key }), {
-        expiresIn: UPLOAD_URL_TTL_SECONDS,
-      }),
+      getSignedUrl(
+        client,
+        new PutObjectCommand({ Bucket: env.R2_BUCKET_NAME, Key: key }),
+        {
+          expiresIn: UPLOAD_URL_TTL_SECONDS,
+        }
+      ),
 
     download: async (key) => {
       try {
@@ -68,7 +73,9 @@ export const createR2Bucket = (env: R2Env): AvatarBucket => {
     },
 
     delete: async (key) => {
-      await client.send(new DeleteObjectCommand({ Bucket: env.R2_BUCKET_NAME, Key: key }));
+      await client.send(
+        new DeleteObjectCommand({ Bucket: env.R2_BUCKET_NAME, Key: key })
+      );
     },
 
     publicUrl: (key) => `${env.R2_PUBLIC_URL}/${key}`,
