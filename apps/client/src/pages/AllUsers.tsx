@@ -1,4 +1,10 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useMemo } from "react";
+import {
+  useInfiniteQuery,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import UserCard from "../Components/UserCard";
 import Button from "../Components/ui/Button";
 import EmptyState from "../Components/ui/EmptyState";
@@ -7,6 +13,7 @@ import Notice from "../Components/ui/Notice";
 import Skeleton from "../Components/ui/Skeleton";
 import { useAuth } from "../contexts/AuthContext";
 import { useNarrowerThan } from "../lib/useMediaQuery";
+import { queryKeys } from "../lib/queryKeys";
 import * as usersApi from "../api/users";
 
 // This page has no ancestor that caps its width the way Plaza caps the feed's
@@ -140,83 +147,101 @@ const EMPTY_COPY: Record<UserFilter, { title: string; description: string }> = {
 };
 
 const AllUsers = () => {
-  const [users, setUsers] = useState<AllUsersUser[]>([]);
-  const [friendIds, setFriendIds] = useState<Set<string>>(new Set());
-  const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [filter, setFilter] = useState<UserFilter>("all");
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [actionError, setActionError] = useState("");
   const { currentUser } = useAuth();
   const columnCount = useColumnCount();
+  const queryClient = useQueryClient();
 
   const uid = currentUser?.uid;
 
-  const loadData = useCallback(async () => {
-    if (!uid) return;
+  const usersQuery = useInfiniteQuery<{
+    users: AllUsersUser[];
+    nextCursor: string | null;
+  }>({
+    queryKey: queryKeys.users.list(),
+    // `pageParam` comes back typed `unknown` here rather than
+    // `string | undefined`: giving `useInfiniteQuery` only its first type
+    // argument (below) fixes TQueryFnData explicitly but stops the rest —
+    // including TPageParam — from being inferred from sibling options in the
+    // same call, so it falls back to its `unknown` default. The cast is
+    // sound because `initialPageParam`/`getNextPageParam` below only ever
+    // produce `string | undefined`.
+    queryFn: ({ pageParam }) =>
+      usersApi.listUsers({ cursor: pageParam as string | undefined }),
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
+    enabled: Boolean(uid),
+  });
+  const users = useMemo(
+    () => usersQuery.data?.pages.flatMap((page) => page.users) ?? [],
+    [usersQuery.data]
+  );
 
-    setIsLoading(true);
-    setError("");
-    try {
-      const [usersPage, friends] = await Promise.all([
-        usersApi.listUsers(),
-        usersApi.listFriends(uid),
-      ]);
+  // The API returns friend objects now, not bare ids. `listFriends` comes
+  // back untyped (api/users.ts's listFriends is Promise<any>), so the query
+  // gets its own minimal shape the same way UpdateProfile.tsx types its own
+  // untyped `getUser` result.
+  const friendsQuery = useQuery<{ id: string }[]>({
+    queryKey: queryKeys.users.friends(uid ?? ""),
+    // Non-null: this page only ever renders behind PrivateRoute, which
+    // redirects to /signin whenever `currentUser` (and so `uid`) is absent —
+    // and `enabled` below keeps this query from ever running until `uid` is
+    // set.
+    queryFn: () => usersApi.listFriends(uid!),
+    enabled: Boolean(uid),
+  });
+  const friendIds = useMemo(
+    () => new Set((friendsQuery.data ?? []).map((friend) => friend.id)),
+    [friendsQuery.data]
+  );
 
-      setUsers(usersPage.users);
-      setNextCursor(usersPage.nextCursor);
-      // The API returns friend objects now, not bare ids. `friends` comes back
-      // untyped (api/users.ts's listFriends is Promise<any>), so the map
-      // callback needs its own minimal shape the same way UpdateProfile.tsx
-      // types its own untyped `getUser` result.
-      setFriendIds(new Set(friends.map((friend: { id: string }) => friend.id)));
-    } catch (err) {
-      // `strict` types the catch binding `unknown`, not `any` — narrow it
-      // before reading `.message` rather than reaching for a cast.
-      setError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setIsLoading(false);
-    }
-  }, [uid]);
+  const isLoading = usersQuery.isLoading || friendsQuery.isLoading;
 
-  // The filter is applied in memory, so changing it no longer refetches
-  // everything the way the old effect's [filter] dependency did.
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
+  // Two sources of error feed the same top banner: a load failure straight
+  // off the queries (including a failed "load more" page, which used to be
+  // caught by hand into `error` state and now just surfaces through
+  // `usersQuery.error` the same way), and a friend add/remove failure, which
+  // has no query of its own to report through and so still needs local state.
+  const loadErrorMessage =
+    (usersQuery.error instanceof Error
+      ? usersQuery.error.message
+      : usersQuery.error
+        ? String(usersQuery.error)
+        : "") ||
+    (friendsQuery.error instanceof Error
+      ? friendsQuery.error.message
+      : friendsQuery.error
+        ? String(friendsQuery.error)
+        : "");
+  const error = actionError || loadErrorMessage;
 
-  const loadMore = async () => {
-    if (!nextCursor) return;
-    try {
-      const page = await usersApi.listUsers({ cursor: nextCursor });
-      setUsers((current) => [...current, ...page.users]);
-      setNextCursor(page.nextCursor);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
-    }
-  };
+  const changeFriendMutation = useMutation({
+    mutationFn: ({ friendId, action }: { friendId: string; action: "add" | "remove" }) =>
+      action === "add"
+        ? usersApi.addFriend(uid!, friendId)
+        : usersApi.removeFriend(uid!, friendId),
+    onMutate: ({ friendId, action }) => {
+      const key = queryKeys.users.friends(uid ?? "");
+      const previous = queryClient.getQueryData<{ id: string }[]>(key);
+      queryClient.setQueryData<{ id: string }[]>(key, (old = []) =>
+        action === "add"
+          ? [...old, { id: friendId }]
+          : old.filter((friend) => friend.id !== friendId)
+      );
+      return { previous };
+    },
+    onError: (err, _variables, context) => {
+      queryClient.setQueryData(queryKeys.users.friends(uid ?? ""), context?.previous);
+      setActionError(err instanceof Error ? err.message : String(err));
+    },
+  });
 
   const handleFriendChange = async (friendId: string, action: "add" | "remove") => {
-    const previous = friendIds;
-
-    setFriendIds((current) => {
-      const next = new Set(current);
-      if (action === "add") next.add(friendId);
-      else next.delete(friendId);
-      return next;
-    });
-
     try {
-      if (action === "add") {
-        // Non-null: this page only ever renders behind PrivateRoute, which
-        // redirects to /signin whenever `currentUser` (and so `uid`) is
-        // absent — by the time a friend action can fire, it is always set.
-        await usersApi.addFriend(uid!, friendId);
-      } else {
-        await usersApi.removeFriend(uid!, friendId);
-      }
+      await changeFriendMutation.mutateAsync({ friendId, action });
     } catch (err) {
-      setFriendIds(previous);
-      setError(err instanceof Error ? err.message : String(err));
+      setActionError(err instanceof Error ? err.message : String(err));
       throw err;
     }
   };
@@ -292,9 +317,9 @@ const AllUsers = () => {
           4.62:1 by day and 5.69:1 at night — and unsafe on a notice, where the
           same border drops to 2.62:1 in Slate Night. This one stands on the
           ground. See the header of Components/ui/Button.js. */}
-      {nextCursor && (
+      {usersQuery.hasNextPage && (
         <div style={{ display: "flex", justifyContent: "center", marginTop: 34 }}>
-          <Button variant="secondary" onClick={loadMore}>
+          <Button variant="secondary" onClick={() => usersQuery.fetchNextPage()}>
             Load more
           </Button>
         </div>

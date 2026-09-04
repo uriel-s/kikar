@@ -1,7 +1,9 @@
 import React, { useId, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import firebase from "firebase/compat/app";
 import * as postsApi from "../api/posts";
 import { machineTime, timeAgo } from "../lib/timeAgo";
+import { queryKeys } from "../lib/queryKeys";
 import Avatar from "./Avatar";
 import Button from "./ui/Button";
 import Field from "./ui/Field";
@@ -268,6 +270,13 @@ interface PostComment {
   createdAt?: Date | string | number | null;
 }
 
+/** The shape `postsApi.listComments` resolves to — named once here rather
+ * than repeated inline everywhere the comments cache is read or written. */
+interface CommentsPage {
+  comments: PostComment[];
+  nextCursor: string | null;
+}
+
 interface Post {
   id: string;
   author: PostAuthor;
@@ -318,12 +327,8 @@ const PostCard = ({
   onDelete,
 }: PostCardProps) => {
   const [newComment, setNewComment] = useState<string>("");
-  const [comments, setComments] = useState<PostComment[]>([]);
-  const [commentsLoaded, setCommentsLoaded] = useState<boolean>(false);
-  const [isLoadingComments, setIsLoadingComments] = useState<boolean>(false);
   const [showComments, setShowComments] = useState<boolean>(false);
-  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
-  const [error, setError] = useState<string>("");
+  const queryClient = useQueryClient();
 
   // Generated, not a literal: one post can appear twice on a page — the feed
   // and a search result — and two panels sharing an id would leave both
@@ -339,52 +344,72 @@ const PostCard = ({
    *
    * Every card used to fetch the full comment list and the author's profile as
    * soon as it rendered, so opening the feed fired two requests per post before
-   * anyone had clicked anything.
+   * anyone had clicked anything. `enabled: showComments` keeps that lazy load;
+   * because the query is keyed by `post.id` and TanStack Query caches a
+   * resolved result, closing and reopening the panel does not show the
+   * skeleton again — the same behavior the old `commentsLoaded` flag produced.
+   *
+   * The explicit `<CommentsPage>` generic is load-bearing, not decorative:
+   * `postsApi.listComments` resolves to `{ comments: any; nextCursor: any }`
+   * (axios's `data` is untyped), and without it `commentsQuery.data?.comments
+   * ?? []` infers a type that still leaves the `.map` below with an
+   * implicit-any callback parameter.
+   *
+   * `staleTime: Infinity`: this component never unmounts between opens — only
+   * `showComments` toggles — so without it, the default staleTime of 0 makes
+   * every reopen an eligible background refetch. The old `commentsLoaded` flag
+   * made a reopen a complete no-op once the list had loaded once; this is the
+   * same guarantee, not a new request the old code never made.
    */
-  const toggleComments = async () => {
-    if (showComments) {
-      setShowComments(false);
-      return;
-    }
+  const commentsQuery = useQuery<CommentsPage>({
+    queryKey: queryKeys.posts.comments(post.id),
+    queryFn: () => postsApi.listComments(post.id),
+    enabled: showComments,
+    staleTime: Infinity,
+  });
+  const comments = commentsQuery.data?.comments ?? [];
 
-    setShowComments(true);
-    if (commentsLoaded) return;
+  const toggleComments = () => setShowComments((current) => !current);
 
-    setIsLoadingComments(true);
-    try {
-      const { comments: loaded } = await postsApi.listComments(post.id);
-      setComments(loaded);
-      setCommentsLoaded(true);
-    } catch (err) {
-      // `strict` types the catch binding `unknown`, not `any` — narrow it
-      // before reading `.message` rather than reaching for a cast.
-      setError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setIsLoadingComments(false);
-    }
-  };
-
-  const handleCommentSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (!newComment.trim() || isSubmitting) return;
-
-    setIsSubmitting(true);
-    setError("");
-    try {
-      // Render what the server actually stored. The old code pushed the raw
-      // input string into a list of comment objects, which is why the markup
-      // had a JSON.stringify fallback for comments with no .content.
-      const created = await postsApi.addComment(post.id, newComment);
-      setComments((current) => [...current, created]);
-      setCommentsLoaded(true);
+  const addCommentMutation = useMutation({
+    mutationFn: (content: string) => postsApi.addComment(post.id, content),
+    onSuccess: (created) => {
+      // Appends unconditionally, tolerating the comments query not having
+      // resolved yet — the reply is visible instantly regardless of whether
+      // the list had already loaded, matching the old code's unconditional
+      // `setComments(current => [...current, created])`.
+      queryClient.setQueryData<CommentsPage>(
+        queryKeys.posts.comments(post.id),
+        (old) => ({
+          comments: [...(old?.comments ?? []), created],
+          nextCursor: old?.nextCursor ?? null,
+        })
+      );
       setShowComments(true);
       setNewComment("");
       onCommentAdded?.(post.id);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setIsSubmitting(false);
-    }
+    },
+  });
+
+  const error =
+    (addCommentMutation.error instanceof Error
+      ? addCommentMutation.error.message
+      : addCommentMutation.error
+        ? String(addCommentMutation.error)
+        : "") ||
+    (commentsQuery.error instanceof Error
+      ? commentsQuery.error.message
+      : commentsQuery.error
+        ? String(commentsQuery.error)
+        : "");
+
+  const handleCommentSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!newComment.trim() || addCommentMutation.isPending) return;
+    // Render what the server actually stored. The old code pushed the raw
+    // input string into a list of comment objects, which is why the markup
+    // had a JSON.stringify fallback for comments with no .content.
+    addCommentMutation.mutate(newComment);
   };
 
   const handleDelete = () => {
@@ -477,8 +502,8 @@ const PostCard = ({
       {showComments && (
         // aria-busy, not a live region: Skeleton is aria-hidden by design, so
         // the region itself is the only thing left that can say it is loading.
-        <div id={panelId} style={PANEL} aria-busy={isLoadingComments}>
-          {isLoadingComments ? (
+        <div id={panelId} style={PANEL} aria-busy={commentsQuery.isLoading}>
+          {commentsQuery.isLoading ? (
             // Bars rather than nothing. An empty panel that fills in half a
             // second later reads as "no replies" for exactly as long as the
             // request takes, and then contradicts itself.
@@ -495,7 +520,7 @@ const PostCard = ({
                   padding. Dropped inside a notice it would be a second notice
                   with nothing in it, and its title would outweigh the post it
                   hangs under. */}
-              {commentsLoaded && comments.length === 0 && (
+              {commentsQuery.isSuccess && comments.length === 0 && (
                 <p style={EMPTY_LINE}>No replies yet.</p>
               )}
 
@@ -547,9 +572,9 @@ const PostCard = ({
               <Button
                 type="submit"
                 size={34}
-                disabled={!newComment.trim() || isSubmitting}
+                disabled={!newComment.trim() || addCommentMutation.isPending}
               >
-                {isSubmitting ? "Posting…" : "Reply"}
+                {addCommentMutation.isPending ? "Posting…" : "Reply"}
               </Button>
             </div>
           </form>

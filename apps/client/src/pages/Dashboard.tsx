@@ -1,6 +1,8 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "../contexts/AuthContext";
 import { useHistory } from "../lib/router";
+import { queryKeys } from "../lib/queryKeys";
 import Avatar from "../Components/Avatar";
 import Button from "../Components/ui/Button";
 import Notice from "../Components/ui/Notice";
@@ -125,44 +127,41 @@ const SKELETON_LINES: React.CSSProperties = {
 
 export default function Dashboard() {
   const { currentUser, logout } = useAuth();
-  const [user, setUser] = useState<DashboardUser | null>(null);
-  const [error, setError] = useState("");
-  const [isLoading, setIsLoading] = useState(true);
   const history = useHistory();
 
   const uid = currentUser?.uid;
 
-  useEffect(() => {
-    if (!uid) return;
+  // One request. The avatar URL arrives on the user, so there is no second
+  // round trip to Firebase Storage to resolve it. Keyed on the shared
+  // profile cache entry — Plaza and UpdateProfile fetch this exact same row.
+  const profileQuery = useQuery<DashboardUser>({
+    queryKey: queryKeys.users.detail(uid ?? ""),
+    queryFn: () => usersApi.getUser(uid!),
+    enabled: Boolean(uid),
+  });
+  const user = profileQuery.data ?? null;
+  const isLoading = profileQuery.isLoading;
 
-    let cancelled = false;
-
-    // One request. The avatar URL arrives on the user, so there is no second
-    // round trip to Firebase Storage to resolve it.
-    usersApi
-      .getUser(uid)
-      .then((loaded: DashboardUser) => {
-        if (!cancelled) setUser(loaded);
-      })
-      .catch((err) => {
-        if (!cancelled) setError(err.message);
-      })
-      .finally(() => {
-        if (!cancelled) setIsLoading(false);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [uid]);
+  // Logout failure is a local action error, not a fetch error, so it keeps
+  // its own state — the query's `error` can't be written to by hand. Both
+  // feed the same rendered `error` message the way the old single `error`
+  // state used to hold either one, whichever was set most recently.
+  const [logoutError, setLogoutError] = useState("");
+  const loadErrorMessage =
+    profileQuery.error instanceof Error
+      ? profileQuery.error.message
+      : profileQuery.error
+        ? String(profileQuery.error)
+        : "";
+  const error = logoutError || loadErrorMessage;
 
   async function handleLogout() {
-    setError("");
+    setLogoutError("");
     try {
       await logout();
       history.push("/signin");
     } catch {
-      setError("Failed to log out");
+      setLogoutError("Failed to log out");
     }
   }
 

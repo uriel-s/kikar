@@ -1,8 +1,10 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useMemo } from "react";
 import { useLocation } from "react-router-dom";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import UserCard from "../Components/UserCard";
 import PostCard from "../Components/PostCard";
 import { useAuth } from "../contexts/AuthContext";
+import { queryKeys } from "../lib/queryKeys";
 import * as usersApi from "../api/users";
 import * as postsApi from "../api/posts";
 
@@ -45,17 +47,19 @@ interface SearchUser {
   avatarUrl?: string | null;
 }
 
-interface SearchResultsState {
-  users: SearchUser[];
-  posts: Post[];
-}
-
 const SearchResults = () => {
-  const [results, setResults] = useState<SearchResultsState>({ users: [], posts: [] });
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState("");
+  // Covers only the like mutation's own failure — the search queries' own
+  // errors are read straight off `usersQuery`/`postsQuery` each render rather
+  // than mirrored into state. Combined with `loadError` below into the SAME
+  // one `error` value the render ternary always used, so a failed like still
+  // replaces the whole results view with `.search-error`, exactly like the
+  // old single `error` state did — this page's error handling has always been
+  // coarser than PostsPage's own top-banner pattern, and that quirk is
+  // preserved rather than "fixed" here.
+  const [actionError, setActionError] = useState("");
   const location = useLocation();
   const { currentUser } = useAuth();
+  const queryClient = useQueryClient();
 
   const { query, type } = useMemo(() => {
     const params = new URLSearchParams(location.search);
@@ -65,83 +69,103 @@ const SearchResults = () => {
     };
   }, [location.search]);
 
-  useEffect(() => {
-    let cancelled = false;
+  const trimmedOk = query.trim().length >= 2;
+  const wantUsers = type === "all" || type === "users";
+  const wantPosts = type === "all" || type === "posts";
 
-    const run = async () => {
-      if (query.trim().length < 2) {
-        setResults({ users: [], posts: [] });
-        setIsLoading(false);
-        return;
-      }
+  // Each result set is requested by its own query instead of being matched to
+  // a position in a conditionally-built array, which is what made an earlier
+  // version of this page assign post results to the users list for
+  // type=posts. A distinct cache key per `query` also means an abandoned
+  // in-flight request for an old search string can never clobber what's
+  // rendered for the current one — the manual `cancelled` guard the old
+  // effect needed for exactly that race is unnecessary by construction here.
+  const usersQuery = useQuery<SearchUser[]>({
+    queryKey: queryKeys.users.search(query),
+    queryFn: () => usersApi.searchUsers(query),
+    enabled: trimmedOk && wantUsers,
+  });
+  const postsQuery = useQuery<Post[]>({
+    queryKey: queryKeys.posts.search(query),
+    queryFn: () => postsApi.searchPosts(query),
+    enabled: trimmedOk && wantPosts,
+  });
 
-      setIsLoading(true);
-      setError("");
-      try {
-        // Each result set is requested by name instead of being matched to a
-        // position in a conditionally-built array, which is what made the old
-        // version assign post results to the users list for type=posts.
-        const wantUsers = type === "all" || type === "users";
-        const wantPosts = type === "all" || type === "posts";
+  const users = usersQuery.data ?? [];
+  const posts = postsQuery.data ?? [];
 
-        const [users, posts] = await Promise.all([
-          wantUsers ? usersApi.searchUsers(query) : Promise.resolve([]),
-          wantPosts ? postsApi.searchPosts(query) : Promise.resolve([]),
-        ]);
+  // A disabled query's `isLoading` is always false, so when `type` excludes a
+  // category that category never blocks this combined flag — matching the
+  // old code's `Promise.resolve([])` stand-in for the unwanted category, which
+  // always resolved instantly.
+  const isLoading = usersQuery.isLoading || postsQuery.isLoading;
 
-        if (!cancelled) {
-          setResults({ users, posts });
-        }
-      } catch (err) {
-        // `strict` types the catch binding `unknown`, not `any` — narrow it
-        // before reading `.message` rather than reaching for a cast.
-        if (!cancelled) setError(err instanceof Error ? err.message : String(err));
-      } finally {
-        if (!cancelled) setIsLoading(false);
-      }
-    };
+  // `strict` types a query's `error` as `unknown`, not `any` — narrow it
+  // before reading `.message` rather than reaching for a cast.
+  const loadError =
+    (usersQuery.error instanceof Error
+      ? usersQuery.error.message
+      : usersQuery.error
+        ? String(usersQuery.error)
+        : "") ||
+    (postsQuery.error instanceof Error
+      ? postsQuery.error.message
+      : postsQuery.error
+        ? String(postsQuery.error)
+        : "");
+  const error = actionError || loadError;
 
-    run();
-    // Guards against an earlier, slower search overwriting a later one.
-    return () => {
-      cancelled = true;
-    };
-  }, [query, type]);
-
-  const patchPost = (postId: string, changes: Partial<Post>) =>
-    setResults((current) => ({
-      ...current,
-      posts: current.posts.map((post) =>
-        post.id === postId ? { ...post, ...changes } : post
-      ),
-    }));
-
-  const handleLike = async (postId: string, isLiked: boolean) => {
-    const post = results.posts.find((candidate) => candidate.id === postId);
-    if (!post) return;
-
-    patchPost(postId, {
-      likedByMe: !isLiked,
-      likeCount: post.likeCount + (isLiked ? -1 : 1),
-    });
-
-    try {
-      const likeCount = isLiked
-        ? await postsApi.unlikePost(postId)
-        : await postsApi.likePost(postId);
-      patchPost(postId, { likeCount });
-    } catch (err) {
-      patchPost(postId, { likedByMe: post.likedByMe, likeCount: post.likeCount });
-      setError(err instanceof Error ? err.message : String(err));
-    }
+  // Patches one post inside the posts-search query cache — the query-cache
+  // equivalent of the old local-state `patchPost` helper, same call sites and
+  // the same `Partial<Post>` merge semantics. Unlike PostsPage's feed cache,
+  // the search cache holds a plain `Post[]`, not paginated data.
+  const patchSearchPost = (postId: string, changes: Partial<Post>) => {
+    queryClient.setQueryData<Post[]>(queryKeys.posts.search(query), (old) =>
+      old?.map((post) => (post.id === postId ? { ...post, ...changes } : post))
+    );
   };
+
+  /**
+   * Applies the like optimistically and rolls back if the request fails.
+   *
+   * The server owns the count, so its response is what finally lands — two
+   * people liking at once no longer produces two different totals on screen.
+   */
+  const likeMutation = useMutation({
+    mutationFn: ({ postId, isLiked }: { postId: string; isLiked: boolean }) =>
+      isLiked ? postsApi.unlikePost(postId) : postsApi.likePost(postId),
+    onMutate: ({ postId, isLiked }) => {
+      const post = posts.find((candidate) => candidate.id === postId);
+      if (post) {
+        patchSearchPost(postId, {
+          likedByMe: !isLiked,
+          likeCount: post.likeCount + (isLiked ? -1 : 1),
+        });
+      }
+      return { previous: post };
+    },
+    onSuccess: (likeCount, { postId }) => patchSearchPost(postId, { likeCount }),
+    onError: (err, { postId }, context) => {
+      if (context?.previous) {
+        patchSearchPost(postId, {
+          likedByMe: context.previous.likedByMe,
+          likeCount: context.previous.likeCount,
+        });
+      }
+      // `strict` types the catch binding `unknown`, not `any` — narrow it
+      // before reading `.message` rather than reaching for a cast.
+      setActionError(err instanceof Error ? err.message : String(err));
+    },
+  });
+  const handleLike = (postId: string, isLiked: boolean) =>
+    likeMutation.mutate({ postId, isLiked });
 
   const handleCommentAdded = (postId: string) => {
-    const post = results.posts.find((candidate) => candidate.id === postId);
-    if (post) patchPost(postId, { commentCount: post.commentCount + 1 });
+    const post = posts.find((candidate) => candidate.id === postId);
+    if (post) patchSearchPost(postId, { commentCount: post.commentCount + 1 });
   };
 
-  const total = results.users.length + results.posts.length;
+  const total = users.length + posts.length;
 
   return (
     <div className="search-results-container">
@@ -163,15 +187,15 @@ const SearchResults = () => {
         <>
           {(type === "all" || type === "users") && (
             <section className="search-results-section">
-              <h2>Users ({results.users.length})</h2>
-              {results.users.length > 0 ? (
+              <h2>Users ({users.length})</h2>
+              {users.length > 0 ? (
                 /* A ul, not a div: UserCard renders a <li> now (see PostCard's
                    own comment below for why the same fix applies here). */
                 <ul
                   className="search-results-grid"
                   style={{ listStyle: "none", margin: 0, padding: 0 }}
                 >
-                  {results.users.map((user) => (
+                  {users.map((user) => (
                     <UserCard key={user.id} user={user} />
                   ))}
                 </ul>
@@ -183,8 +207,8 @@ const SearchResults = () => {
 
           {(type === "all" || type === "posts") && (
             <section className="search-results-section">
-              <h2>Posts ({results.posts.length})</h2>
-              {results.posts.length > 0 ? (
+              <h2>Posts ({posts.length})</h2>
+              {posts.length > 0 ? (
                 /* A ul, not a div: PostCard renders a <li> now, and an <li>
                    with no list around it is an orphan — the browser keeps it
                    but assistive technology loses the "N items" the list
@@ -194,7 +218,7 @@ const SearchResults = () => {
                   className="search-results-grid"
                   style={{ listStyle: "none", margin: 0, padding: 0 }}
                 >
-                  {results.posts.map((post) => (
+                  {posts.map((post) => (
                     <PostCard
                       key={post.id}
                       post={post}
