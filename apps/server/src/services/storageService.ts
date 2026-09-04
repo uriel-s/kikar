@@ -11,8 +11,21 @@
 export interface AvatarBucket {
   /** A short-lived presigned URL the browser can PUT the avatar bytes to directly. */
   createUploadUrl(key: string): Promise<string>;
+  /**
+   * The object's size in bytes, or null if nothing has been uploaded to `key`
+   * yet — cheap enough (a HEAD, not a GET) to check before deciding whether the
+   * object is even worth downloading.
+   */
+  headSize(key: string): Promise<number | null>;
   /** The object's current bytes, or null if nothing has been uploaded to `key` yet. */
   download(key: string): Promise<Buffer | null>;
+  /**
+   * Re-tags the stored object's Content-Type metadata to `contentType`, in
+   * place, without touching its bytes. A presigned PUT binds no Content-Type of
+   * its own, so this is what makes the detected type — rather than whatever a
+   * direct-to-R2 caller happened to declare — the one that is actually served.
+   */
+  retagContentType(key: string, contentType: string): Promise<void>;
   delete(key: string): Promise<void>;
   /** The URL the object is served at once uploaded. */
   publicUrl(key: string): string;
@@ -38,7 +51,12 @@ export const createStorageService = (bucket: AvatarBucket) => {
     createAvatarUploadUrl: (uid: string): Promise<string> =>
       bucket.createUploadUrl(keyFor(uid)),
 
+    avatarSize: (uid: string): Promise<number | null> => bucket.headSize(keyFor(uid)),
+
     downloadAvatar: (uid: string): Promise<Buffer | null> => bucket.download(keyFor(uid)),
+
+    setAvatarContentType: (uid: string, contentType: string): Promise<void> =>
+      bucket.retagContentType(keyFor(uid), contentType),
 
     deleteAvatarObject: (uid: string): Promise<void> => bucket.delete(keyFor(uid)),
 

@@ -159,16 +159,26 @@ const createUserController = ({ users, storage }: UserControllerDeps) => ({
    * check, both before the save, is now one check after it: download the
    * object back and inspect its actual bytes, because R2 will happily store
    * whatever a PUT sends regardless of what it claims to be.
+   *
+   * The size check runs first, and against a HEAD rather than the downloaded
+   * buffer: the presigned PUT has no size limit of its own, so an oversized
+   * object must be rejected without ever pulling its full bytes into this
+   * process's memory.
    */
   updateAvatar: authenticated<UserIdParams>(async (req, res) => {
-    const buffer = await storage.downloadAvatar(req.user.uid);
-    if (!buffer) {
+    const size = await storage.avatarSize(req.user.uid);
+    if (size === null) {
       throw ApiError.badRequest("No image uploaded");
     }
 
-    if (buffer.length > MAX_AVATAR_BYTES) {
+    if (size > MAX_AVATAR_BYTES) {
       await storage.deleteAvatarObject(req.user.uid);
       throw ApiError.payloadTooLarge("Image must be 5MB or smaller");
+    }
+
+    const buffer = await storage.downloadAvatar(req.user.uid);
+    if (!buffer) {
+      throw ApiError.badRequest("No image uploaded");
     }
 
     const contentType = detectImageType(buffer);
@@ -176,6 +186,10 @@ const createUserController = ({ users, storage }: UserControllerDeps) => ({
       await storage.deleteAvatarObject(req.user.uid);
       throw ApiError.badRequest("File is not a valid JPEG, PNG, or WebP image");
     }
+
+    // The detected type, never whatever the direct-to-R2 PUT declared, is what
+    // gets served — see the "Avatar uploads" invariant in CLAUDE.md.
+    await storage.setAvatarContentType(req.user.uid, contentType);
 
     const avatarUrl = storage.publicAvatarUrl(req.user.uid);
     const user = await users.setAvatarUrl(req.user.uid, avatarUrl);

@@ -40,8 +40,9 @@ describe("detectImageType", () => {
 /**
  * Avatars now upload directly to R2: the browser PUTs to a presigned URL this
  * API hands out, and only reports back afterward. These tests simulate that
- * direct upload with `bucket.seed(...)` — the fake's one method with no
- * counterpart on the real AvatarBucket, standing in for bytes that in
+ * direct upload with `bucket.seed(...)` and inspect the result with
+ * `bucket.contentTypeOf(...)` — the fake's two extras with no counterpart on
+ * the real AvatarBucket, standing in for bytes and metadata that in
  * production never pass through this server at all.
  */
 describe("avatar upload", () => {
@@ -69,13 +70,24 @@ describe("avatar upload", () => {
     };
 
     it("stores a real PNG that was uploaded directly to R2", async () => {
-      const { app, setAvatarUrl } = appWith(PNG);
+      const { app, bucket, setAvatarUrl } = appWith(PNG);
       const res = await request(app)
         .put("/api/users/alice/avatar")
         .set(authHeader("alice"));
 
       expect(res.status).toBe(200);
-      expect(setAvatarUrl).toHaveBeenCalled();
+      expect(res.body.user).toEqual({ id: "alice", name: "Alice" });
+      expect(setAvatarUrl).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: "alice" },
+          data: expect.objectContaining({
+            avatarUrl: expect.stringContaining("profile_pictures/alice"),
+          }),
+        })
+      );
+      // The stored object's Content-Type must be re-tagged to what the magic
+      // bytes actually are, never left as whatever the direct PUT declared.
+      expect(bucket.contentTypeOf(AVATAR_KEY)).toBe("image/png");
     });
 
     /**
@@ -102,6 +114,27 @@ describe("avatar upload", () => {
       expect(await bucket.download(AVATAR_KEY)).toBeNull();
     });
 
+    /**
+     * The size check runs off a HEAD, not a downloaded buffer — see
+     * config/storage.ts's `headSize` — so an oversized object is rejected
+     * without this process ever pulling the full bytes into memory. The
+     * download spy proves that: it must never be reached once the size check
+     * alone was enough to reject and delete the object.
+     */
+    it("rejects a confirmed upload over the 5MB avatar cap, without downloading it", async () => {
+      const { app, bucket, setAvatarUrl } = appWith(Buffer.alloc(5 * 1024 * 1024 + 1));
+      const downloadSpy = jest.spyOn(bucket, "download");
+
+      const res = await request(app)
+        .put("/api/users/alice/avatar")
+        .set(authHeader("alice"));
+
+      expect(res.status).toBe(413);
+      expect(setAvatarUrl).not.toHaveBeenCalled();
+      expect(downloadSpy).not.toHaveBeenCalled();
+      expect(await bucket.download(AVATAR_KEY)).toBeNull();
+    });
+
     it("rejects confirmation when nothing has been uploaded yet", async () => {
       const { app, setAvatarUrl } = appWith();
       const res = await request(app)
@@ -119,6 +152,9 @@ describe("avatar upload", () => {
 
     const noToken = await request(app).post("/api/users/alice/avatar/upload-url");
     expect(noToken.status).toBe(401);
+
+    const noTokenConfirm = await request(app).put("/api/users/alice/avatar");
+    expect(noTokenConfirm.status).toBe(401);
 
     const crossUserUploadUrl = await request(app)
       .post("/api/users/bob/avatar/upload-url")

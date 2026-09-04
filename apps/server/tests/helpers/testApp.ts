@@ -44,17 +44,28 @@ const fakeAuth = (users: FakeUsers = {}) => ({
  */
 const fakeBucket = () => {
   const store = new Map<string, Buffer>();
+  const contentTypes = new Map<string, string>();
 
   return {
     createUploadUrl: async (key: string) => `https://storage.test/upload/${key}`,
+    // Mirrors the real bucket's HEAD-before-GET shape: reports size without
+    // handing back the bytes, which is what lets the oversized-upload path be
+    // rejected without ever downloading the object.
+    headSize: async (key: string) => store.get(key)?.length ?? null,
     download: async (key: string) => store.get(key) ?? null,
+    retagContentType: async (key: string, contentType: string) => {
+      contentTypes.set(key, contentType);
+    },
     delete: async (key: string) => {
       store.delete(key);
+      contentTypes.delete(key);
     },
     publicUrl: (key: string) => `https://storage.test/${key}`,
     seed: (key: string, data: Buffer) => {
       store.set(key, data);
     },
+    /** Test-only: what retagContentType last recorded for `key`, or undefined. */
+    contentTypeOf: (key: string) => contentTypes.get(key),
   };
 };
 

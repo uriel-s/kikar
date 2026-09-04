@@ -1,6 +1,8 @@
 import {
+  CopyObjectCommand,
   DeleteObjectCommand,
   GetObjectCommand,
+  HeadObjectCommand,
   PutObjectCommand,
   S3Client,
 } from "@aws-sdk/client-s3";
@@ -56,6 +58,18 @@ export const createR2Bucket = (env: R2Env): AvatarBucket => {
         }
       ),
 
+    headSize: async (key) => {
+      try {
+        const result = await client.send(
+          new HeadObjectCommand({ Bucket: env.R2_BUCKET_NAME, Key: key })
+        );
+        return result.ContentLength ?? null;
+      } catch (err) {
+        if (isNoSuchKey(err)) return null;
+        throw err;
+      }
+    },
+
     download: async (key) => {
       try {
         const result = await client.send(
@@ -70,6 +84,22 @@ export const createR2Bucket = (env: R2Env): AvatarBucket => {
         if (isNoSuchKey(err)) return null;
         throw err;
       }
+    },
+
+    // A presigned PUT binds no Content-Type of its own, so the object as R2
+    // first stores it carries whatever (or nothing) the uploader declared.
+    // Copying the object onto itself with MetadataDirective "REPLACE" is the
+    // S3-API way to retag metadata in place, without re-uploading the bytes.
+    retagContentType: async (key, contentType) => {
+      await client.send(
+        new CopyObjectCommand({
+          Bucket: env.R2_BUCKET_NAME,
+          CopySource: `${env.R2_BUCKET_NAME}/${encodeURIComponent(key)}`,
+          Key: key,
+          ContentType: contentType,
+          MetadataDirective: "REPLACE",
+        })
+      );
     },
 
     delete: async (key) => {
