@@ -1,5 +1,7 @@
 import "./App.css";
 import React from "react";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { queryClient } from "./lib/queryClient";
 import { AuthProvider } from "./contexts/AuthContext";
 import { BrowserRouter as Router, Switch, Route, Redirect } from "./lib/router";
 import { useLocation } from "react-router-dom";
@@ -74,55 +76,60 @@ const Square = () => (
 
 function App() {
   return (
-    <div className="App">
-      <Router>
-        {/*
-         * Outside AuthProvider, which renders nothing at all until Firebase has
-         * answered — the canvas used to sit outside the Router entirely and
-         * paint immediately, and moving it inside the provider would replace
-         * that first frame with a blank page.
-         */}
-        <OffPlaza>
-          <WavesBackground />
-        </OffPlaza>
-
-        <AuthProvider>
+    // Outermost so every descendant — Router, AuthProvider, every route — can
+    // read and write the cache; stage 6 moves data fetching into useQuery one
+    // page at a time, and each of those needs the provider already in place.
+    <QueryClientProvider client={queryClient}>
+      <div className="App">
+        <Router>
+          {/*
+           * Outside AuthProvider, which renders nothing at all until Firebase has
+           * answered — the canvas used to sit outside the Router entirely and
+           * paint immediately, and moving it inside the provider would replace
+           * that first frame with a blank page.
+           */}
           <OffPlaza>
-            <Navbar />
+            <WavesBackground />
           </OffPlaza>
 
-          <Content>
-            <Switch>
-              {/* Private routes - require authentication */}
-              {/* The square is the home screen: the design has no separate
-                  dashboard-shaped landing page. */}
-              <PrivateRoute exact path={PLAZA_PATH} component={Square} />
-              <PrivateRoute path="/me" component={Dashbord} />
-              <PrivateRoute path="/update-profile" component={UpdateProfile} />
-              <PrivateRoute path="/allusers" component={AllUsers} />
-              <PrivateRoute path="/search" component={SearchResults} />
+          <AuthProvider>
+            <OffPlaza>
+              <Navbar />
+            </OffPlaza>
 
-              {/* Footer and the old navbar still link to /posts, and so do any
-                  bookmarks. The feed lives at / now, so send them there rather
-                  than editing every call site. */}
-              <Redirect from="/posts" to={PLAZA_PATH} />
+            <Content>
+              <Switch>
+                {/* Private routes - require authentication */}
+                {/* The square is the home screen: the design has no separate
+                    dashboard-shaped landing page. */}
+                <PrivateRoute exact path={PLAZA_PATH} component={Square} />
+                <PrivateRoute path="/me" component={Dashbord} />
+                <PrivateRoute path="/update-profile" component={UpdateProfile} />
+                <PrivateRoute path="/allusers" component={AllUsers} />
+                <PrivateRoute path="/search" component={SearchResults} />
 
-              {/* Public routes */}
-              <Route path="/signup" component={SignUp} />
-              <Route path="/signin" component={Signin} />
-              <Route path="/privacy" component={Privacy} />
-              <Route path="/terms" component={Terms} />
-              <Route path="/contact" component={Contact} />
+                {/* Footer and the old navbar still link to /posts, and so do any
+                    bookmarks. The feed lives at / now, so send them there rather
+                    than editing every call site. */}
+                <Redirect from="/posts" to={PLAZA_PATH} />
 
-              {/* Redirect to home if no route matches */}
-              <Redirect to={PLAZA_PATH} />
-            </Switch>
-          </Content>
+                {/* Public routes */}
+                <Route path="/signup" component={SignUp} />
+                <Route path="/signin" component={Signin} />
+                <Route path="/privacy" component={Privacy} />
+                <Route path="/terms" component={Terms} />
+                <Route path="/contact" component={Contact} />
 
-          <Footer />
-        </AuthProvider>
-      </Router>
-    </div>
+                {/* Redirect to home if no route matches */}
+                <Redirect to={PLAZA_PATH} />
+              </Switch>
+            </Content>
+
+            <Footer />
+          </AuthProvider>
+        </Router>
+      </div>
+    </QueryClientProvider>
   );
 }
 
